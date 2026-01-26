@@ -1,0 +1,750 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  suspended
+  blocked
+  self_excluded
+}
+
+enum TransactionType {
+  deposit
+  withdrawal
+  bet_placed
+  bet_won
+  bet_refund
+  bonus
+  transfer
+  adjustment
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
+  cancelled
+}
+
+enum MatchStatus {
+  scheduled
+  live
+  finished
+  cancelled
+  postponed
+}
+
+enum BetStatus {
+  pending
+  won
+  lost
+  void
+  partial_won
+  cashout
+}
+
+enum SelectionResult {
+  pending
+  won
+  lost
+  void
+  half_won
+  half_lost
+}
+
+enum OddsStatus {
+  active
+  suspended
+  closed
+  settled
+}
+
+enum DataProviderStatus {
+  active
+  inactive
+  error
+  maintenance
+}
+
+enum DataProviderType {
+  odds
+  fixtures
+  live_scores
+  statistics
+  leagues
+  teams
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  permissions Json     @default("[]")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id            String     @id @default(uuid())
+  username      String     @unique
+  email         String?    @unique
+  phone         String?
+  passwordHash  String     @map("password_hash")
+
+  roleId        String?    @map("role_id")
+  role          Role?      @relation(fields: [roleId], references: [id])
+
+  agentId       String?    @map("agent_id")
+  agent         Agent?     @relation("UserAgent", fields: [agentId], references: [id])
+
+  firstName     String?    @map("first_name")
+  lastName      String?    @map("last_name")
+  avatarUrl     String?    @map("avatar_url")
+
+  status        UserStatus @default(active)
+  emailVerified Boolean    @default(false) @map("email_verified")
+  phoneVerified Boolean    @default(false) @map("phone_verified")
+
+  bettingLimits Json       @default("{}") @map("betting_limits")
+
+  lastLoginAt   DateTime?  @map("last_login_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+
+  wallet              Wallet?
+  ownedAgent          Agent?               @relation("AgentUser")
+  loginHistory        LoginHistory[]
+  bets                Bet[]
+  depositRequests     DepositRequest[]
+  withdrawalRequests  WithdrawalRequest[]
+  notifications       Notification[]
+  supportTickets      SupportTicket[]
+  ticketMessages      TicketMessage[]
+  bankAccounts        UserBankAccount[]
+
+  @@map("users")
+}
+
+model Agent {
+  id             String  @id @default(uuid())
+  userId         String  @unique @map("user_id")
+  user           User    @relation("AgentUser", fields: [userId], references: [id])
+
+  parentId       String? @map("parent_id")
+  parent         Agent?  @relation("AgentHierarchy", fields: [parentId], references: [id])
+  children       Agent[] @relation("AgentHierarchy")
+
+  level          Int     @default(1)
+  agentCode      String  @unique @map("agent_code")
+
+  commissionRate Decimal @default(0.00) @map("commission_rate") @db.Decimal(5, 2)
+
+  bettingLimits  Json    @default("{}") @map("betting_limits")
+
+  status         String  @default("active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  downlineUsers  User[]   @relation("UserAgent")
+
+  @@map("agents")
+}
+
+model Wallet {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  user           User     @relation(fields: [userId], references: [id])
+
+  realBalance    Decimal  @default(0.00) @map("real_balance") @db.Decimal(18, 2)
+  bonusBalance   Decimal  @default(0.00) @map("bonus_balance") @db.Decimal(18, 2)
+  pendingBalance Decimal  @default(0.00) @map("pending_balance") @db.Decimal(18, 2)
+
+  currency       String   @default("VND")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  transactions   Transaction[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  walletId       String            @map("wallet_id")
+  wallet         Wallet            @relation(fields: [walletId], references: [id])
+
+  type           TransactionType
+  amount         Decimal           @db.Decimal(18, 2)
+  balanceBefore  Decimal           @map("balance_before") @db.Decimal(18, 2)
+  balanceAfter   Decimal           @map("balance_after") @db.Decimal(18, 2)
+
+  balanceType    String            @default("real") @map("balance_type")
+
+  referenceType  String?           @map("reference_type")
+  referenceId    String?           @map("reference_id")
+
+  description    String?
+  metadata       Json              @default("{}")
+
+  status         TransactionStatus @default(completed)
+
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  @@index([walletId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model LoginHistory {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  deviceType    String?  @map("device_type")
+  deviceName    String?  @map("device_name")
+  browser       String?
+  os            String?
+
+  location      String?
+  countryCode   String?  @map("country_code")
+
+  status        String   @default("success")
+  failureReason String?  @map("failure_reason")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("login_history")
+}
+
+model Sport {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  icon      String?
+
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  leagues  League[]
+  teams    Team[]
+  betTypes BetType[]
+
+  @@map("sports")
+}
+
+model League {
+  id          String   @id @default(uuid())
+  sportId     String   @map("sport_id")
+  sport       Sport    @relation(fields: [sportId], references: [id])
+
+  name        String
+  slug        String
+  country     String?
+  countryCode String?  @map("country_code")
+  logoUrl     String?  @map("logo_url")
+
+  season      String?
+
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+
+  externalId  String?  @map("external_id")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  matches Match[]
+
+  @@unique([sportId, externalId])
+  @@map("leagues")
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  sportId     String   @map("sport_id")
+  sport       Sport    @relation(fields: [sportId], references: [id])
+
+  name        String
+  shortName   String?  @map("short_name")
+  slug        String
+  logoUrl     String?  @map("logo_url")
+
+  country     String?
+  countryCode String?  @map("country_code")
+
+  externalId  String?  @map("external_id")
+
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+
+  @@unique([sportId, externalId])
+  @@map("teams")
+}
+
+model Match {
+  id             String      @id @default(uuid())
+  leagueId       String      @map("league_id")
+  league         League      @relation(fields: [leagueId], references: [id])
+
+  homeTeamId     String      @map("home_team_id")
+  homeTeam       Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+
+  awayTeamId     String      @map("away_team_id")
+  awayTeam       Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  startTime      DateTime    @map("start_time")
+
+  status         MatchStatus @default(scheduled)
+
+  homeScore      Int?        @map("home_score")
+  awayScore      Int?        @map("away_score")
+
+  result         Json        @default("{}")
+
+  isLive         Boolean     @default(false) @map("is_live")
+  isFeatured     Boolean     @default(false) @map("is_featured")
+  bettingEnabled Boolean     @default(true) @map("betting_enabled")
+
+  liveMinute     Int?        @map("live_minute")
+  period         String?
+
+  externalId     String?     @map("external_id")
+  metadata       Json        @default("{}")
+
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  odds           Odds[]
+  betSelections  BetSelection[]
+
+  @@unique([externalId])
+  @@index([leagueId])
+  @@index([startTime])
+  @@index([status])
+  @@map("matches")
+}
+
+model BetType {
+  id          String   @id @default(uuid())
+  sportId     String?  @map("sport_id")
+  sport       Sport?   @relation(fields: [sportId], references: [id])
+
+  name        String
+  code        String
+  description String?
+
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  odds Odds[]
+
+  @@unique([sportId, code])
+  @@map("bet_types")
+}
+
+model Odds {
+  id            String   @id @default(uuid())
+  matchId       String   @map("match_id")
+  match         Match    @relation(fields: [matchId], references: [id])
+
+  betTypeId     String   @map("bet_type_id")
+  betType       BetType  @relation(fields: [betTypeId], references: [id])
+
+  selection     String
+  selectionName String?  @map("selection_name")
+
+  handicap      Decimal? @db.Decimal(5, 2)
+
+  oddsValue     Decimal  @map("odds_value") @db.Decimal(8, 3)
+
+  status        OddsStatus @default(active)
+
+  externalId    String?  @map("external_id")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  betSelections BetSelection[]
+
+  @@index([matchId])
+  @@index([betTypeId])
+  @@map("odds")
+}
+
+model Bet {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id])
+
+  betType      String    @map("bet_type")
+
+  stake        Decimal   @db.Decimal(18, 2)
+  totalOdds    Decimal   @map("total_odds") @db.Decimal(10, 3)
+  potentialWin Decimal   @map("potential_win") @db.Decimal(18, 2)
+  actualWin    Decimal   @default(0) @map("actual_win") @db.Decimal(18, 2)
+
+  status       BetStatus @default(pending)
+
+  placedAt     DateTime  @default(now()) @map("placed_at")
+  settledAt    DateTime? @map("settled_at")
+
+  ipAddress    String?   @map("ip_address")
+  deviceType   String?   @map("device_type")
+
+  metadata     Json      @default("{}")
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  selections BetSelection[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([placedAt])
+  @@map("bets")
+}
+
+model BetSelection {
+  id            String          @id @default(uuid())
+  betId         String          @map("bet_id")
+  bet           Bet             @relation(fields: [betId], references: [id])
+
+  oddsId        String          @map("odds_id")
+  odds          Odds            @relation(fields: [oddsId], references: [id])
+
+  matchId       String          @map("match_id")
+  match         Match           @relation(fields: [matchId], references: [id])
+
+  oddsValue     Decimal         @map("odds_value") @db.Decimal(8, 3)
+
+  selection     String
+  selectionName String?         @map("selection_name")
+  handicap      Decimal?        @db.Decimal(5, 2)
+
+  result        SelectionResult @default(pending)
+
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@index([betId])
+  @@index([matchId])
+  @@map("bet_selections")
+}
+
+model DepositRequest {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id])
+
+  amount          Decimal  @db.Decimal(18, 2)
+
+  paymentMethod   String   @map("payment_method")
+
+  bankName        String?  @map("bank_name")
+  accountNumber   String?  @map("account_number")
+  accountName     String?  @map("account_name")
+  transferContent String?  @map("transfer_content")
+
+  proofImageUrl   String?  @map("proof_image_url")
+
+  status          String   @default("pending")
+
+  processedBy     String?  @map("processed_by")
+  processedAt     DateTime? @map("processed_at")
+  rejectReason    String?  @map("reject_reason")
+
+  notes           String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("deposit_requests")
+}
+
+model WithdrawalRequest {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id])
+
+  amount          Decimal  @db.Decimal(18, 2)
+  fee             Decimal  @default(0) @db.Decimal(18, 2)
+  netAmount       Decimal  @map("net_amount") @db.Decimal(18, 2)
+
+  bankName        String   @map("bank_name")
+  accountNumber   String   @map("account_number")
+  accountName     String   @map("account_name")
+
+  status          String   @default("pending")
+
+  processedBy     String?  @map("processed_by")
+  processedAt     DateTime? @map("processed_at")
+  rejectReason    String?  @map("reject_reason")
+
+  transactionRef  String?  @map("transaction_ref")
+
+  notes           String?
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("withdrawal_requests")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String?   @map("user_id")
+  user      User?     @relation(fields: [userId], references: [id])
+
+  type      String
+  title     String
+  content   String
+
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+
+  actionUrl String?   @map("action_url")
+
+  metadata  Json      @default("{}")
+
+  expiresAt DateTime? @map("expires_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model SupportTicket {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id])
+
+  ticketNumber String    @unique @map("ticket_number")
+
+  subject      String
+  category     String
+  priority     String    @default("normal")
+
+  status       String    @default("open")
+
+  assignedTo   String?   @map("assigned_to")
+
+  resolvedAt   DateTime? @map("resolved_at")
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  messages TicketMessage[]
+
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id          String   @id @default(uuid())
+  ticketId    String   @map("ticket_id")
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id])
+
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+
+  message     String
+
+  attachments Json     @default("[]")
+
+  isInternal  Boolean  @default(false) @map("is_internal")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("ticket_messages")
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+
+  description String?
+  category    String?
+
+  isPublic    Boolean  @default(false) @map("is_public")
+
+  updatedBy   String?  @map("updated_by")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  
+  token       String   @unique
+  
+  deviceInfo  String?  @map("device_info")
+  ipAddress   String?  @map("ip_address")
+  
+  expiresAt   DateTime @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  
+  token       String    @unique
+  
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+model UserBankAccount {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+
+  bankName      String   @map("bank_name")
+  bankCode      String?  @map("bank_code")
+  accountNumber String   @map("account_number")
+  accountName   String   @map("account_name")
+
+  isDefault     Boolean  @default(false) @map("is_default")
+  isVerified    Boolean  @default(false) @map("is_verified")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("user_bank_accounts")
+}
+
+model DataProvider {
+  id           String             @id @default(uuid())
+  code         String             @unique // 'api_football', 'sportradar', etc.
+  name         String             // 'API-Football'
+  description  String?
+
+  // Provider capabilities
+  types        DataProviderType[] // what this provider offers
+
+  // Connection
+  baseUrl      String             @map("base_url")
+  apiKey       String?            @map("api_key")
+  apiSecret    String?            @map("api_secret")
+
+  // Headers & Config
+  headers      Json               @default("{}") // custom headers like {'x-apisports-key': '{{apiKey}}'}
+  config       Json               @default("{}") // rate limits, timeout, retry config
+
+  // Status & Priority
+  status       DataProviderStatus @default(inactive)
+  priority     Int                @default(0) // higher = preferred when multiple providers
+
+  // Health monitoring
+  lastSyncAt   DateTime?          @map("last_sync_at")
+  lastErrorAt  DateTime?          @map("last_error_at")
+  lastError    String?            @map("last_error")
+  healthScore  Int                @default(100) @map("health_score") // 0-100
+
+  // Usage tracking for rate limits
+  dailyLimit   Int?               @map("daily_limit")
+  dailyUsage   Int                @default(0) @map("daily_usage")
+  dailyResetAt DateTime?          @map("daily_reset_at")
+
+  monthlyLimit Int?               @map("monthly_limit")
+  monthlyUsage Int                @default(0) @map("monthly_usage")
+  monthlyResetAt DateTime?        @map("monthly_reset_at")
+
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  @@map("data_providers")
+
+  apiRequestLogs ApiRequestLog[]
+}
+
+enum ApiRequestStatus {
+  success
+  error
+  timeout
+}
+
+model ApiRequestLog {
+  id             String           @id @default(uuid())
+  providerId     String           @map("provider_id")
+  provider       DataProvider     @relation(fields: [providerId], references: [id])
+
+  // Request info
+  endpoint       String           // e.g., '/fixtures', '/odds', '/odds/live'
+  method         String           @default("GET")
+  params         Json             @default("{}") // query parameters
+  headers        Json             @default("{}") // request headers (sanitized, no API keys)
+
+  // Response info
+  status         ApiRequestStatus @default(success)
+  statusCode     Int?             @map("status_code") // HTTP status code
+  responseTime   Int?             @map("response_time") // in milliseconds
+  responseSize   Int?             @map("response_size") // in bytes (approximate)
+  resultCount    Int?             @map("result_count") // number of results returned
+  responseBody   Json?            @map("response_body") // truncated response payload (for admin debugging)
+
+  // Error info
+  errorMessage   String?          @map("error_message")
+  errorCode      String?          @map("error_code")
+
+  // Metadata
+  fixtureIds     String[]         @default([]) @map("fixture_ids") // related fixture IDs if applicable
+  leagueIds      Int[]            @default([]) @map("league_ids") // related league IDs if applicable
+
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  @@index([providerId])
+  @@index([endpoint])
+  @@index([status])
+  @@index([createdAt])
+  @@map("api_request_logs")
+}

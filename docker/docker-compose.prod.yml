@@ -1,0 +1,14 @@
+services:
+  api:
+    image: ${IMAGE_API}
+    env_file:
+      - ../apps/api/.env
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  web:
+    image: ${IMAGE_WEB}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
