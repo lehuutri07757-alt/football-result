@@ -1,77 +1,100 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { LeagueSyncService } from './league-sync.service';
-import { TeamSyncService } from './team-sync.service';
-import { FixtureSyncService } from './fixture-sync.service';
-import { OddsSyncService } from './odds-sync.service';
+import { SyncJobService } from './sync-job.service';
+import { SyncJobType, SyncJobPriority } from './interfaces';
 
 @Injectable()
 export class ApiFootballScheduler {
   private readonly logger = new Logger(ApiFootballScheduler.name);
 
-  constructor(
-    private readonly leagueSyncService: LeagueSyncService,
-    private readonly teamSyncService: TeamSyncService,
-    private readonly fixtureSyncService: FixtureSyncService,
-    private readonly oddsSyncService: OddsSyncService,
-  ) {}
+  constructor(private readonly syncJobService: SyncJobService) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
-  async handleLeagueSync() {
-    this.logger.log('Running scheduled league sync...');
+  async handleLeagueSync(): Promise<void> {
+    this.logger.log('Scheduling league sync job...');
     try {
-      const result = await this.leagueSyncService.syncLeagues();
-      this.logger.log(`League sync completed: ${result.created} created, ${result.updated} updated`);
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.league,
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`League sync job scheduled: ${jobId}`);
     } catch (error) {
-      this.logger.error(`League sync failed: ${error}`);
+      this.logger.error(`Failed to schedule league sync: ${error}`);
     }
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
-  async handleTeamSync() {
-    this.logger.log('Running scheduled team sync...');
+  async handleTeamSync(): Promise<void> {
+    this.logger.log('Scheduling team sync job...');
     try {
-      const result = await this.teamSyncService.syncAllActiveLeagues();
-      this.logger.log(`Team sync completed: ${result.created} created, ${result.updated} updated`);
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.team,
+        params: { syncAllActive: true },
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`Team sync job scheduled: ${jobId}`);
     } catch (error) {
-      this.logger.error(`Team sync failed: ${error}`);
+      this.logger.error(`Failed to schedule team sync: ${error}`);
     }
   }
 
   @Cron(CronExpression.EVERY_HOUR)
-  async handleFixtureSync() {
-    this.logger.log('Running scheduled fixture sync...');
+  async handleFixtureSync(): Promise<void> {
+    this.logger.log('Scheduling fixture sync job...');
     try {
       const today = new Date();
       const dateFrom = new Date(today.setDate(today.getDate() - 1)).toISOString().split('T')[0];
-      const dateTo = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const dateTo = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const result = await this.fixtureSyncService.syncFixturesByDate(dateFrom, dateTo);
-      this.logger.log(`Fixture sync completed: ${result.created} created, ${result.updated} updated`);
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.fixture,
+        params: { dateFrom, dateTo },
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`Fixture sync job scheduled: ${jobId}`);
     } catch (error) {
-      this.logger.error(`Fixture sync failed: ${error}`);
+      this.logger.error(`Failed to schedule fixture sync: ${error}`);
     }
   }
 
   @Cron(CronExpression.EVERY_30_MINUTES)
-  async handleUpcomingOddsSync() {
-    this.logger.log('Running scheduled upcoming odds sync...');
+  async handleUpcomingOddsSync(): Promise<void> {
+    this.logger.log('Scheduling upcoming odds sync job...');
     try {
-      const result = await this.oddsSyncService.syncOddsForUpcomingMatches(48);
-      this.logger.log(`Upcoming odds sync completed: ${result.totalOdds} odds for ${result.totalMatches} matches`);
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.odds_upcoming,
+        params: { hoursAhead: 48 },
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`Upcoming odds sync job scheduled: ${jobId}`);
     } catch (error) {
-      this.logger.error(`Upcoming odds sync failed: ${error}`);
+      this.logger.error(`Failed to schedule upcoming odds sync: ${error}`);
     }
   }
 
   @Cron(CronExpression.EVERY_5_MINUTES)
-  async handleLiveOddsSync() {
-    this.logger.log('Running scheduled live odds sync...');
+  async handleLiveOddsSync(): Promise<void> {
+    this.logger.log('Scheduling live odds sync job...');
     try {
-      const result = await this.oddsSyncService.syncOddsForLiveMatches();
-      this.logger.log(`Live odds sync completed: ${result.totalOdds} odds for ${result.totalMatches} matches`);
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.odds_live,
+        priority: SyncJobPriority.high,
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`Live odds sync job scheduled: ${jobId}`);
     } catch (error) {
-      this.logger.error(`Live odds sync failed: ${error}`);
+      this.logger.error(`Failed to schedule live odds sync: ${error}`);
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async handleJobCleanup(): Promise<void> {
+    this.logger.log('Cleaning up old sync jobs...');
+    try {
+      const deleted = await this.syncJobService.cleanupOldJobs(7);
+      this.logger.log(`Cleaned up ${deleted} old sync jobs`);
+    } catch (error) {
+      this.logger.error(`Failed to cleanup old jobs: ${error}`);
     }
   }
 }

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,7 +27,9 @@ export class MatchesController {
   @Get('upcoming')
   @ApiOperation({ summary: 'Get upcoming matches' })
   @ApiResponse({ status: 200, description: 'List of upcoming matches' })
-  async findUpcoming(@Query('limit') limit?: number) {
+  async findUpcoming(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
     return this.matchesService.findUpcoming(limit);
   }
 

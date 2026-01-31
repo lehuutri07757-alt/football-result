@@ -10,6 +10,7 @@ exports.MatchesModule = void 0;
 const common_1 = require("@nestjs/common");
 const matches_controller_1 = require("./matches.controller");
 const matches_service_1 = require("./matches.service");
+const matches_scheduler_service_1 = require("./matches-scheduler.service");
 const prisma_module_1 = require("../../prisma/prisma.module");
 let MatchesModule = class MatchesModule {
 };
@@ -18,7 +19,7 @@ exports.MatchesModule = MatchesModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule],
         controllers: [matches_controller_1.MatchesController],
-        providers: [matches_service_1.MatchesService],
+        providers: [matches_service_1.MatchesService, matches_scheduler_service_1.MatchesSchedulerService],
         exports: [matches_service_1.MatchesService],
     })
 ], MatchesModule);

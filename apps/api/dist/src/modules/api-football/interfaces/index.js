@@ -16,4 +16,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./api-football.interface"), exports);
 __exportStar(require("./odds-table.interface"), exports);
+__exportStar(require("./sync-job.interface"), exports);
 //# sourceMappingURL=index.js.map

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateLeagueDto, UpdateLeagueDto, QueryLeagueDto, ReorderLeaguesDto } from './dto';
 import { Prisma } from '@prisma/client';
+import { buildLeagueSearchKey, normalizeForSearch } from '../../common/utils/search-normalize';
 
 @Injectable()
 export class LeaguesService {
@@ -17,7 +18,10 @@ export class LeaguesService {
     }
 
     return this.prisma.league.create({
-      data: createLeagueDto,
+      data: {
+        ...createLeagueDto,
+        searchKey: buildLeagueSearchKey(createLeagueDto),
+      },
       include: { sport: true },
     });
   }
@@ -26,19 +30,15 @@ export class LeaguesService {
     const { page = 1, limit = 10, search, sportId, country, isActive, isFeatured, sortBy = 'sortOrder', sortOrder = 'asc' } = query;
     const skip = (page - 1) * limit;
 
-    const normalizedSearch = search?.trim().replace(/\s+/g, ' ');
+    const normalizedSearchKey = search ? normalizeForSearch(search) : undefined;
 
     const where: Prisma.LeagueWhereInput = {
       ...(sportId && { sportId }),
       ...(country && { country: { contains: country, mode: 'insensitive' } }),
       ...(isActive !== undefined && { isActive }),
       ...(isFeatured !== undefined && { isFeatured }),
-      ...(normalizedSearch && {
-        OR: [
-          { name: { contains: normalizedSearch, mode: 'insensitive' } },
-          { slug: { contains: normalizedSearch, mode: 'insensitive' } },
-          { country: { contains: normalizedSearch, mode: 'insensitive' } },
-        ],
+      ...(normalizedSearchKey && {
+        searchKey: { contains: normalizedSearchKey },
       }),
     };
 
@@ -116,9 +116,20 @@ export class LeaguesService {
       }
     }
 
+    // compute next searchKey based on existing + patch
+    const existing = await this.prisma.league.findUnique({ where: { id } });
+    const nextSearchKey = buildLeagueSearchKey({
+      name: updateLeagueDto.name ?? existing?.name,
+      slug: updateLeagueDto.slug ?? existing?.slug,
+      country: updateLeagueDto.country ?? existing?.country,
+    });
+
     return this.prisma.league.update({
       where: { id },
-      data: updateLeagueDto,
+      data: {
+        ...updateLeagueDto,
+        searchKey: nextSearchKey,
+      },
       include: { sport: true },
     });
   }

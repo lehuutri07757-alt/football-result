@@ -47,7 +47,7 @@ export default function WalletPage() {
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!isAuthenticated) router.push('/login');
+    if (!isAuthenticated) router.push('/');
   }, [isAuthenticated, router]);
 
   const balance = (user as any)?.balance ?? 0;

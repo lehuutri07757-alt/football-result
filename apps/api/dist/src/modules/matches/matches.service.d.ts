@@ -31,6 +31,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -108,6 +109,7 @@ export declare class MatchesService {
                 season: string | null;
                 isFeatured: boolean;
                 externalId: string | null;
+                searchKey: string | null;
             };
             _count: {
                 odds: number;
@@ -195,6 +197,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -271,6 +274,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -347,6 +351,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -423,6 +428,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -499,6 +505,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         odds: ({
             betType: {
@@ -603,6 +610,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -679,6 +687,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -755,6 +764,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -831,6 +841,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -907,6 +918,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -983,6 +995,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -1059,6 +1072,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -1135,6 +1149,7 @@ export declare class MatchesService {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;

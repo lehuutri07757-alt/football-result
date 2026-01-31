@@ -156,6 +156,7 @@ export interface ApiRequestLog {
   responseBody?: unknown;
   errorMessage?: string;
   errorCode?: string;
+  apiErrors?: Record<string, string>;
   fixtureIds: string[];
   leagueIds: number[];
   createdAt: string;
@@ -221,6 +222,39 @@ export interface ApiFootballAccountStatus {
     dailyUsage: number;
     dailyLimit: number;
     remainingToday: number;
+  };
+}
+
+export interface ApiFootballSyncConfig {
+  fixture: {
+    intervalMinutes: number;
+    pastDays: number;
+    futureDays: number;
+    enabled: boolean;
+  };
+  liveOdds: {
+    intervalMinutes: number;
+    maxMatchesPerSync: number;
+    enabled: boolean;
+  };
+  upcomingOdds: {
+    intervalMinutes: number;
+    hoursAhead: number;
+    maxMatchesPerSync: number;
+    enabled: boolean;
+  };
+  league: {
+    intervalMinutes: number;
+    enabled: boolean;
+  };
+  team: {
+    intervalMinutes: number;
+    enabled: boolean;
+  };
+  rateLimit: {
+    requestsPerMinute: number;
+    dailyLimit: number;
+    delayBetweenRequests: number;
   };
 }
 
@@ -354,6 +388,21 @@ export const adminService = {
 
   async getApiFootballStatus(): Promise<ApiFootballAccountStatus | null> {
     const response = await api.get<ApiFootballAccountStatus>('/api-football/status');
+    return response.data;
+  },
+
+  async getSyncConfig(): Promise<ApiFootballSyncConfig> {
+    const response = await api.get<ApiFootballSyncConfig>('/api-football/sync/config');
+    return response.data;
+  },
+
+  async updateSyncConfig(config: Partial<ApiFootballSyncConfig>): Promise<ApiFootballSyncConfig> {
+    const response = await api.post<ApiFootballSyncConfig>('/api-football/sync/config', config);
+    return response.data;
+  },
+
+  async reloadSchedulers(): Promise<{message: string}> {
+    const response = await api.post<{message: string}>('/api-football/sync/reload-schedulers');
     return response.data;
   },
 };

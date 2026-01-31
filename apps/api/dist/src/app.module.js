@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const throttler_1 = require("@nestjs/throttler");
 const schedule_1 = require("@nestjs/schedule");
+const bull_1 = require("@nestjs/bull");
 const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
@@ -30,6 +31,8 @@ const matches_module_1 = require("./modules/matches/matches.module");
 const api_football_module_1 = require("./modules/api-football/api-football.module");
 const redis_module_1 = require("./redis/redis.module");
 const home_module_1 = require("./modules/home/home.module");
+const featured_matches_module_1 = require("./modules/featured-matches/featured-matches.module");
+const search_module_1 = require("./modules/search/search.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -41,6 +44,18 @@ exports.AppModule = AppModule = __decorate([
                 envFilePath: ".env",
             }),
             schedule_1.ScheduleModule.forRoot(),
+            bull_1.BullModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: (configService) => ({
+                    redis: {
+                        host: configService.get("REDIS_HOST") || "127.0.0.1",
+                        port: Number(configService.get("REDIS_PORT") || 6379),
+                        password: configService.get("REDIS_PASSWORD") || undefined,
+                        db: Number(configService.get("REDIS_DB") || 0),
+                    },
+                }),
+                inject: [config_1.ConfigService],
+            }),
             throttler_1.ThrottlerModule.forRoot([
                 {
                     ttl: 60000,
@@ -66,6 +81,8 @@ exports.AppModule = AppModule = __decorate([
             api_football_module_1.ApiFootballModule,
             redis_module_1.RedisModule,
             home_module_1.HomeModule,
+            featured_matches_module_1.FeaturedMatchesModule,
+            search_module_1.SearchModule,
         ],
     })
 ], AppModule);

@@ -3,16 +3,22 @@ import { LeagueSyncService } from './league-sync.service';
 import { TeamSyncService } from './team-sync.service';
 import { FixtureSyncService } from './fixture-sync.service';
 import { OddsSyncService } from './odds-sync.service';
+import { SyncConfigService } from './sync-config.service';
 import { QueryOddsDto, QueryApiLogsDto } from './dto';
 import { LeagueSyncConfig } from './interfaces';
+import { ApiFootballSyncConfig } from './constants/api-football.constants';
 export declare class ApiFootballController {
     private readonly apiFootballService;
     private readonly leagueSyncService;
     private readonly teamSyncService;
     private readonly fixtureSyncService;
     private readonly oddsSyncService;
-    constructor(apiFootballService: ApiFootballService, leagueSyncService: LeagueSyncService, teamSyncService: TeamSyncService, fixtureSyncService: FixtureSyncService, oddsSyncService: OddsSyncService);
+    private readonly syncConfigService;
+    constructor(apiFootballService: ApiFootballService, leagueSyncService: LeagueSyncService, teamSyncService: TeamSyncService, fixtureSyncService: FixtureSyncService, oddsSyncService: OddsSyncService, syncConfigService: SyncConfigService);
     getTopLeagues(date?: string): Promise<import("./interfaces").TopLeaguesResponse>;
+    getGlobalSyncConfig(): Promise<ApiFootballSyncConfig>;
+    updateGlobalSyncConfig(config: Partial<ApiFootballSyncConfig>): Promise<ApiFootballSyncConfig>;
+    updateGlobalSyncConfigPut(config: Partial<ApiFootballSyncConfig>): Promise<ApiFootballSyncConfig>;
     getLeagues(refresh?: string): Promise<import("./interfaces").ApiLeagueInfo[]>;
     getSyncConfig(): Promise<LeagueSyncConfig>;
     updateSyncConfig(config: Partial<LeagueSyncConfig>): Promise<LeagueSyncConfig>;
@@ -83,6 +89,7 @@ export declare class ApiFootballController {
             responseBody: import("@prisma/client/runtime/library").JsonValue | null;
             errorMessage: string | null;
             errorCode: string | null;
+            apiErrors: import("@prisma/client/runtime/library").JsonValue | null;
             fixtureIds: string[];
         })[];
         pagination: {

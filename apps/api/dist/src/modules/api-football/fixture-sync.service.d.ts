@@ -7,9 +7,18 @@ export declare class FixtureSyncService {
     private readonly redis;
     private readonly apiFootballService;
     private readonly logger;
+    private static readonly MAX_PAST_DAYS;
+    private static readonly MAX_FUTURE_DAYS;
+    private footballSportId;
     constructor(prisma: PrismaService, redis: RedisService, apiFootballService: ApiFootballService);
-    syncFixturesByDate(dateFrom: string, dateTo: string): Promise<FixtureSyncResult>;
+    private getOrCreateFootballSport;
+    private getOrCreateLeague;
+    private getOrCreateTeam;
+    private generateSlug;
+    private extractCountryCodeFromFlag;
+    syncFixturesByDate(dateFrom: string, dateTo: string, onProgress?: (progress: number, processedItems: number, totalItems: number) => Promise<void>): Promise<FixtureSyncResult>;
     syncFixturesForLeague(leagueExternalId: number, dateFrom: string, dateTo: string): Promise<FixtureSyncResult>;
+    private syncFixturesBatch;
     syncSingleFixture(apiFixture: ApiFixture): Promise<{
         created?: boolean;
         updated?: boolean;
@@ -17,7 +26,6 @@ export declare class FixtureSyncService {
     }>;
     private fetchFixturesForLeagueAndDate;
     private fetchFixturesForDate;
-    private findTeamByExternalId;
     private mapFixtureStatus;
     getFixturesCount(): Promise<{
         total: number;

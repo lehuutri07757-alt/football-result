@@ -2,15 +2,13 @@
 
 import { 
   Trophy, 
-  Calendar, 
-  Clock, 
-  BarChart3,
   MapPin,
   CircleDot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Match, MatchStatus } from '@/services/match.service';
 import Link from 'next/link';
+import { useLiveMatchTime } from '@/hooks/useLiveMatchTime';
 
 interface MatchCardProps {
   match: Match;
@@ -21,6 +19,15 @@ export function MatchCard({ match, className }: MatchCardProps) {
   const isLive = match.status === 'live' || match.isLive;
   const isFinished = match.status === 'finished';
   
+  const { displayTime } = useLiveMatchTime({
+    startTime: match.startTime,
+    period: match.period,
+    liveMinute: match.liveMinute,
+    isLive,
+    status: match.status,
+    updateInterval: 1000,
+  });
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
     return new Intl.DateTimeFormat('en-US', {
@@ -103,7 +110,7 @@ export function MatchCard({ match, className }: MatchCardProps) {
             </span>
           )}
           {getStatusLabel(match.status)}
-          {isLive && match.liveMinute && <span className="ml-0.5">{match.liveMinute}'</span>}
+                    {isLive && <span className="ml-0.5">{displayTime}</span>}
         </div>
       </div>
 

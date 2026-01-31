@@ -47,6 +47,10 @@ let MatchesService = class MatchesService {
     async findAll(query) {
         const { page = 1, limit = 10, search, leagueId, sportId, teamId, status, isLive, isFeatured, bettingEnabled, dateFrom, dateTo, sortBy = 'startTime', sortOrder = 'asc', } = query;
         const skip = (page - 1) * limit;
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const effectiveDateFrom = dateFrom ? new Date(dateFrom) : todayStart;
+        const effectiveDateTo = dateTo ? new Date(dateTo) : undefined;
         const where = {
             ...(leagueId && { leagueId }),
             ...(sportId && { league: { sportId } }),
@@ -57,8 +61,8 @@ let MatchesService = class MatchesService {
             ...(isLive !== undefined && { isLive }),
             ...(isFeatured !== undefined && { isFeatured }),
             ...(bettingEnabled !== undefined && { bettingEnabled }),
-            ...(dateFrom && { startTime: { gte: new Date(dateFrom) } }),
-            ...(dateTo && { startTime: { lte: new Date(dateTo) } }),
+            ...(effectiveDateFrom && { startTime: { gte: effectiveDateFrom } }),
+            ...(effectiveDateTo && { startTime: { lte: effectiveDateTo } }),
             ...(search && {
                 OR: [
                     { homeTeam: { name: { contains: search, mode: 'insensitive' } } },
@@ -106,12 +110,13 @@ let MatchesService = class MatchesService {
         });
     }
     async findUpcoming(limit = 10) {
+        const take = Number.isFinite(limit) && limit > 0 ? limit : 10;
         return this.prisma.match.findMany({
             where: {
                 status: client_1.MatchStatus.scheduled,
                 startTime: { gte: new Date() },
             },
-            take: limit,
+            take,
             orderBy: { startTime: 'asc' },
             include: {
                 league: { include: { sport: true } },
@@ -141,18 +146,55 @@ let MatchesService = class MatchesService {
         });
     }
     async findFeatured() {
-        return this.prisma.match.findMany({
+        const now = new Date();
+        const maxFeatured = 10;
+        let matches = await this.prisma.match.findMany({
             where: {
                 isFeatured: true,
-                status: { in: [client_1.MatchStatus.scheduled, client_1.MatchStatus.live] },
+                OR: [
+                    { status: client_1.MatchStatus.live },
+                    {
+                        status: client_1.MatchStatus.scheduled,
+                        startTime: { gte: now },
+                    },
+                ],
             },
-            orderBy: { startTime: 'asc' },
+            take: maxFeatured,
+            orderBy: [{ isLive: 'desc' }, { startTime: 'asc' }],
             include: {
                 league: { include: { sport: true } },
                 homeTeam: true,
                 awayTeam: true,
             },
         });
+        if (matches.length === 0) {
+            matches = await this.prisma.match.findMany({
+                where: { status: client_1.MatchStatus.live },
+                take: maxFeatured,
+                orderBy: { startTime: 'asc' },
+                include: {
+                    league: { include: { sport: true } },
+                    homeTeam: true,
+                    awayTeam: true,
+                },
+            });
+        }
+        if (matches.length === 0) {
+            matches = await this.prisma.match.findMany({
+                where: {
+                    status: client_1.MatchStatus.scheduled,
+                    startTime: { gte: now },
+                },
+                take: maxFeatured,
+                orderBy: { startTime: 'asc' },
+                include: {
+                    league: { include: { sport: true } },
+                    homeTeam: true,
+                    awayTeam: true,
+                },
+            });
+        }
+        return matches;
     }
     async findOne(id) {
         const match = await this.prisma.match.findUnique({

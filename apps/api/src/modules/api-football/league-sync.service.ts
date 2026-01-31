@@ -3,6 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { RedisService } from '@/redis/redis.service';
 import { ApiFootballService } from './api-football.service';
 import { ApiLeagueInfo, LeagueSyncResult, LeagueSyncConfig } from './interfaces';
+import { buildLeagueSearchKey } from '../../common/utils/search-normalize';
 
 const CACHE_KEY_LEAGUES = 'api_football:leagues';
 const CACHE_KEY_TOP_LEAGUES = 'api_football:top_leagues';
@@ -136,6 +137,17 @@ export class LeagueSyncService implements OnModuleInit, OnModuleDestroy {
       const apiLeagues = await this.fetchLeaguesFromApi();
       result.totalFetched = apiLeagues.length;
 
+      // Deactivate leagues not in the current API result set.
+      // This prevents stale/old seasons (e.g. 2016) staying active forever.
+      const activeExternalIds = apiLeagues.map((l) => l.league.id.toString());
+      await this.prisma.league.updateMany({
+        where: {
+          externalId: { not: null, notIn: activeExternalIds },
+          sport: { slug: 'football' },
+        },
+        data: { isActive: false },
+      });
+
       const footballSport = await this.getOrCreateFootballSport();
 
       for (const apiLeague of apiLeagues) {
@@ -155,6 +167,11 @@ export class LeagueSyncService implements OnModuleInit, OnModuleDestroy {
             sportId: footballSport.id,
             externalId: apiLeague.league.id.toString(),
             isActive: true,
+            searchKey: buildLeagueSearchKey({
+              name: apiLeague.league.name,
+              slug: this.generateSlug(apiLeague.league.name, apiLeague.country.name),
+              country: apiLeague.country.name,
+            }),
           };
 
           if (existing) {

@@ -18,7 +18,10 @@ export class OddsSyncService {
     private readonly apiFootballService: ApiFootballService,
   ) {}
 
-  async syncOddsForUpcomingMatches(hoursAhead = 48): Promise<OddsSyncResult> {
+  async syncOddsForUpcomingMatches(
+    hoursAhead = 48,
+    onProgress?: (progress: number, processedItems: number, totalItems: number) => Promise<void>,
+  ): Promise<OddsSyncResult> {
     const result: OddsSyncResult = {
       totalMatches: 0,
       totalOdds: 0,
@@ -45,6 +48,8 @@ export class OddsSyncService {
       result.totalMatches = matches.length;
       this.logger.log(`Syncing odds for ${matches.length} upcoming matches...`);
 
+      let processedMatches = 0;
+
       for (const match of matches) {
         try {
           const matchResult = await this.syncOddsForMatch(match.id, match.externalId!);
@@ -55,6 +60,13 @@ export class OddsSyncService {
           const msg = `Failed to sync odds for match ${match.externalId}: ${error}`;
           this.logger.warn(msg);
           result.errors.push(msg);
+        }
+
+        processedMatches++;
+        const progress = Math.round((processedMatches / matches.length) * 100);
+        
+        if (onProgress) {
+          await onProgress(progress, processedMatches, matches.length);
         }
       }
 
@@ -70,7 +82,9 @@ export class OddsSyncService {
     return result;
   }
 
-  async syncOddsForLiveMatches(): Promise<OddsSyncResult> {
+  async syncOddsForLiveMatches(
+    onProgress?: (progress: number, processedItems: number, totalItems: number) => Promise<void>,
+  ): Promise<OddsSyncResult> {
     const result: OddsSyncResult = {
       totalMatches: 0,
       totalOdds: 0,
@@ -94,6 +108,8 @@ export class OddsSyncService {
       result.totalMatches = liveMatches.length;
       this.logger.log(`Syncing live odds for ${liveMatches.length} matches...`);
 
+      let processedMatches = 0;
+
       for (const match of liveMatches) {
         try {
           const matchResult = await this.syncLiveOddsForMatch(match.id, match.externalId!);
@@ -104,6 +120,13 @@ export class OddsSyncService {
           const msg = `Failed to sync live odds for match ${match.externalId}: ${error}`;
           this.logger.warn(msg);
           result.errors.push(msg);
+        }
+
+        processedMatches++;
+        const progress = Math.round((processedMatches / liveMatches.length) * 100);
+        
+        if (onProgress) {
+          await onProgress(progress, processedMatches, liveMatches.length);
         }
       }
 

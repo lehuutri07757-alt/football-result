@@ -54,6 +54,13 @@ export class MatchesService {
     } = query;
     const skip = (page - 1) * limit;
 
+    // Default to only returning matches from today onward.
+    // (User can still query historical data by explicitly providing dateFrom/dateTo.)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const effectiveDateFrom = dateFrom ? new Date(dateFrom) : todayStart;
+    const effectiveDateTo = dateTo ? new Date(dateTo) : undefined;
+
     const where: Prisma.MatchWhereInput = {
       ...(leagueId && { leagueId }),
       ...(sportId && { league: { sportId } }),
@@ -64,8 +71,9 @@ export class MatchesService {
       ...(isLive !== undefined && { isLive }),
       ...(isFeatured !== undefined && { isFeatured }),
       ...(bettingEnabled !== undefined && { bettingEnabled }),
-      ...(dateFrom && { startTime: { gte: new Date(dateFrom) } }),
-      ...(dateTo && { startTime: { lte: new Date(dateTo) } }),
+      // Keep results limited to current/future by default.
+      ...(effectiveDateFrom && { startTime: { gte: effectiveDateFrom } }),
+      ...(effectiveDateTo && { startTime: { lte: effectiveDateTo } }),
       ...(search && {
         OR: [
           { homeTeam: { name: { contains: search, mode: 'insensitive' } } },
@@ -117,12 +125,13 @@ export class MatchesService {
   }
 
   async findUpcoming(limit = 10) {
+    const take = Number.isFinite(limit) && limit > 0 ? limit : 10;
     return this.prisma.match.findMany({
       where: {
         status: MatchStatus.scheduled,
         startTime: { gte: new Date() },
       },
-      take: limit,
+      take,
       orderBy: { startTime: 'asc' },
       include: {
         league: { include: { sport: true } },
@@ -155,18 +164,59 @@ export class MatchesService {
   }
 
   async findFeatured() {
-    return this.prisma.match.findMany({
+    const now = new Date();
+    const maxFeatured = 10;
+
+    let matches = await this.prisma.match.findMany({
       where: {
         isFeatured: true,
-        status: { in: [MatchStatus.scheduled, MatchStatus.live] },
+        OR: [
+          { status: MatchStatus.live },
+          {
+            status: MatchStatus.scheduled,
+            startTime: { gte: now },
+          },
+        ],
       },
-      orderBy: { startTime: 'asc' },
+      take: maxFeatured,
+      orderBy: [{ isLive: 'desc' }, { startTime: 'asc' }],
       include: {
         league: { include: { sport: true } },
         homeTeam: true,
         awayTeam: true,
       },
     });
+
+    if (matches.length === 0) {
+      matches = await this.prisma.match.findMany({
+        where: { status: MatchStatus.live },
+        take: maxFeatured,
+        orderBy: { startTime: 'asc' },
+        include: {
+          league: { include: { sport: true } },
+          homeTeam: true,
+          awayTeam: true,
+        },
+      });
+    }
+
+    if (matches.length === 0) {
+      matches = await this.prisma.match.findMany({
+        where: {
+          status: MatchStatus.scheduled,
+          startTime: { gte: now },
+        },
+        take: maxFeatured,
+        orderBy: { startTime: 'asc' },
+        include: {
+          league: { include: { sport: true } },
+          homeTeam: true,
+          awayTeam: true,
+        },
+      });
+    }
+
+    return matches;
   }
 
   async findOne(id: string) {

@@ -51,3 +51,40 @@ export declare const CACHE_KEYS: {
     readonly ODDS_BY_FIXTURE: (fixtureId: number) => string;
     readonly LIVE_ODDS: (fixtureId: number) => string;
 };
+export declare const SETTING_KEYS: {
+    readonly SYNC_CONFIG: "api_football.sync_config";
+    readonly LEAGUE_SYNC_CONFIG: "league_sync_config";
+};
+export interface ApiFootballSyncConfig {
+    fixture: {
+        intervalMinutes: number;
+        pastDays: number;
+        futureDays: number;
+        enabled: boolean;
+    };
+    liveOdds: {
+        intervalMinutes: number;
+        maxMatchesPerSync: number;
+        enabled: boolean;
+    };
+    upcomingOdds: {
+        intervalMinutes: number;
+        hoursAhead: number;
+        maxMatchesPerSync: number;
+        enabled: boolean;
+    };
+    league: {
+        intervalMinutes: number;
+        enabled: boolean;
+    };
+    team: {
+        intervalMinutes: number;
+        enabled: boolean;
+    };
+    rateLimit: {
+        requestsPerMinute: number;
+        dailyLimit: number;
+        delayBetweenRequests: number;
+    };
+}
+export declare const DEFAULT_SYNC_CONFIG: ApiFootballSyncConfig;

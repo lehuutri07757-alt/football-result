@@ -18,7 +18,7 @@ export const oddsService = {
   },
 
   async getFixtureOdds(fixtureId: number): Promise<OddsTableRow | null> {
-    const response = await api.get<OddsTableRow | null>(`/odds/fixture/${fixtureId}`);
+    const response = await api.get<OddsTableRow | null>(`/api-football/fixtures/${fixtureId}/odds`);
     return response.data;
   },
 };

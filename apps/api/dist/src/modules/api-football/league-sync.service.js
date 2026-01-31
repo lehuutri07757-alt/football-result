@@ -15,6 +15,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_service_1 = require("../../redis/redis.service");
 const api_football_service_1 = require("./api-football.service");
+const search_normalize_1 = require("../../common/utils/search-normalize");
 const CACHE_KEY_LEAGUES = 'api_football:leagues';
 const CACHE_KEY_TOP_LEAGUES = 'api_football:top_leagues';
 const SETTING_KEY_SYNC_CONFIG = 'league_sync_config';
@@ -121,6 +122,14 @@ let LeagueSyncService = LeagueSyncService_1 = class LeagueSyncService {
             this.logger.log('Starting league sync...');
             const apiLeagues = await this.fetchLeaguesFromApi();
             result.totalFetched = apiLeagues.length;
+            const activeExternalIds = apiLeagues.map((l) => l.league.id.toString());
+            await this.prisma.league.updateMany({
+                where: {
+                    externalId: { not: null, notIn: activeExternalIds },
+                    sport: { slug: 'football' },
+                },
+                data: { isActive: false },
+            });
             const footballSport = await this.getOrCreateFootballSport();
             for (const apiLeague of apiLeagues) {
                 try {
@@ -138,6 +147,11 @@ let LeagueSyncService = LeagueSyncService_1 = class LeagueSyncService {
                         sportId: footballSport.id,
                         externalId: apiLeague.league.id.toString(),
                         isActive: true,
+                        searchKey: (0, search_normalize_1.buildLeagueSearchKey)({
+                            name: apiLeague.league.name,
+                            slug: this.generateSlug(apiLeague.league.name, apiLeague.country.name),
+                            country: apiLeague.country.name,
+                        }),
                     };
                     if (existing) {
                         await this.prisma.league.update({

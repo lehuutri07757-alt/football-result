@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MatchesController = void 0;
 const common_1 = require("@nestjs/common");
+const common_2 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const matches_service_1 = require("./matches.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
@@ -96,7 +97,7 @@ __decorate([
     (0, common_1.Get)('upcoming'),
     (0, swagger_1.ApiOperation)({ summary: 'Get upcoming matches' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'List of upcoming matches' }),
-    __param(0, (0, common_1.Query)('limit')),
+    __param(0, (0, common_1.Query)('limit', new common_2.DefaultValuePipe(10), common_2.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)

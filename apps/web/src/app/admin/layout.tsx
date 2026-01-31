@@ -23,6 +23,11 @@ import {
   LayoutDashboard,
   Activity,
   Gamepad2,
+  HeartPulse,
+  Settings2,
+  RefreshCw,
+  UsersRound,
+  Star,
 } from 'lucide-react';
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MASTER_AGENT'];
@@ -33,9 +38,14 @@ const navItems = [
   { id: 'deposits', name: 'Deposits', icon: ArrowDownToLine, href: '/admin/deposits' },
   { id: 'withdrawals', name: 'Withdrawals', icon: ArrowUpFromLine, href: '/admin/withdrawals' },
   { id: 'leagues', name: 'Leagues', icon: Trophy, href: '/admin/leagues' },
+  { id: 'teams', name: 'Teams', icon: UsersRound, href: '/admin/teams' },
   { id: 'matches', name: 'Matches', icon: Gamepad2, href: '/admin/matches' },
+  { id: 'featured-matches', name: 'Featured Matches', icon: Star, href: '/admin/featured-matches' },
   { id: 'agents', name: 'Agents', icon: UserCog, href: '/admin/agents' },
+  { id: 'sync-dashboard', name: 'Sync Dashboard', icon: RefreshCw, href: '/admin/sync-dashboard' },
+  { id: 'api-health', name: 'API Health', icon: HeartPulse, href: '/admin/api-health' },
   { id: 'api-logs', name: 'API Logs', icon: Activity, href: '/admin/api-logs' },
+  { id: 'sync-settings', name: 'Sync Settings', icon: Settings2, href: '/admin/sync-settings' },
   { id: 'settings', name: 'Settings', icon: Settings, href: '/admin/settings' },
 ];
 
@@ -61,7 +71,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        router.push('/login?redirect=/admin');
+        router.push('/?redirect=/admin');
         return;
       }
 
@@ -74,7 +84,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push('/');
   };
 
   if (isLoading) {

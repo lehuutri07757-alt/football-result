@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity,
   RefreshCw,
@@ -50,6 +50,9 @@ export default function ApiLogsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [statsDays, setStatsDays] = useState(7);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  
+  const isInitialMount = useRef(true);
+  const isInitialStatsDays = useRef(true);
 
   const formatJsonPreview = (value: unknown) => {
     if (value === undefined || value === null) return '-';
@@ -100,15 +103,25 @@ export default function ApiLogsPage() {
 
   useEffect(() => {
     fetchLogs();
-  }, [fetchLogs]);
-
-  useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchAccountStatus();
+  }, []);
 
   useEffect(() => {
-    fetchAccountStatus();
-  }, [fetchAccountStatus]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    fetchLogs();
+  }, [filters]);
+
+  useEffect(() => {
+    if (isInitialStatsDays.current) {
+      isInitialStatsDays.current = false;
+      return;
+    }
+    fetchStats();
+  }, [statsDays]);
 
   const handlePageChange = (newPage: number) => {
     setFilters((prev) => ({ ...prev, page: newPage }));
@@ -590,7 +603,16 @@ export default function ApiLogsPage() {
                           .join(', ')}
                         {Object.keys(log.params || {}).length > 2 && '...'}
                       </code>
-                      {log.errorMessage && (
+                      {log.apiErrors && Object.keys(log.apiErrors).length > 0 && (
+                        <div className={cn(
+                          'mt-1 text-xs px-2 py-1 rounded border inline-flex items-center gap-1',
+                          isDark ? 'bg-red-950/50 border-red-800 text-red-400' : 'bg-red-50 border-red-200 text-red-600'
+                        )}>
+                          <XCircle size={12} />
+                          {Object.keys(log.apiErrors)[0]}: {Object.values(log.apiErrors)[0]?.slice(0, 50)}...
+                        </div>
+                      )}
+                      {log.errorMessage && !log.apiErrors && (
                         <div className="text-red-500 mt-1 truncate max-w-xs" title={log.errorMessage}>
                           {log.errorMessage}
                         </div>
@@ -600,6 +622,29 @@ export default function ApiLogsPage() {
                   {expandedLogId === log.id && (
                     <tr className={isDark ? 'bg-slate-900/30' : 'bg-slate-50/50'}>
                       <td colSpan={7} className="px-4 py-4">
+                        {log.apiErrors && Object.keys(log.apiErrors).length > 0 && (
+                          <div className={cn(
+                            'mb-4 p-4 rounded-lg border',
+                            isDark ? 'bg-red-950/30 border-red-800' : 'bg-red-50 border-red-200'
+                          )}>
+                            <div className={cn('text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-2', 'text-red-500')}>
+                              <XCircle size={14} />
+                              API-Football Errors
+                            </div>
+                            <div className="space-y-2">
+                              {Object.entries(log.apiErrors).map(([key, value]) => (
+                                <div key={key} className="flex flex-col gap-1">
+                                  <span className={cn('text-xs font-medium uppercase', isDark ? 'text-red-400' : 'text-red-600')}>
+                                    {key}
+                                  </span>
+                                  <span className={cn('text-sm', isDark ? 'text-red-300' : 'text-red-700')}>
+                                    {value}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                           <div>
                             <div className={cn('text-xs font-semibold uppercase tracking-wider mb-2', isDark ? 'text-slate-400' : 'text-slate-500')}>

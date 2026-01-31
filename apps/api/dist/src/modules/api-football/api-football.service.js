@@ -17,6 +17,7 @@ const crypto_1 = require("crypto");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_service_1 = require("../../redis/redis.service");
 const interfaces_1 = require("./interfaces");
+const api_football_response_interceptor_1 = require("./interceptors/api-football-response.interceptor");
 const dto_1 = require("./dto");
 const api_football_constants_1 = require("./constants/api-football.constants");
 const PROVIDER_CODE = 'api_football';
@@ -255,10 +256,9 @@ let ApiFootballService = ApiFootballService_1 = class ApiFootballService {
                 responseSize: responseText.length,
                 resultCount: data.results,
             });
-            if (!Array.isArray(data.response) || data.response.length === 0) {
-                return null;
-            }
-            const accountStatus = data.response[0];
+            const accountStatus = Array.isArray(data.response)
+                ? data.response[0]
+                : data.response;
             if (!accountStatus || !accountStatus.requests) {
                 this.logger.warn(`Status API returned unexpected payload (missing requests): ${responseText.slice(0, 500)}`);
                 return null;
@@ -420,6 +420,27 @@ let ApiFootballService = ApiFootballService_1 = class ApiFootballService {
                 }
                 const responseText = await response.text();
                 const responseData = JSON.parse(responseText);
+                const apiErrors = (0, api_football_response_interceptor_1.parseApiFootballErrors)(responseData);
+                if (apiErrors.hasError) {
+                    await this.logApiRequest({
+                        endpoint,
+                        method: 'GET',
+                        params,
+                        responseBody: responseData,
+                        statusCode: response.status,
+                        responseTime,
+                        responseSize: responseText.length,
+                        resultCount: responseData.results,
+                        errorMessage: apiErrors.errorMessage || 'API returned error in response body',
+                        errorCode: apiErrors.errorCode || 'API_BODY_ERROR',
+                        fixtureIds: this.extractFixtureIds(params),
+                        leagueIds: this.extractLeagueIds(params),
+                        apiErrors: apiErrors.errors,
+                    });
+                    await this.recordError(apiErrors.errorMessage || 'API error');
+                    this.logger.warn(`API returned error: ${endpoint} - ${apiErrors.errorMessage}`);
+                    return responseData;
+                }
                 await this.logApiRequest({
                     endpoint,
                     method: 'GET',
@@ -538,6 +559,7 @@ let ApiFootballService = ApiFootballService_1 = class ApiFootballService {
                     responseBody: this.truncateResponseBodyForLogging(data.responseBody),
                     errorMessage: data.errorMessage,
                     errorCode: data.errorCode,
+                    apiErrors: data.apiErrors || undefined,
                     fixtureIds: data.fixtureIds || [],
                     leagueIds: data.leagueIds || [],
                 },
@@ -911,12 +933,11 @@ let ApiFootballService = ApiFootballService_1 = class ApiFootballService {
         return response.response;
     }
     async fetchTeams(leagueId, season) {
+        const effectiveSeason = season ?? new Date().getFullYear();
         const params = {
             league: leagueId.toString(),
+            season: effectiveSeason.toString(),
         };
-        if (season) {
-            params.season = season.toString();
-        }
         const response = await this.makeApiRequest('/teams', params);
         return response.response;
     }

@@ -19,9 +19,10 @@ import {
   Loader2,
   ToggleLeft,
   ArrowUpDown,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { leaguesService, sportsService, League, Sport } from '@/services/match.service';
+import { leaguesService, sportsService, League, Sport, apiFootballSyncService } from '@/services/match.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import {
@@ -30,6 +31,7 @@ import {
   type LeagueStatusFilter,
   type LeaguesFiltersValue,
 } from './components/leagues-filters';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface DragItem {
   id: string;
@@ -45,6 +47,7 @@ export default function AdminLeaguesPage() {
   const [countries, setCountries] = useState<{ code: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [sportFilter, setSportFilter] = useState<string>('all');
   const [countryFilter, setCountryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<LeagueStatusFilter>('all');
@@ -70,6 +73,7 @@ export default function AdminLeaguesPage() {
   const [activeSaving, setActiveSaving] = useState<Record<string, boolean>>({});
   const [featuredSaving, setFeaturedSaving] = useState<Record<string, boolean>>({});
   const [inactiveAllLoading, setInactiveAllLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
 
   const [editForm, setEditForm] = useState({
     sportId: '',
@@ -103,7 +107,7 @@ export default function AdminLeaguesPage() {
       const params: Record<string, unknown> = {
         page,
         limit: 20,
-        search: searchQuery || undefined,
+        search: debouncedSearchQuery || undefined,
         sportId: sportFilter !== 'all' ? sportFilter : undefined,
         country: countryFilter !== 'all' ? countryFilter : undefined,
         isActive: statusFilter !== 'all' ? statusFilter === 'active' : undefined,
@@ -122,7 +126,7 @@ export default function AdminLeaguesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, sportFilter, countryFilter, statusFilter, featuredFilter]);
+  }, [page, debouncedSearchQuery, sportFilter, countryFilter, statusFilter, featuredFilter]);
 
   const fetchSports = async () => {
     try {
@@ -298,6 +302,21 @@ export default function AdminLeaguesPage() {
     }
   };
 
+  const handleSyncLeagues = async () => {
+    try {
+      setSyncLoading(true);
+      const result = await apiFootballSyncService.syncLeagues();
+      toast.success(
+        `Synced ${result.totalFetched} leagues: ${result.created} created, ${result.updated} updated`,
+      );
+      fetchLeagues();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to sync leagues from API-Football'));
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const handleDelete = async (leagueId: string) => {
     if (!confirm('Are you sure you want to delete this league?')) return;
     try {
@@ -461,6 +480,22 @@ export default function AdminLeaguesPage() {
         <div className="flex items-center gap-3 flex-wrap justify-end">
           {!isReorderMode ? (
             <>
+              <button
+                onClick={handleSyncLeagues}
+                disabled={loading || syncLoading}
+                className={`px-4 py-2.5 border rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50 ${
+                  isDark
+                    ? 'bg-slate-700 border-slate-600 text-white hover:border-cyan-500 hover:bg-cyan-500/20'
+                    : 'bg-white border-slate-200 text-slate-800 hover:border-cyan-500 hover:bg-cyan-50'
+                }`}
+              >
+                {syncLoading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={18} />
+                )}
+                Sync Leagues
+              </button>
               <button
                 onClick={handleInactiveAll}
                 disabled={loading || inactiveAllLoading}

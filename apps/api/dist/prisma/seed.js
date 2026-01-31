@@ -224,6 +224,108 @@ async function main() {
             monthlyLimit: 3000,
         },
     });
+    const featuredLeagues = await prisma.league.findMany({
+        where: {
+            slug: {
+                in: [
+                    'premier-league',
+                    'la-liga',
+                    'bundesliga',
+                    'serie-a',
+                    'champions-league',
+                ],
+            },
+        },
+        select: { id: true },
+    });
+    const topTeams = await prisma.team.findMany({
+        where: {
+            slug: {
+                in: [
+                    'manchester-united',
+                    'manchester-city',
+                    'liverpool',
+                    'arsenal',
+                    'chelsea',
+                    'real-madrid',
+                    'barcelona',
+                    'bayern-munich',
+                    'borussia-dortmund',
+                    'juventus',
+                    'ac-milan',
+                    'inter-milan',
+                    'psg',
+                ],
+            },
+        },
+        select: { id: true, slug: true },
+    });
+    const teamIdMap = new Map(topTeams.map(t => [t.slug, t.id]));
+    const derbyPairs = [];
+    const manUtdId = teamIdMap.get('manchester-united');
+    const manCityId = teamIdMap.get('manchester-city');
+    const liverpoolId = teamIdMap.get('liverpool');
+    const arsenalId = teamIdMap.get('arsenal');
+    const chelseaId = teamIdMap.get('chelsea');
+    const realMadridId = teamIdMap.get('real-madrid');
+    const barcelonaId = teamIdMap.get('barcelona');
+    const bayernId = teamIdMap.get('bayern-munich');
+    const dortmundId = teamIdMap.get('borussia-dortmund');
+    const juventusId = teamIdMap.get('juventus');
+    const acMilanId = teamIdMap.get('ac-milan');
+    const interMilanId = teamIdMap.get('inter-milan');
+    if (manUtdId && manCityId) {
+        derbyPairs.push({ homeTeamId: manUtdId, awayTeamId: manCityId, name: 'Manchester Derby' });
+    }
+    if (manUtdId && liverpoolId) {
+        derbyPairs.push({ homeTeamId: manUtdId, awayTeamId: liverpoolId, name: 'North West Derby' });
+    }
+    if (arsenalId && chelseaId) {
+        derbyPairs.push({ homeTeamId: arsenalId, awayTeamId: chelseaId, name: 'London Derby' });
+    }
+    if (realMadridId && barcelonaId) {
+        derbyPairs.push({ homeTeamId: realMadridId, awayTeamId: barcelonaId, name: 'El Clasico' });
+    }
+    if (bayernId && dortmundId) {
+        derbyPairs.push({ homeTeamId: bayernId, awayTeamId: dortmundId, name: 'Der Klassiker' });
+    }
+    if (acMilanId && interMilanId) {
+        derbyPairs.push({ homeTeamId: acMilanId, awayTeamId: interMilanId, name: 'Derby della Madonnina' });
+    }
+    if (juventusId && interMilanId) {
+        derbyPairs.push({ homeTeamId: juventusId, awayTeamId: interMilanId, name: 'Derby d\'Italia' });
+    }
+    const featuredMatchesSettings = {
+        featuredLeagueIds: featuredLeagues.map(l => l.id),
+        topTeamRankThreshold: 4,
+        topTeamIds: topTeams.map(t => t.id),
+        derbyPairs,
+        maxFeaturedMatches: 10,
+        autoSelectEnabled: true,
+        includeUpcoming: true,
+        includeLive: true,
+        upcomingHours: 48,
+    };
+    await prisma.setting.upsert({
+        where: { key: 'featured_matches_settings' },
+        update: {
+            value: featuredMatchesSettings,
+            description: 'Featured Matches Settings - Auto-configured with top leagues, teams and derby matches',
+            category: 'matches',
+            isPublic: false,
+        },
+        create: {
+            key: 'featured_matches_settings',
+            value: featuredMatchesSettings,
+            description: 'Featured Matches Settings - Auto-configured with top leagues, teams and derby matches',
+            category: 'matches',
+            isPublic: false,
+        },
+    });
+    console.log('Featured Matches Settings seeded:');
+    console.log(`  - Featured Leagues: ${featuredLeagues.length}`);
+    console.log(`  - Top Teams: ${topTeams.length}`);
+    console.log(`  - Derby Pairs: ${derbyPairs.length}`);
     console.log('Seed completed successfully');
 }
 main()

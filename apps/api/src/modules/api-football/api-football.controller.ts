@@ -1,12 +1,14 @@
-import { Controller, Get, Post, Body, Query, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Query, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { ApiFootballService } from './api-football.service';
 import { LeagueSyncService } from './league-sync.service';
 import { TeamSyncService } from './team-sync.service';
 import { FixtureSyncService } from './fixture-sync.service';
 import { OddsSyncService } from './odds-sync.service';
+import { SyncConfigService } from './sync-config.service';
 import { QueryOddsDto, QueryApiLogsDto } from './dto';
 import { LeagueSyncConfig } from './interfaces';
+import { ApiFootballSyncConfig } from './constants/api-football.constants';
 
 @ApiTags('API Football')
 @Controller('api-football')
@@ -17,6 +19,7 @@ export class ApiFootballController {
     private readonly teamSyncService: TeamSyncService,
     private readonly fixtureSyncService: FixtureSyncService,
     private readonly oddsSyncService: OddsSyncService,
+    private readonly syncConfigService: SyncConfigService,
   ) {}
 
   @Get('top-leagues')
@@ -25,6 +28,27 @@ export class ApiFootballController {
   @ApiQuery({ name: 'date', required: false, description: 'Date in YYYY-MM-DD format (defaults to today)' })
   async getTopLeagues(@Query('date') date?: string) {
     return this.apiFootballService.getTopLeagues(date);
+  }
+
+  @Get('sync/config')
+  @ApiOperation({ summary: 'Get global sync configuration' })
+  @ApiResponse({ status: 200, description: 'Current global sync configuration' })
+  async getGlobalSyncConfig(): Promise<ApiFootballSyncConfig> {
+    return this.syncConfigService.getConfig();
+  }
+
+  @Post('sync/config')
+  @ApiOperation({ summary: 'Update global sync configuration' })
+  @ApiResponse({ status: 200, description: 'Updated global sync configuration' })
+  async updateGlobalSyncConfig(@Body() config: Partial<ApiFootballSyncConfig>): Promise<ApiFootballSyncConfig> {
+    return this.syncConfigService.updateConfig(config);
+  }
+
+  @Put('sync/config')
+  @ApiOperation({ summary: 'Update global sync configuration (PUT)' })
+  @ApiResponse({ status: 200, description: 'Updated global sync configuration' })
+  async updateGlobalSyncConfigPut(@Body() config: Partial<ApiFootballSyncConfig>): Promise<ApiFootballSyncConfig> {
+    return this.syncConfigService.updateConfig(config);
   }
 
   @Get('leagues')

@@ -20,17 +20,28 @@ const league_sync_service_1 = require("./league-sync.service");
 const team_sync_service_1 = require("./team-sync.service");
 const fixture_sync_service_1 = require("./fixture-sync.service");
 const odds_sync_service_1 = require("./odds-sync.service");
+const sync_config_service_1 = require("./sync-config.service");
 const dto_1 = require("./dto");
 let ApiFootballController = class ApiFootballController {
-    constructor(apiFootballService, leagueSyncService, teamSyncService, fixtureSyncService, oddsSyncService) {
+    constructor(apiFootballService, leagueSyncService, teamSyncService, fixtureSyncService, oddsSyncService, syncConfigService) {
         this.apiFootballService = apiFootballService;
         this.leagueSyncService = leagueSyncService;
         this.teamSyncService = teamSyncService;
         this.fixtureSyncService = fixtureSyncService;
         this.oddsSyncService = oddsSyncService;
+        this.syncConfigService = syncConfigService;
     }
     async getTopLeagues(date) {
         return this.apiFootballService.getTopLeagues(date);
+    }
+    async getGlobalSyncConfig() {
+        return this.syncConfigService.getConfig();
+    }
+    async updateGlobalSyncConfig(config) {
+        return this.syncConfigService.updateConfig(config);
+    }
+    async updateGlobalSyncConfigPut(config) {
+        return this.syncConfigService.updateConfig(config);
     }
     async getLeagues(refresh) {
         const forceRefresh = refresh === 'true';
@@ -131,6 +142,32 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ApiFootballController.prototype, "getTopLeagues", null);
+__decorate([
+    (0, common_1.Get)('sync/config'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get global sync configuration' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Current global sync configuration' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ApiFootballController.prototype, "getGlobalSyncConfig", null);
+__decorate([
+    (0, common_1.Post)('sync/config'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update global sync configuration' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Updated global sync configuration' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiFootballController.prototype, "updateGlobalSyncConfig", null);
+__decorate([
+    (0, common_1.Put)('sync/config'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update global sync configuration (PUT)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Updated global sync configuration' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ApiFootballController.prototype, "updateGlobalSyncConfigPut", null);
 __decorate([
     (0, common_1.Get)('leagues'),
     (0, swagger_1.ApiOperation)({ summary: 'Get all leagues (cached)' }),
@@ -374,6 +411,7 @@ exports.ApiFootballController = ApiFootballController = __decorate([
         league_sync_service_1.LeagueSyncService,
         team_sync_service_1.TeamSyncService,
         fixture_sync_service_1.FixtureSyncService,
-        odds_sync_service_1.OddsSyncService])
+        odds_sync_service_1.OddsSyncService,
+        sync_config_service_1.SyncConfigService])
 ], ApiFootballController);
 //# sourceMappingURL=api-football.controller.js.map

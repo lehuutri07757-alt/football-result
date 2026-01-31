@@ -260,7 +260,13 @@ export const matchesService = {
   },
 
   async getUpcoming(limit?: number): Promise<Match[]> {
-    const response = await api.get<Match[]>('/matches/upcoming', { params: { limit } });
+    const params = limit !== undefined ? { limit } : undefined;
+    const response = await api.get<Match[]>('/matches/upcoming', { params });
+    return response.data;
+  },
+
+  async getUpcomingPaginated(params?: PaginationParams): Promise<PaginatedResponse<Match>> {
+    const response = await api.get<PaginatedResponse<Match>>('/matches/upcoming', { params });
     return response.data;
   },
 
@@ -331,5 +337,191 @@ export const matchesService = {
 
   async delete(id: string): Promise<void> {
     await api.delete(`/matches/${id}`);
+  },
+};
+
+// === API-Football sync services ===
+
+export interface FixtureSyncResult {
+  totalFetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export interface TeamSyncResult {
+  totalFetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export interface LeagueSyncResult {
+  totalFetched: number;
+  created: number;
+  updated: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export interface OddsSyncResult {
+  totalMatches: number;
+  totalOdds: number;
+  created: number;
+  updated: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export const apiFootballSyncService = {
+  /**
+   * Sync fixtures (matches) from API-Football
+   * @param from Start date YYYY-MM-DD (default: today -1)
+   * @param to End date YYYY-MM-DD (default: today +7)
+   */
+  async syncFixtures(from?: string, to?: string): Promise<FixtureSyncResult> {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const response = await api.post<FixtureSyncResult>('/api-football/fixtures/sync', null, { params });
+    return response.data;
+  },
+
+  /**
+   * Sync fixtures for a specific league
+   */
+  async syncFixturesByLeague(leagueExternalId: number, from?: string, to?: string): Promise<FixtureSyncResult> {
+    const params: Record<string, string> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const response = await api.post<FixtureSyncResult>(`/api-football/fixtures/sync/${leagueExternalId}`, null, { params });
+    return response.data;
+  },
+
+  /**
+   * Sync leagues from API-Football
+   */
+  async syncLeagues(): Promise<LeagueSyncResult> {
+    const response = await api.post<LeagueSyncResult>('/api-football/leagues/sync');
+    return response.data;
+  },
+
+  /**
+   * Sync teams for all active leagues
+   */
+  async syncTeams(): Promise<TeamSyncResult> {
+    const response = await api.post<TeamSyncResult>('/api-football/teams/sync');
+    return response.data;
+  },
+
+  /**
+   * Sync teams for a specific league
+   */
+  async syncTeamsByLeague(leagueExternalId: string, season?: string): Promise<TeamSyncResult> {
+    const params: Record<string, string> = {};
+    if (season) params.season = season;
+    const response = await api.post<TeamSyncResult>(`/api-football/teams/sync/${leagueExternalId}`, null, { params });
+    return response.data;
+  },
+
+  /**
+   * Sync odds for upcoming matches
+   */
+  async syncUpcomingOdds(hours?: number): Promise<OddsSyncResult> {
+    const params: Record<string, string> = {};
+    if (hours) params.hours = hours.toString();
+    const response = await api.post<OddsSyncResult>('/api-football/odds/sync/upcoming', null, { params });
+    return response.data;
+  },
+
+  /**
+   * Sync live odds
+   */
+  async syncLiveOdds(): Promise<OddsSyncResult> {
+    const response = await api.post<OddsSyncResult>('/api-football/odds/sync/live');
+    return response.data;
+  },
+
+  /**
+   * Get fixtures stats (count by status)
+   */
+  async getFixturesStats(): Promise<{ total: number; byStatus: Record<string, number> }> {
+    const response = await api.get<{ total: number; byStatus: Record<string, number> }>('/api-football/fixtures/stats');
+    return response.data;
+  },
+};
+
+export interface FeaturedMatchesSettings {
+  featuredLeagueIds: string[];
+  topTeamRankThreshold: number;
+  topTeamIds: string[];
+  derbyPairs: { homeTeamId: string; awayTeamId: string; name?: string }[];
+  maxFeaturedMatches: number;
+  autoSelectEnabled: boolean;
+  includeUpcoming: boolean;
+  includeLive: boolean;
+  upcomingHours: number;
+}
+
+export interface FeaturedMatchesStats {
+  totalFeatured: number;
+  byLeague: { leagueId: string; leagueName: string; count: number }[];
+  byStatus: { status: string; count: number }[];
+  liveCount: number;
+  upcomingCount: number;
+}
+
+export const featuredMatchesService = {
+  async getFeaturedMatches(): Promise<Match[]> {
+    const response = await api.get<Match[]>('/featured-matches');
+    return response.data;
+  },
+
+  async getSettings(): Promise<FeaturedMatchesSettings> {
+    const response = await api.get<FeaturedMatchesSettings>('/featured-matches/settings');
+    return response.data;
+  },
+
+  async updateSettings(settings: Partial<FeaturedMatchesSettings>): Promise<FeaturedMatchesSettings> {
+    const response = await api.put<FeaturedMatchesSettings>('/featured-matches/settings', settings);
+    return response.data;
+  },
+
+  async getStats(): Promise<FeaturedMatchesStats> {
+    const response = await api.get<FeaturedMatchesStats>('/featured-matches/stats');
+    return response.data;
+  },
+
+  async autoSelect(): Promise<{ updated: number }> {
+    const response = await api.post<{ updated: number }>('/featured-matches/auto-select');
+    return response.data;
+  },
+
+  async toggleFeatured(matchId: string): Promise<Match> {
+    const response = await api.post<Match>(`/featured-matches/toggle/${matchId}`);
+    return response.data;
+  },
+
+  async batchUpdate(matchIds: string[], featured: boolean): Promise<{ updated: number }> {
+    const response = await api.post<{ updated: number }>('/featured-matches/batch-update', {
+      matchIds,
+      featured,
+    });
+    return response.data;
+  },
+
+  async getAvailableLeagues(): Promise<League[]> {
+    const response = await api.get<League[]>('/featured-matches/available-leagues');
+    return response.data;
+  },
+
+  async getAvailableTeams(leagueId?: string): Promise<Team[]> {
+    const params = leagueId ? { leagueId } : undefined;
+    const response = await api.get<Team[]>('/featured-matches/available-teams', { params });
+    return response.data;
   },
 };

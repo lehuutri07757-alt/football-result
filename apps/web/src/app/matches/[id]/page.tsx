@@ -4,35 +4,20 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  ChevronRight, 
-  Calendar, 
-  Clock, 
-  Trophy, 
-  AlertCircle,
-  TrendingUp,
+  ChevronLeft, 
+  Star,
   RefreshCw,
-  Info
+  AlertCircle
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
 
 import { matchesService, Match } from '@/services/match.service';
 import { oddsService } from '@/services/odds.service';
-import { OddsTableRow, OddsCell, MatchOdds } from '@/types/odds';
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(value);
-};
+import { OddsTableRow, OddsCell } from '@/types/odds';
+import { useLiveMatchTime } from '@/hooks/useLiveMatchTime';
 
 interface BetSelection {
   id: string;
@@ -44,6 +29,17 @@ interface BetSelection {
   handicap?: string;
 }
 
+type TabType = 'popular' | 'custom' | 'handicap' | 'goals' | 'intervals' | 'corners' | 'all';
+
+const sportsCategories = [
+  { id: 1, name: 'Football', icon: '⚽', count: 1046, active: true },
+  { id: 2, name: 'eSports', icon: '🎮', count: 71, active: false },
+  { id: 3, name: 'Basketball', icon: '🏀', count: 306, active: false },
+  { id: 4, name: 'Tennis', icon: '🎾', count: 192, active: false },
+  { id: 5, name: 'Hockey', icon: '🏒', count: 259, active: false },
+  { id: 6, name: 'Baseball', icon: '⚾', count: 89, active: false },
+];
+
 export default function MatchDetailPage() {
   const params = useParams();
   const id = params.id as string;
@@ -53,9 +49,9 @@ export default function MatchDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('popular');
   
   const [betSlip, setBetSlip] = useState<BetSelection[]>([]);
-  const [stake, setStake] = useState<string>('100000');
   
   const fetchData = async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -69,8 +65,12 @@ export default function MatchDetailPage() {
       if (matchData.externalId) {
         const fixtureId = parseInt(matchData.externalId);
         if (!isNaN(fixtureId)) {
-          const oddsData = await oddsService.getFixtureOdds(fixtureId);
-          setOdds(oddsData);
+          try {
+            const oddsData = await oddsService.getFixtureOdds(fixtureId);
+            setOdds(oddsData);
+          } catch (oddsError) {
+            console.warn('Could not fetch odds:', oddsError);
+          }
         }
       }
     } catch (err) {
@@ -121,490 +121,469 @@ export default function MatchDetailPage() {
     
     setBetSlip([selection]);
   };
-  
-  const handlePlaceBet = () => {
-    alert(`Placing bet: ${formatCurrency(Number(stake))} on ${betSlip[0].selectionName} @ ${betSlip[0].odds}`);
-  };
-  
-  if (isLoading && !match) {
-    return <MatchSkeleton />;
-  }
-  
-  if (error || !match) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="pt-6">
-            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">Error Loading Match</h2>
-            <p className="text-muted-foreground mb-6">{error || 'Match not found'}</p>
-            <Button onClick={() => fetchData(true)}>Retry</Button>
-            <div className="mt-4">
-              <Link href="/matches" className="text-primary hover:underline text-sm">
-                Back to Matches
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-  
-  const isLive = match.status === 'live';
-  const isFinished = match.status === 'finished';
-  const potentialWin = Number(stake) * (betSlip[0]?.odds || 0);
+
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'popular', label: 'PHỔ BIẾN' },
+    { id: 'custom', label: 'CƯỢC TÙY CHỌN' },
+    { id: 'handicap', label: 'CƯỢC CHẤP & CƯỢC TRÊN DƯỚI' },
+    { id: 'goals', label: 'BÀN THẮNG' },
+    { id: 'intervals', label: 'INTERVALS' },
+    { id: 'corners', label: 'PHẠT GÓC' },
+    { id: 'all', label: 'TẤT CẢ LOẠI CƯỢC' },
+  ];
 
   return (
-    <div className="min-h-screen bg-background pb-12">
-      <div className="bg-muted/30 border-b">
-        <div className="container mx-auto px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
-          <Link href="/" className="hover:text-foreground">Home</Link>
-          <ChevronRight className="h-4 w-4" />
-          <Link href="/matches" className="hover:text-foreground">Matches</Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-foreground font-medium truncate max-w-[200px] sm:max-w-none">
-            {match.homeTeam?.name} vs {match.awayTeam?.name}
-          </span>
-        </div>
-      </div>
-      
-      <div className="bg-card border-b shadow-sm relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/5 to-slate-950/5 pointer-events-none" />
-        
-        <div className="container mx-auto px-4 py-8 relative">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            {match.league?.logoUrl ? (
-              <img src={match.league.logoUrl} alt={match.league.name} className="h-8 w-8 object-contain" />
-            ) : (
-              <Trophy className="h-6 w-6 text-emerald-600" />
-            )}
-            <div className="text-center">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                {match.league?.country} • {match.league?.name}
-              </h2>
+    <div className="flex min-h-[calc(100vh-64px)] overflow-hidden">
+      <aside className="hidden lg:flex w-64 flex-col border-r border-slate-200 bg-white/50 dark:border-white/5 dark:bg-slate-950/50">
+          <div className="p-4">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Sports</h3>
+            <div className="space-y-1">
+              {sportsCategories.map((sport) => (
+                <button
+                  key={sport.id}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
+                    sport.active 
+                      ? 'bg-emerald-500/10 text-emerald-600 font-medium dark:text-emerald-500'
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span>{sport.icon}</span>
+                    <span>{sport.name}</span>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-md ${
+                    sport.active ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-500' : 'bg-slate-200 text-slate-600 dark:bg-slate-900'
+                  }`}>
+                    {sport.count}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
           
-          <div className="flex flex-col md:flex-row items-center justify-between max-w-4xl mx-auto gap-8">
-            <div className="flex flex-col items-center flex-1 text-center">
-              <div className="h-24 w-24 md:h-32 md:w-32 bg-white rounded-full p-4 shadow-sm border mb-4 flex items-center justify-center">
-                {match.homeTeam?.logoUrl ? (
-                  <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="max-h-full max-w-full object-contain" />
-                ) : (
-                  <div className="text-2xl font-bold text-muted-foreground">{match.homeTeam?.name.substring(0, 2)}</div>
-                )}
-              </div>
-              <h1 className="text-xl md:text-2xl font-bold">{match.homeTeam?.name}</h1>
-            </div>
-            
-            <div className="flex flex-col items-center justify-center min-w-[140px]">
-              {isLive || isFinished ? (
-                <div className="text-5xl md:text-6xl font-bold tracking-tighter mb-2 font-mono tabular-nums">
-                  {match.homeScore ?? 0} - {match.awayScore ?? 0}
-                </div>
-              ) : (
-                <div className="text-4xl md:text-5xl font-bold tracking-tighter mb-2 text-muted-foreground">
-                  VS
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 mt-2">
-                {isLive ? (
-                  <Badge variant="destructive" className="animate-pulse px-3 py-1 text-sm uppercase">
-                    Live • {match.liveMinute}'
-                  </Badge>
-                ) : isFinished ? (
-                  <Badge variant="secondary" className="px-3 py-1 text-sm uppercase">
-                    Full Time
-                  </Badge>
-                ) : (
-                  <Badge className="bg-emerald-600 hover:bg-emerald-700 px-3 py-1 text-sm uppercase">
-                    {format(parseISO(match.startTime), 'HH:mm')}
-                  </Badge>
-                )}
-              </div>
-              
-              {isLive && isRefreshing && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                  <RefreshCw className="h-3 w-3 animate-spin" /> Updating odds...
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-col items-center flex-1 text-center">
-              <div className="h-24 w-24 md:h-32 md:w-32 bg-white rounded-full p-4 shadow-sm border mb-4 flex items-center justify-center">
-                {match.awayTeam?.logoUrl ? (
-                  <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="max-h-full max-w-full object-contain" />
-                ) : (
-                  <div className="text-2xl font-bold text-muted-foreground">{match.awayTeam?.name.substring(0, 2)}</div>
-                )}
-              </div>
-              <h1 className="text-xl md:text-2xl font-bold">{match.awayTeam?.name}</h1>
+          <div className="mt-auto p-4 border-t border-slate-200 dark:border-white/5">
+            <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-center dark:from-indigo-600">
+              <Star className="h-8 w-8 text-yellow-300 mx-auto mb-2" />
+              <h4 className="font-bold text-white mb-1">VIP Club</h4>
+              <p className="text-xs text-indigo-100 mb-3">Unlock exclusive bonuses</p>
+              <button className="w-full py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition-colors backdrop-blur-sm">
+                View Status
+              </button>
             </div>
           </div>
-          
-          <div className="mt-10 flex flex-wrap justify-center gap-6 text-sm text-muted-foreground border-t pt-6 max-w-3xl mx-auto">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>{format(parseISO(match.startTime), 'EEEE, d MMMM yyyy')}</span>
-            </div>
-            {match.league?.season && (
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                <span>Season {match.league.season}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Kickoff {format(parseISO(match.startTime), 'HH:mm')}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        </aside>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-emerald-600" />
-                Betting Markets
-              </h2>
-            </div>
-            
-            {!match.bettingEnabled ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <AlertCircle className="h-10 w-10 mx-auto mb-3" />
-                  <p>Betting is currently disabled for this match.</p>
+        <main className="flex-1 overflow-y-auto scrollbar-hide">
+          {isLoading && !match ? (
+            <MatchSkeleton />
+          ) : error || !match ? (
+            <div className="flex items-center justify-center h-full">
+              <Card className="max-w-md mx-auto">
+                <CardContent className="pt-6 text-center">
+                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <h2 className="text-xl font-bold mb-2">Error Loading Match</h2>
+                  <p className="text-slate-500 dark:text-slate-400 mb-6">{error || 'Match not found'}</p>
+                  <Button onClick={() => fetchData(true)} className="bg-emerald-500 hover:bg-emerald-600">Retry</Button>
+                  <div className="mt-4">
+                    <Link href="/matches" className="text-emerald-500 hover:underline text-sm">
+                      Back to Matches
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
-            ) : !odds ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Info className="h-10 w-10 mx-auto mb-3" />
-                  <p>No odds available at the moment.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Tabs defaultValue="all" className="w-full">
-                <TabsList className="w-full justify-start overflow-x-auto mb-6 bg-transparent p-0 gap-2 h-auto">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white border px-4 py-2 h-auto rounded-full">All Markets</TabsTrigger>
-                  <TabsTrigger value="main" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white border px-4 py-2 h-auto rounded-full">Main</TabsTrigger>
-                  <TabsTrigger value="goals" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white border px-4 py-2 h-auto rounded-full">Goals</TabsTrigger>
-                  <TabsTrigger value="half" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white border px-4 py-2 h-auto rounded-full">1st Half</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="all" className="space-y-4">
-                  <MarketGroup title="Match Result (1X2)" market={odds.oneXTwo} 
-                    type="1x2" onSelect={addToBetSlip} 
-                    labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away', draw: 'Draw' }} 
-                  />
-                  
-                  <MarketGroup title="Asian Handicap" market={odds.hdp} 
-                    type="handicap" onSelect={addToBetSlip} 
-                    labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away' }}
-                  />
-                  
-                  <MarketGroup title="Over/Under" market={odds.overUnder} 
-                    type="ou" onSelect={addToBetSlip} 
-                    labels={{ home: 'Over', away: 'Under' }}
-                  />
-                  
-                  <MarketGroup title="Both Teams To Score" market={odds.btts} 
-                    type="btts" onSelect={addToBetSlip} 
-                    labels={{ home: 'Yes', away: 'No' }}
-                  />
+            </div>
+          ) : (
+            <MatchContent 
+              match={match}
+              odds={odds}
+              isRefreshing={isRefreshing}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              tabs={tabs}
+              addToBetSlip={addToBetSlip}
+            />
+          )}
+        </main>
+    </div>
+  );
+}
 
-                  <div className="pt-4 border-t">
-                    <h3 className="font-semibold mb-4 text-muted-foreground">Half Time Markets</h3>
-                    <div className="space-y-4">
-                      <MarketGroup title="HT Match Result" market={odds.htOneXTwo} 
-                        type="1x2" onSelect={addToBetSlip} 
-                        labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away', draw: 'Draw' }}
-                      />
-                      <MarketGroup title="HT Handicap" market={odds.htHdp} 
-                        type="handicap" onSelect={addToBetSlip} 
-                        labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away' }}
-                      />
-                      <MarketGroup title="HT Over/Under" market={odds.htOverUnder} 
-                        type="ou" onSelect={addToBetSlip} 
-                        labels={{ home: 'Over', away: 'Under' }}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="main" className="space-y-4">
-                  <MarketGroup title="Match Result (1X2)" market={odds.oneXTwo} 
-                    type="1x2" onSelect={addToBetSlip} 
-                    labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away', draw: 'Draw' }} 
-                  />
-                  <MarketGroup title="Asian Handicap" market={odds.hdp} 
-                    type="handicap" onSelect={addToBetSlip} 
-                    labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away' }}
-                  />
-                  <MarketGroup title="Over/Under" market={odds.overUnder} 
-                    type="ou" onSelect={addToBetSlip} 
-                    labels={{ home: 'Over', away: 'Under' }}
-                  />
-                </TabsContent>
+function MatchContent({
+  match,
+  odds,
+  isRefreshing,
+  activeTab,
+  setActiveTab,
+  tabs,
+  addToBetSlip
+}: {
+  match: Match;
+  odds: OddsTableRow | null;
+  isRefreshing: boolean;
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
+  tabs: { id: TabType; label: string }[];
+  addToBetSlip: (market: string, selection: string, odds: OddsCell) => void;
+}) {
+  const isLive = match.status === 'live';
+  const homeTeamName = match.homeTeam?.name?.toUpperCase() || 'HOME';
+  const awayTeamName = match.awayTeam?.name?.toUpperCase() || 'AWAY';
+  const leagueName = match.league?.name?.toUpperCase() || 'LEAGUE';
+  
+  const homeStats = { redCards: 0, yellowCards: 1, corners: 2 };
+  const awayStats = { redCards: 0, yellowCards: 3, corners: 4 };
+  
+  const { displayTime, period } = useLiveMatchTime({
+    startTime: match.startTime,
+    period: match.period,
+    liveMinute: match.liveMinute,
+    isLive,
+    status: match.status,
+    updateInterval: 1000,
+  });
 
-                <TabsContent value="goals" className="space-y-4">
-                  <MarketGroup title="Over/Under" market={odds.overUnder} 
-                    type="ou" onSelect={addToBetSlip} 
-                    labels={{ home: 'Over', away: 'Under' }}
-                  />
-                  <MarketGroup title="Home Team O/U" market={odds.homeGoalOU} 
-                    type="ou" onSelect={addToBetSlip} 
-                    labels={{ home: 'Over', away: 'Under' }}
-                  />
-                  <MarketGroup title="Away Team O/U" market={odds.awayGoalOU} 
-                    type="ou" onSelect={addToBetSlip} 
-                    labels={{ home: 'Over', away: 'Under' }}
-                  />
-                  <MarketGroup title="Both Teams To Score" market={odds.btts} 
-                    type="btts" onSelect={addToBetSlip} 
-                    labels={{ home: 'Yes', away: 'No' }}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="half" className="space-y-4">
-                  <MarketGroup title="HT Match Result" market={odds.htOneXTwo} 
-                    type="1x2" onSelect={addToBetSlip} 
-                    labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away', draw: 'Draw' }}
-                  />
-                  <MarketGroup title="HT Handicap" market={odds.htHdp} 
-                    type="handicap" onSelect={addToBetSlip} 
-                    labels={{ home: match.homeTeam?.name || 'Home', away: match.awayTeam?.name || 'Away' }}
-                  />
-                  <MarketGroup title="HT Over/Under" market={odds.htOverUnder} 
-                    type="ou" onSelect={addToBetSlip} 
-                    labels={{ home: 'Over', away: 'Under' }}
-                  />
-                </TabsContent>
-              </Tabs>
-            )}
-          </div>
+  return (
+    <div className="min-h-full">
+      <div className="flex items-center justify-between px-4 lg:px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+        <div className="flex items-center gap-2">
+          <Link href="/matches" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{leagueName}</span>
+        </div>
+        <Link href="/matches" className="text-emerald-600 dark:text-emerald-500 text-sm font-medium hover:underline">
+          Đổi Trận Đấu
+        </Link>
+      </div>
+
+      <div className="p-4 lg:p-6">
+        <Card className="relative overflow-hidden bg-gradient-to-b from-green-600/10 via-green-500/5 to-transparent dark:from-green-900/20 dark:via-green-800/10 border-slate-200 dark:border-slate-800">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 via-transparent to-green-600/10 dark:from-green-700/20 dark:to-green-700/20" />
           
-          <div className="space-y-6">
-            <Card className="sticky top-4 border-emerald-500/20 shadow-lg">
-              <CardHeader className="bg-emerald-500/5 pb-4">
-                <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                  <div className="bg-emerald-500 text-white p-1 rounded">
-                    <TrendingUp className="h-4 w-4" />
-                  </div>
-                  Bet Slip
-                </CardTitle>
-                <CardDescription>
-                  {betSlip.length > 0 ? 'Review your selection' : 'Select odds to place a bet'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {betSlip.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <p className="text-sm">Click on any odds to add selection</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {betSlip.map((selection) => (
-                      <div key={selection.id} className="bg-muted/50 p-3 rounded-md border relative group">
-                        <button 
-                          onClick={() => setBetSlip([])}
-                          className="absolute top-2 right-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ×
-                        </button>
-                        <div className="text-xs text-muted-foreground mb-1">{selection.marketName}</div>
-                        <div className="font-bold flex justify-between items-center">
-                          <span className="text-sm">{selection.selectionName} {selection.handicap && `(${selection.handicap})`}</span>
-                          <Badge variant="outline" className="bg-background font-mono text-emerald-600 border-emerald-200">
-                            {selection.odds.toFixed(2)}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1 truncate">{selection.matchName}</div>
-                      </div>
-                    ))}
-                    
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="stake">Stake Amount</Label>
-                      <div className="relative">
-                        <Input 
-                          id="stake"
-                          type="number" 
-                          value={stake} 
-                          onChange={(e) => setStake(e.target.value)}
-                          className="pl-8 font-mono"
-                        />
-                        <span className="absolute left-3 top-2.5 text-muted-foreground">₫</span>
-                      </div>
-                      <div className="flex gap-2 text-xs">
-                        {['50000', '100000', '500000', '1000000'].map((amt) => (
-                          <button 
-                            key={amt}
-                            onClick={() => setStake(amt)}
-                            className="bg-muted px-2 py-1 rounded hover:bg-muted/80 transition-colors"
-                          >
-                            {Number(amt) / 1000}k
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="bg-emerald-500/10 p-3 rounded-md flex justify-between items-center">
-                      <span className="text-sm font-medium">Potential Win</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(potentialWin)}</span>
-                    </div>
-                    
-                    <Button 
-                      className="w-full bg-emerald-600 hover:bg-emerald-700" 
-                      onClick={handlePlaceBet}
-                      disabled={!betSlip.length || !stake || Number(stake) <= 0}
-                    >
-                      Place Bet
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Head to Head</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span>Wins</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-bold text-emerald-600">3</span>
-                      <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden flex">
-                        <div className="h-full bg-emerald-500 w-[60%]"></div>
-                        <div className="h-full bg-slate-300 w-[20%]"></div>
-                        <div className="h-full bg-red-500 w-[20%]"></div>
-                      </div>
-                      <span className="font-bold text-red-600">1</span>
-                    </div>
-                  </div>
-                  <div className="text-xs text-center text-muted-foreground">
-                    Last 5 matches: {match.homeTeam?.name} won 3, {match.awayTeam?.name} won 1, 1 Draw
-                  </div>
+          <CardContent className="relative z-10 py-8">
+            <div className="flex items-center justify-center gap-8">
+              <div className="flex flex-col items-center">
+                <span className="text-slate-900 dark:text-white font-bold text-lg tracking-wide">{homeTeamName}</span>
+                <div className="flex items-center gap-2 mt-2 text-xs">
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-4 bg-red-600 rounded-sm inline-block"></span>
+                    <span className="text-slate-600 dark:text-slate-300">{homeStats.redCards}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-4 bg-yellow-400 rounded-sm inline-block"></span>
+                    <span className="text-slate-600 dark:text-slate-300">{homeStats.yellowCards}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-slate-400">⚑</span>
+                    <span className="text-slate-600 dark:text-slate-300">{homeStats.corners}</span>
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl font-bold text-slate-900 dark:text-white">{match.homeScore ?? 0}</span>
+                  <span className="text-5xl font-bold text-slate-900 dark:text-white">{match.awayScore ?? 0}</span>
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                  {isLive ? displayTime : 'VS'}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <span className="text-slate-900 dark:text-white font-bold text-lg tracking-wide">{awayTeamName}</span>
+                <div className="flex items-center gap-2 mt-2 text-xs">
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-4 bg-red-600 rounded-sm inline-block"></span>
+                    <span className="text-slate-600 dark:text-slate-300">{awayStats.redCards}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-4 bg-yellow-400 rounded-sm inline-block"></span>
+                    <span className="text-slate-600 dark:text-slate-300">{awayStats.yellowCards}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-slate-400">⚑</span>
+                    <span className="text-slate-600 dark:text-slate-300">{awayStats.corners}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {isRefreshing && (
+              <div className="absolute top-4 right-4 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                <RefreshCw className="h-3 w-3 animate-spin" /> Updating...
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="mt-6 flex gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-lg overflow-x-auto scrollbar-hide">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap rounded-md transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          {activeTab === 'popular' && (
+            <div className="space-y-4">
+              <MainMarketSection 
+                homeTeamName={homeTeamName}
+                awayTeamName={awayTeamName}
+                odds={odds}
+                onSelect={addToBetSlip}
+              />
+
+              <div className="mt-6">
+                <div className="inline-block bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300">
+                  60 - 75 Phút ({match.homeScore ?? 0} - {match.awayScore ?? 0})
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== 'popular' && (
+            <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+              <p>Đang phát triển...</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function MarketGroup({ 
-  title, 
-  market, 
-  type, 
-  onSelect, 
-  labels 
+function MainMarketSection({ 
+  homeTeamName, 
+  awayTeamName, 
+  odds,
+  onSelect 
 }: { 
-  title: string; 
-  market?: MatchOdds; 
-  type: '1x2' | 'handicap' | 'ou' | 'btts'; 
+  homeTeamName: string; 
+  awayTeamName: string;
+  odds: OddsTableRow | null;
   onSelect: (market: string, selection: string, odds: OddsCell) => void;
-  labels: { home: string, away: string, draw?: string }
 }) {
-  if (!market) return null;
+  const mockOdds = {
+    handicap: [
+      { home: { handicap: '+0/0.5', odds: 0.59 }, away: { handicap: '-0/0.5', odds: 1.44 }, over: { handicap: 'O0.5', odds: 0.82 }, under: { handicap: 'U0.5', odds: 1.06 } },
+      { home: { handicap: '0', odds: 1.58 }, away: { handicap: '0', odds: 0.53 }, over: { handicap: 'O0.5/1', odds: 1.20 }, under: { handicap: 'U0.5/1', odds: 0.71 } },
+    ],
+    oneXTwo: { home: 4.85, draw: 1.74, away: 3.15 },
+    team1OU: { over: { handicap: 'O0.5', odds: 2.12 }, under: { handicap: 'U0.5', odds: 0.30 } },
+    team2OU: { over: { handicap: 'O0.5', odds: 1.44 }, under: { handicap: 'U0.5', odds: 0.52 } },
+    oddEven: { odd: 1.38, even: 0.59 },
+    bothScore: { yes: 9.3, no: 1.02 },
+  };
+
+  const createOddsCell = (label: string, oddsValue: number, handicap: string): OddsCell => ({
+    label,
+    odds: oddsValue,
+    handicap,
+    suspended: false
+  });
 
   return (
-    <Card className="overflow-hidden">
-      <div className="bg-muted/40 px-4 py-2 text-sm font-medium flex justify-between items-center border-b">
-        <span>{title}</span>
-        {market.home.handicap && <Badge variant="outline" className="text-xs font-normal">{market.home.handicap}</Badge>}
+    <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <span className="font-bold text-slate-900 dark:text-white">CƯỢC CHÍNH</span>
+        <button className="text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-500 transition-colors">
+          <Star className="h-5 w-5" />
+        </button>
       </div>
-      <CardContent className="p-0">
-        <div className={`grid ${type === '1x2' ? 'grid-cols-3' : 'grid-cols-2'} divide-x`}>
-          <OddsButton 
-            label={labels.home} 
-            value={market.home} 
-            onClick={() => onSelect(title, labels.home, market.home)} 
-          />
-          {type === '1x2' && market.draw && (
-            <OddsButton 
-              label={labels.draw!} 
-              value={market.draw} 
-              onClick={() => onSelect(title, labels.draw!, market.draw!)} 
-            />
-          )}
-          <OddsButton 
-            label={labels.away} 
-            value={market.away} 
-            onClick={() => onSelect(title, labels.away, market.away)} 
-          />
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="text-center text-slate-600 dark:text-slate-400 text-sm border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <th className="py-3 px-4 font-medium">{homeTeamName}</th>
+              <th className="py-3 px-4 font-medium">{awayTeamName}</th>
+              <th className="py-3 px-4 border-l border-slate-200 dark:border-slate-700 font-medium">Trên</th>
+              <th className="py-3 px-4 font-medium">Dưới</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-slate-950">
+            <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+              <td className="py-4 px-4">
+                <OddsButtonCell 
+                  handicap="+0/0.5" 
+                  odds={mockOdds.handicap[0].home.odds}
+                  onClick={() => onSelect('Handicap', homeTeamName, createOddsCell(homeTeamName, mockOdds.handicap[0].home.odds, '+0/0.5'))}
+                />
+              </td>
+              <td className="py-4 px-4">
+                <OddsButtonCell 
+                  handicap="-0/0.5" 
+                  odds={mockOdds.handicap[0].away.odds}
+                  onClick={() => onSelect('Handicap', awayTeamName, createOddsCell(awayTeamName, mockOdds.handicap[0].away.odds, '-0/0.5'))}
+                />
+              </td>
+              <td className="py-4 px-4 border-l border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                <OddsButtonCell 
+                  handicap="O0.5" 
+                  odds={mockOdds.handicap[0].over.odds}
+                  onClick={() => onSelect('Over/Under', 'Over 0.5', createOddsCell('Over 0.5', mockOdds.handicap[0].over.odds, '0.5'))}
+                />
+              </td>
+              <td className="py-4 px-4 bg-slate-50/50 dark:bg-slate-800/30">
+                <OddsButtonCell 
+                  handicap="U0.5" 
+                  odds={mockOdds.handicap[0].under.odds}
+                  onClick={() => onSelect('Over/Under', 'Under 0.5', createOddsCell('Under 0.5', mockOdds.handicap[0].under.odds, '0.5'))}
+                />
+              </td>
+            </tr>
+
+            <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+              <td className="py-4 px-4">
+                <OddsButtonCell 
+                  handicap="0" 
+                  odds={mockOdds.handicap[1].home.odds}
+                  onClick={() => onSelect('Handicap', homeTeamName, createOddsCell(homeTeamName, mockOdds.handicap[1].home.odds, '0'))}
+                />
+              </td>
+              <td className="py-4 px-4">
+                <OddsButtonCell 
+                  handicap="0" 
+                  odds={mockOdds.handicap[1].away.odds}
+                  onClick={() => onSelect('Handicap', awayTeamName, createOddsCell(awayTeamName, mockOdds.handicap[1].away.odds, '0'))}
+                />
+              </td>
+              <td className="py-4 px-4 border-l border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                <OddsButtonCell 
+                  handicap="O0.5/1" 
+                  odds={mockOdds.handicap[1].over.odds}
+                  onClick={() => onSelect('Over/Under', 'Over 0.5/1', createOddsCell('Over 0.5/1', mockOdds.handicap[1].over.odds, '0.5/1'))}
+                />
+              </td>
+              <td className="py-4 px-4 bg-slate-50/50 dark:bg-slate-800/30">
+                <OddsButtonCell 
+                  handicap="U0.5/1" 
+                  odds={mockOdds.handicap[1].under.odds}
+                  onClick={() => onSelect('Over/Under', 'Under 0.5/1', createOddsCell('Under 0.5/1', mockOdds.handicap[1].under.odds, '0.5/1'))}
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="grid grid-cols-5 border-t border-slate-200 dark:border-slate-700 text-sm">
+          <div className="border-r border-slate-200 dark:border-slate-700">
+            <div className="py-2 px-3 text-center text-slate-600 dark:text-slate-400 text-xs border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-medium">1 X 2</div>
+            <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-950">
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">1</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.oneXTwo.home}</div>
+              </button>
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">X</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.oneXTwo.draw}</div>
+              </button>
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">2</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.oneXTwo.away}</div>
+              </button>
+            </div>
+          </div>
+
+          <div className="border-r border-slate-200 dark:border-slate-700">
+            <div className="py-2 px-3 text-center text-slate-600 dark:text-slate-400 text-xs border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-medium">Đội 1 Trên/Dưới</div>
+            <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-950">
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">O0.5</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.team1OU.over.odds}</div>
+              </button>
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">U0.5</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.team1OU.under.odds}</div>
+              </button>
+            </div>
+          </div>
+
+          <div className="border-r border-slate-200 dark:border-slate-700">
+            <div className="py-2 px-3 text-center text-slate-600 dark:text-slate-400 text-xs border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-medium">Đội 2 Trên/Dưới</div>
+            <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-950">
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">O0.5</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.team2OU.over.odds}</div>
+              </button>
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">U0.5</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.team2OU.under.odds}</div>
+              </button>
+            </div>
+          </div>
+
+          <div className="border-r border-slate-200 dark:border-slate-700">
+            <div className="py-2 px-3 text-center text-slate-600 dark:text-slate-400 text-xs border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-medium">Lẻ/Chẵn</div>
+            <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-950">
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">Lẻ</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.oddEven.odd}</div>
+              </button>
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">Chẵn</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.oddEven.even}</div>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div className="py-2 px-3 text-center text-slate-600 dark:text-slate-400 text-xs border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 font-medium">2 Đội Ghi Bàn</div>
+            <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-950">
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">Có</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.bothScore.yes}</div>
+              </button>
+              <button className="py-3 px-2 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                <div className="text-slate-500 dark:text-slate-400 text-xs">Không</div>
+                <div className="text-emerald-600 dark:text-emerald-500 font-bold">{mockOdds.bothScore.no}</div>
+              </button>
+            </div>
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }
 
-function OddsButton({ label, value, onClick }: { label: string, value: OddsCell, onClick: () => void }) {
-  const isSuspended = value.suspended;
-  
+function OddsButtonCell({ handicap, odds, onClick }: { handicap: string; odds: number; onClick: () => void }) {
   return (
-    <button
+    <button 
       onClick={onClick}
-      disabled={isSuspended}
-      className={`
-        flex flex-col items-center justify-center py-4 px-2 hover:bg-emerald-500/5 transition-colors
-        ${isSuspended ? 'opacity-50 cursor-not-allowed bg-muted/20' : 'cursor-pointer active:bg-emerald-500/10'}
-      `}
+      className="flex items-center justify-center gap-2 w-full hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded py-1 px-2 transition-colors"
     >
-      <span className="text-xs text-muted-foreground mb-1 truncate max-w-full px-1">{label}</span>
-      <div className="flex items-center gap-1">
-        <span className={`font-bold font-mono ${isSuspended ? 'text-muted-foreground' : 'text-emerald-600'}`}>
-          {isSuspended ? '-' : value.odds.toFixed(2)}
-        </span>
-        {value.handicap && (
-          <span className="text-xs text-muted-foreground font-mono">
-            {value.handicap}
-          </span>
-        )}
-      </div>
+      <span className="text-slate-500 dark:text-slate-400 text-sm">{handicap}</span>
+      <span className="text-emerald-600 dark:text-emerald-500 font-bold">{odds.toFixed(2)}</span>
     </button>
   );
 }
 
 function MatchSkeleton() {
   return (
-    <div className="min-h-screen bg-background pb-12">
-      <div className="h-12 border-b bg-muted/30 mb-0" />
-      <div className="bg-card border-b shadow-sm py-12 mb-8">
-        <div className="container mx-auto px-4 flex justify-between items-center max-w-4xl">
-          <div className="flex flex-col items-center gap-4">
-            <Skeleton className="h-24 w-24 rounded-full" />
-            <Skeleton className="h-6 w-32" />
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <Skeleton className="h-12 w-32" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-          <div className="flex flex-col items-center gap-4">
-            <Skeleton className="h-24 w-24 rounded-full" />
-            <Skeleton className="h-6 w-32" />
+    <div className="min-h-full">
+      <div className="h-12 border-b border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50" />
+      <div className="p-4 lg:p-6">
+        <div className="bg-slate-100 dark:bg-slate-900/50 py-8 rounded-lg">
+          <div className="flex items-center justify-center gap-8">
+            <Skeleton className="h-20 w-32 bg-slate-200 dark:bg-slate-700" />
+            <Skeleton className="h-16 w-24 bg-slate-200 dark:bg-slate-700" />
+            <Skeleton className="h-20 w-32 bg-slate-200 dark:bg-slate-700" />
           </div>
         </div>
-      </div>
-      
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-4">
-            <Skeleton className="h-8 w-48 mb-4" />
-            <Skeleton className="h-12 w-full mb-4" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-64 w-full" />
-          </div>
+        <Skeleton className="h-12 w-full mt-6 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+        <div className="mt-4 space-y-4">
+          <Skeleton className="h-64 w-full bg-slate-200 dark:bg-slate-700 rounded-lg" />
+          <Skeleton className="h-32 w-full bg-slate-200 dark:bg-slate-700 rounded-lg" />
         </div>
       </div>
     </div>

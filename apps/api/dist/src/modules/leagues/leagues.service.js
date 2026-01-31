@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LeaguesService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const search_normalize_1 = require("../../common/utils/search-normalize");
 let LeaguesService = class LeaguesService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -24,25 +25,24 @@ let LeaguesService = class LeaguesService {
             throw new common_1.NotFoundException('Sport not found');
         }
         return this.prisma.league.create({
-            data: createLeagueDto,
+            data: {
+                ...createLeagueDto,
+                searchKey: (0, search_normalize_1.buildLeagueSearchKey)(createLeagueDto),
+            },
             include: { sport: true },
         });
     }
     async findAll(query) {
         const { page = 1, limit = 10, search, sportId, country, isActive, isFeatured, sortBy = 'sortOrder', sortOrder = 'asc' } = query;
         const skip = (page - 1) * limit;
-        const normalizedSearch = search?.trim().replace(/\s+/g, ' ');
+        const normalizedSearchKey = search ? (0, search_normalize_1.normalizeForSearch)(search) : undefined;
         const where = {
             ...(sportId && { sportId }),
             ...(country && { country: { contains: country, mode: 'insensitive' } }),
             ...(isActive !== undefined && { isActive }),
             ...(isFeatured !== undefined && { isFeatured }),
-            ...(normalizedSearch && {
-                OR: [
-                    { name: { contains: normalizedSearch, mode: 'insensitive' } },
-                    { slug: { contains: normalizedSearch, mode: 'insensitive' } },
-                    { country: { contains: normalizedSearch, mode: 'insensitive' } },
-                ],
+            ...(normalizedSearchKey && {
+                searchKey: { contains: normalizedSearchKey },
             }),
         };
         const [data, total] = await Promise.all([
@@ -109,9 +109,18 @@ let LeaguesService = class LeaguesService {
                 throw new common_1.NotFoundException('Sport not found');
             }
         }
+        const existing = await this.prisma.league.findUnique({ where: { id } });
+        const nextSearchKey = (0, search_normalize_1.buildLeagueSearchKey)({
+            name: updateLeagueDto.name ?? existing?.name,
+            slug: updateLeagueDto.slug ?? existing?.slug,
+            country: updateLeagueDto.country ?? existing?.country,
+        });
         return this.prisma.league.update({
             where: { id },
-            data: updateLeagueDto,
+            data: {
+                ...updateLeagueDto,
+                searchKey: nextSearchKey,
+            },
             include: { sport: true },
         });
     }

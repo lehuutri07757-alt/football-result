@@ -8,7 +8,7 @@ export declare class TeamSyncService {
     private readonly apiFootballService;
     private readonly logger;
     constructor(prisma: PrismaService, redis: RedisService, apiFootballService: ApiFootballService);
-    syncAllActiveLeagues(): Promise<TeamSyncResult>;
+    syncAllActiveLeagues(onProgress?: (progress: number, processedItems: number, totalItems: number) => Promise<void>): Promise<TeamSyncResult>;
     syncTeamsByLeague(leagueExternalId: string, season?: string): Promise<TeamSyncResult>;
     getTeamsCount(): Promise<{
         total: number;

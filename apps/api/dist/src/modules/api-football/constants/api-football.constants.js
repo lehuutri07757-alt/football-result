@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CACHE_KEYS = exports.CACHE_TTL_SECONDS = exports.BET_TYPE_MAPPING = exports.BetTypeCode = exports.DEFAULT_BOOKMAKER_ID = exports.BOOKMAKER_IDS = exports.API_FOOTBALL_BET_IDS = void 0;
+exports.DEFAULT_SYNC_CONFIG = exports.SETTING_KEYS = exports.CACHE_KEYS = exports.CACHE_TTL_SECONDS = exports.BET_TYPE_MAPPING = exports.BetTypeCode = exports.DEFAULT_BOOKMAKER_ID = exports.BOOKMAKER_IDS = exports.API_FOOTBALL_BET_IDS = void 0;
 exports.API_FOOTBALL_BET_IDS = {
     MATCH_WINNER: 1,
     OVER_UNDER: 2,
@@ -64,5 +64,41 @@ exports.CACHE_KEYS = {
     LIVE_FIXTURES: 'odds:fixtures:live',
     ODDS_BY_FIXTURE: (fixtureId) => `odds:fixture:${fixtureId}`,
     LIVE_ODDS: (fixtureId) => `odds:live:${fixtureId}`,
+};
+exports.SETTING_KEYS = {
+    SYNC_CONFIG: 'api_football.sync_config',
+    LEAGUE_SYNC_CONFIG: 'league_sync_config',
+};
+exports.DEFAULT_SYNC_CONFIG = {
+    fixture: {
+        intervalMinutes: 120,
+        pastDays: 1,
+        futureDays: 1,
+        enabled: true,
+    },
+    liveOdds: {
+        intervalMinutes: 15,
+        maxMatchesPerSync: 15,
+        enabled: true,
+    },
+    upcomingOdds: {
+        intervalMinutes: 120,
+        hoursAhead: 48,
+        maxMatchesPerSync: 20,
+        enabled: true,
+    },
+    league: {
+        intervalMinutes: 1440,
+        enabled: true,
+    },
+    team: {
+        intervalMinutes: 1440,
+        enabled: true,
+    },
+    rateLimit: {
+        requestsPerMinute: 300,
+        dailyLimit: 7500,
+        delayBetweenRequests: 200,
+    },
 };
 //# sourceMappingURL=api-football.constants.js.map

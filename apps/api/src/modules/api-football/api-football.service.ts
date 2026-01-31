@@ -18,6 +18,7 @@ import {
   ApiLeagueInfo,
   ApiTeamInfo,
 } from './interfaces';
+import { parseApiFootballErrors, ParsedApiError } from './interceptors/api-football-response.interceptor';
 import {
   OddsTableRow,
   LeagueOddsGroup,
@@ -51,6 +52,7 @@ interface ApiLogData {
   errorCode?: string;
   fixtureIds?: string[];
   leagueIds?: number[];
+  apiErrors?: Record<string, string>;
 }
 
 @Injectable()
@@ -307,7 +309,7 @@ export class ApiFootballService implements OnModuleInit {
       }
 
       const responseText = await response.text();
-      const data = JSON.parse(responseText) as ApiFootballResponse<ApiAccountStatus>;
+      const data = JSON.parse(responseText);
 
       await this.logApiRequest({
         endpoint,
@@ -320,11 +322,10 @@ export class ApiFootballService implements OnModuleInit {
         resultCount: data.results,
       });
 
-      if (!Array.isArray(data.response) || data.response.length === 0) {
-        return null;
-      }
+      const accountStatus: ApiAccountStatus | null = Array.isArray(data.response)
+        ? data.response[0]
+        : data.response;
 
-      const accountStatus = data.response[0];
       if (!accountStatus || !accountStatus.requests) {
         this.logger.warn(
           `Status API returned unexpected payload (missing requests): ${responseText.slice(0, 500)}`,
@@ -521,6 +522,31 @@ export class ApiFootballService implements OnModuleInit {
         const responseText = await response.text();
         const responseData = JSON.parse(responseText) as ApiFootballResponse<T>;
 
+        const apiErrors = parseApiFootballErrors(responseData);
+        
+        if (apiErrors.hasError) {
+          await this.logApiRequest({
+            endpoint,
+            method: 'GET',
+            params,
+            responseBody: responseData,
+            statusCode: response.status,
+            responseTime,
+            responseSize: responseText.length,
+            resultCount: responseData.results,
+            errorMessage: apiErrors.errorMessage || 'API returned error in response body',
+            errorCode: apiErrors.errorCode || 'API_BODY_ERROR',
+            fixtureIds: this.extractFixtureIds(params),
+            leagueIds: this.extractLeagueIds(params),
+            apiErrors: apiErrors.errors as Record<string, string>,
+          });
+
+          await this.recordError(apiErrors.errorMessage || 'API error');
+          this.logger.warn(`API returned error: ${endpoint} - ${apiErrors.errorMessage}`);
+          
+          return responseData;
+        }
+
         await this.logApiRequest({
           endpoint,
           method: 'GET',
@@ -649,6 +675,7 @@ export class ApiFootballService implements OnModuleInit {
           responseBody: this.truncateResponseBodyForLogging(data.responseBody),
           errorMessage: data.errorMessage,
           errorCode: data.errorCode,
+          apiErrors: data.apiErrors || undefined,
           fixtureIds: data.fixtureIds || [],
           leagueIds: data.leagueIds || [],
         },
@@ -1096,13 +1123,14 @@ export class ApiFootballService implements OnModuleInit {
   }
 
   async fetchTeams(leagueId: number, season?: number): Promise<ApiTeamInfo[]> {
+    // API-Football requires season parameter when querying by league
+    // If not provided, use current year as season
+    const effectiveSeason = season ?? new Date().getFullYear();
+    
     const params: Record<string, string> = {
       league: leagueId.toString(),
+      season: effectiveSeason.toString(),
     };
-    
-    if (season) {
-      params.season = season.toString();
-    }
 
     const response = await this.makeApiRequest<ApiTeamInfo>('/teams', params);
     return response.response;

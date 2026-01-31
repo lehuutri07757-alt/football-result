@@ -44,6 +44,7 @@ export declare class ApiFootballService implements OnModuleInit {
             responseBody: import("@prisma/client/runtime/library").JsonValue | null;
             errorMessage: string | null;
             errorCode: string | null;
+            apiErrors: import("@prisma/client/runtime/library").JsonValue | null;
             fixtureIds: string[];
         })[];
         pagination: {

@@ -31,6 +31,7 @@ export declare class MatchesController {
                 season: string | null;
                 isFeatured: boolean;
                 externalId: string | null;
+                searchKey: string | null;
             };
             _count: {
                 odds: number;
@@ -118,6 +119,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -167,7 +169,7 @@ export declare class MatchesController {
         liveMinute: number | null;
         period: string | null;
     })[]>;
-    findUpcoming(limit?: number): Promise<({
+    findUpcoming(limit: number): Promise<({
         league: {
             sport: {
                 name: string;
@@ -194,6 +196,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -270,6 +273,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -346,6 +350,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -422,6 +427,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         odds: ({
             betType: {
@@ -534,6 +540,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -610,6 +617,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -686,6 +694,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -762,6 +771,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -838,6 +848,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -914,6 +925,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -990,6 +1002,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -1066,6 +1079,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;
@@ -1142,6 +1156,7 @@ export declare class MatchesController {
             season: string | null;
             isFeatured: boolean;
             externalId: string | null;
+            searchKey: string | null;
         };
         homeTeam: {
             name: string;

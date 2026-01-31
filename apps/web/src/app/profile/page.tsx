@@ -47,7 +47,7 @@ export default function ProfilePage() {
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!isAuthenticated) router.push('/login');
+    if (!isAuthenticated) router.push('/');
   }, [isAuthenticated, router]);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-950/80 backdrop-blur-md">
         <div className="flex h-16 items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link href="/dashboard" className="flex items-center gap-2 group">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-all">
                 <Trophy className="h-5 w-5 text-white" />
               </div>

@@ -72,3 +72,97 @@ export const CACHE_KEYS = {
   ODDS_BY_FIXTURE: (fixtureId: number) => `odds:fixture:${fixtureId}`,
   LIVE_ODDS: (fixtureId: number) => `odds:live:${fixtureId}`,
 } as const;
+
+// ============================================================
+// SYNC CONFIGURATION - Configurable via Settings
+// ============================================================
+
+export const SETTING_KEYS = {
+  SYNC_CONFIG: 'api_football.sync_config',
+  LEAGUE_SYNC_CONFIG: 'league_sync_config', // backward compatible
+} as const;
+
+/**
+ * Sync configuration interface for all API-Football sync jobs
+ * All intervals are in MINUTES
+ */
+export interface ApiFootballSyncConfig {
+  // Fixture sync settings
+  fixture: {
+    intervalMinutes: number;      // How often to sync fixtures (default: 120)
+    pastDays: number;             // Days in the past to sync (default: 1)
+    futureDays: number;           // Days in the future to sync (default: 1)
+    enabled: boolean;
+  };
+
+  // Live odds sync settings
+  liveOdds: {
+    intervalMinutes: number;      // How often to sync live odds (default: 15)
+    maxMatchesPerSync: number;    // Max live matches to sync at once (default: 15)
+    enabled: boolean;
+  };
+
+  // Upcoming/pre-match odds sync settings
+  upcomingOdds: {
+    intervalMinutes: number;      // How often to sync upcoming odds (default: 120)
+    hoursAhead: number;           // Hours ahead to look for matches (default: 48)
+    maxMatchesPerSync: number;    // Max matches to sync at once (default: 20)
+    enabled: boolean;
+  };
+
+  // League sync settings
+  league: {
+    intervalMinutes: number;      // Auto sync interval (default: 1440 = once per day)
+    enabled: boolean;
+  };
+
+  // Team sync settings  
+  team: {
+    intervalMinutes: number;      // Auto sync interval (default: 1440 = once per day)
+    enabled: boolean;
+  };
+
+  // Rate limiting
+  rateLimit: {
+    requestsPerMinute: number;    // Max requests per minute (default: 300)
+    dailyLimit: number;           // Daily quota (default: 7500)
+    delayBetweenRequests: number; // Delay in ms between sequential requests (default: 200)
+  };
+}
+
+/**
+ * Default sync configuration - optimized for 7500 requests/day quota
+ * Estimated daily usage: ~1,845 requests (25% of quota)
+ */
+export const DEFAULT_SYNC_CONFIG: ApiFootballSyncConfig = {
+  fixture: {
+    intervalMinutes: 120,         // Every 2 hours (was 60)
+    pastDays: 1,
+    futureDays: 1,
+    enabled: true,
+  },
+  liveOdds: {
+    intervalMinutes: 15,          // Every 15 minutes (was 5)
+    maxMatchesPerSync: 15,        // Max 15 matches (was 30)
+    enabled: true,
+  },
+  upcomingOdds: {
+    intervalMinutes: 120,         // Every 2 hours (was 30 min)
+    hoursAhead: 48,
+    maxMatchesPerSync: 20,        // Max 20 matches (was 50)
+    enabled: true,
+  },
+  league: {
+    intervalMinutes: 1440,        // Once per day
+    enabled: true,
+  },
+  team: {
+    intervalMinutes: 1440,        // Once per day
+    enabled: true,
+  },
+  rateLimit: {
+    requestsPerMinute: 300,
+    dailyLimit: 7500,
+    delayBetweenRequests: 200,    // 200ms delay = max 300/min
+  },
+};
