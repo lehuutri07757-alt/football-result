@@ -113,6 +113,31 @@ export class SyncJobController {
     return { jobId };
   }
 
+  @Post('standings')
+  @ApiOperation({ summary: 'Trigger standings sync for all active leagues' })
+  async triggerStandingsSync(): Promise<{ jobId: string }> {
+    const jobId = await this.syncJobService.createJob({
+      type: SyncJobType.standings,
+      triggeredBy: 'api',
+    });
+    return { jobId };
+  }
+
+  @Post('standings/:externalLeagueId')
+  @ApiOperation({ summary: 'Trigger standings sync for specific league' })
+  @ApiQuery({ name: 'season', required: false })
+  async triggerStandingsSyncForLeague(
+    @Param('externalLeagueId') externalLeagueId: string,
+    @Query('season') season?: string,
+  ): Promise<{ jobId: string }> {
+    const jobId = await this.syncJobService.createJob({
+      type: SyncJobType.standings,
+      params: { externalLeagueId, season },
+      triggeredBy: 'api',
+    });
+    return { jobId };
+  }
+
   @Post('full')
   @ApiOperation({ summary: 'Trigger full sync (leagues, teams, fixtures, odds)' })
   async triggerFullSync(

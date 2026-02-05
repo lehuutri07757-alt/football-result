@@ -5,12 +5,15 @@ import { ApiFootballController } from './api-football.controller';
 import { ApiFootballService } from './api-football.service';
 import { LeagueSyncService } from './league-sync.service';
 import { TeamSyncService } from './team-sync.service';
+import { TeamStatisticsSyncService } from './team-statistics-sync.service';
 import { FixtureSyncService } from './fixture-sync.service';
 import { OddsSyncService } from './odds-sync.service';
+import { StandingsSyncService } from './standings-sync.service';
 import { SyncConfigService } from './sync-config.service';
 import { SyncJobService } from './sync-job.service';
 import { SyncJobProcessor } from './sync-job.processor';
 import { SyncJobController } from './sync-job.controller';
+import { StandingsController } from './standings.controller';
 import { ApiFootballScheduler } from './api-football.scheduler';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { RedisModule } from '@/redis/redis.module';
@@ -36,13 +39,15 @@ import { SYNC_QUEUE_NAME } from './interfaces';
       },
     }),
   ],
-  controllers: [ApiFootballController, SyncJobController],
+  controllers: [ApiFootballController, SyncJobController, StandingsController],
   providers: [
     ApiFootballService,
     LeagueSyncService,
     TeamSyncService,
+    TeamStatisticsSyncService,
     FixtureSyncService,
     OddsSyncService,
+    StandingsSyncService,
     SyncConfigService,
     SyncJobService,
     SyncJobProcessor,
@@ -52,8 +57,10 @@ import { SYNC_QUEUE_NAME } from './interfaces';
     ApiFootballService,
     LeagueSyncService,
     TeamSyncService,
+    TeamStatisticsSyncService,
     FixtureSyncService,
     OddsSyncService,
+    StandingsSyncService,
     SyncConfigService,
     SyncJobService,
   ],

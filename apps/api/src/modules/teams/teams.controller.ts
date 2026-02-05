@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards } fro
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateTeamDto, UpdateTeamDto, QueryTeamDto } from './dto';
+import { CreateTeamDto, UpdateTeamDto, QueryTeamDto, QueryTeamMatchesDto } from './dto';
 
 @ApiTags('Teams')
 @Controller('teams')
@@ -28,6 +28,14 @@ export class TeamsController {
   @ApiResponse({ status: 200, description: 'Team details' })
   async findOne(@Param('id') id: string) {
     return this.teamsService.findOne(id);
+  }
+
+  @Get(':id/matches')
+  @ApiOperation({ summary: 'Get team matches' })
+  @ApiResponse({ status: 200, description: 'List of matches' })
+  @ApiResponse({ status: 404, description: 'Team not found' })
+  async findTeamMatches(@Param('id') id: string, @Query() query: QueryTeamMatchesDto) {
+    return this.teamsService.findTeamMatches(id, query);
   }
 
   @Post()

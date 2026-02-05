@@ -27,6 +27,7 @@ import {
   Calendar,
   ArrowRight,
   Unlock,
+  ListOrdered,
 } from 'lucide-react';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { AdminLoading } from '@/components/admin/AdminLoading';
@@ -39,6 +40,7 @@ const JOB_TYPE_CONFIG: Record<SyncJobType, { label: string; icon: React.ElementT
   fixture: { label: 'Fixtures', icon: Activity, color: 'text-emerald-500' },
   odds_upcoming: { label: 'Upcoming Odds', icon: TrendingUp, color: 'text-amber-500' },
   odds_live: { label: 'Live Odds', icon: Zap, color: 'text-red-500' },
+  standings: { label: 'Standings', icon: ListOrdered, color: 'text-cyan-500' },
   full_sync: { label: 'Full Sync', icon: Database, color: 'text-indigo-500' },
 };
 
@@ -388,6 +390,9 @@ export default function SyncDashboardPage() {
           break;
         case 'odds_live':
           await syncJobService.triggerLiveOddsSync();
+          break;
+        case 'standings':
+          await syncJobService.triggerStandingsSync();
           break;
         case 'full_sync':
           await syncJobService.triggerFullSync();

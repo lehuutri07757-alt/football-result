@@ -1,6 +1,6 @@
 import api from './api';
 
-export type SyncJobType = 'league' | 'team' | 'fixture' | 'odds_upcoming' | 'odds_live' | 'full_sync';
+export type SyncJobType = 'league' | 'team' | 'fixture' | 'odds_upcoming' | 'odds_live' | 'standings' | 'full_sync';
 export type SyncJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 export type SyncJobPriority = 'low' | 'normal' | 'high' | 'critical';
 
@@ -103,6 +103,12 @@ export const syncJobService = {
 
   async triggerLiveOddsSync(): Promise<CreateJobResponse> {
     const response = await api.post<CreateJobResponse>('/sync-jobs/odds/live');
+    return response.data;
+  },
+
+  async triggerStandingsSync(externalLeagueId?: string): Promise<CreateJobResponse> {
+    const url = externalLeagueId ? `/sync-jobs/standings/${externalLeagueId}` : '/sync-jobs/standings';
+    const response = await api.post<CreateJobResponse>(url);
     return response.data;
   },
 

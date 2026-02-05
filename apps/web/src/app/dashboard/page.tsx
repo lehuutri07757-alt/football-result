@@ -1,56 +1,81 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   ChevronLeft,
   ChevronRight,
   Trophy,
-  Calendar,
   Zap,
   Star,
-  Wifi,
-  CheckCircle2,
   Loader2
 } from 'lucide-react';
 
 import { useAuthStore } from '@/stores/auth.store';
+import { useBetSlipStore } from '@/stores/betslip.store';
 import { UpcomingMatchesTabs } from '@/components/dashboard/UpcomingMatchesTabs';
-import { MatchCard } from '@/components/matches/MatchCard';
 import { LiveMatchTimer } from '@/components/matches/LiveMatchTimer';
-import { matchesService, Match } from '@/services/match.service';
+import { FloatingBetSlip } from '@/components/mobile';
+import { Bet365OddsTable } from '@/components/odds/Bet365OddsTable';
+import { BetSelection } from '@/components/odds/Bet365MatchRow';
+import { featuredMatchesService, Match, League } from '@/services/match.service';
+import { useTodayOdds } from '@/hooks/useOdds';
 import { cn } from '@/lib/utils';
-import { normalizeForSearch } from '@/lib/search';
-
- // Dashboard should focus on actionable matches; we don't show the "All" tab here.
- type MatchTabType = 'upcoming' | 'live' | 'finished';
-
-const MATCHES_PER_PAGE = 20;
-
-const sportsCategories = [
-  { id: 1, name: 'Football', icon: '⚽', count: 1046, active: true },
-  { id: 2, name: 'eSports', icon: '🎮', count: 71, active: false },
-  { id: 3, name: 'Basketball', icon: '🏀', count: 306, active: false },
-  { id: 4, name: 'Tennis', icon: '🎾', count: 192, active: false },
-  { id: 5, name: 'Hockey', icon: '🏒', count: 259, active: false },
-  { id: 6, name: 'Baseball', icon: '⚾', count: 89, active: false },
-];
+import { useMatchStatistics } from '@/hooks/useMatchStatistics';
 
 export default function DashboardPage() {
-  // Default to upcoming matches (instead of showing all matches first)
-  const [activeMatchTab, setActiveMatchTab] = useState<MatchTabType>('upcoming');
-  const [matches, setMatches] = useState<Match[]>([]);
   const [featuredMatches, setFeaturedMatches] = useState<Match[]>([]);
-  const [isLoadingMatches, setIsLoadingMatches] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [totalMatches, setTotalMatches] = useState(0);
+  const [selectedCountry, setSelectedCountry] = useState<{ countryCode: string; countryName: string } | null>(null);
   const featuredScrollRef = useRef<HTMLDivElement | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  
+  const { data: statistics } = useMatchStatistics();
+  const footballCount = statistics?.total ?? 0;
+  const liveCount = statistics?.live ?? 0;
+
+  const { data: oddsData, isLoading: isLoadingOdds, refetch: refetchOdds } = useTodayOdds();
+
+  const { items: betSlipItems, toggleSelection } = useBetSlipStore();
+
+  const selectedBetsMap = useMemo(() => {
+    const map = new Map<string, BetSelection>();
+    betSlipItems.forEach((item) => {
+      map.set(item.id, {
+        fixtureId: item.fixtureId,
+        matchName: item.matchName,
+        market: item.market,
+        selection: item.selection,
+        odds: item.odds,
+        handicap: item.handicap,
+      });
+    });
+    return map;
+  }, [betSlipItems]);
+
+  const handleSelectBet = useCallback((selection: BetSelection) => {
+    toggleSelection({
+      fixtureId: selection.fixtureId,
+      matchName: selection.matchName,
+      market: selection.market,
+      selection: selection.selection,
+      odds: selection.odds,
+      handicap: selection.handicap,
+    });
+  }, [toggleSelection]);
+
+  const filteredLeagues = useMemo(() => {
+    if (!oddsData?.leagues) return [];
+    if (!selectedCountry || selectedCountry.countryCode === 'TOP') {
+      return oddsData.leagues;
+    }
+    return oddsData.leagues.filter((league) => {
+      return league.country === selectedCountry.countryName || 
+             league.country === selectedCountry.countryCode;
+    });
+  }, [oddsData?.leagues, selectedCountry]);
+
+  const totalMatches = filteredLeagues.reduce((sum, league) => sum + league.matches.length, 0);
 
   const scrollFeatured = (direction: 'left' | 'right') => {
     if (featuredScrollRef.current) {
@@ -65,7 +90,7 @@ export default function DashboardPage() {
   const fetchFeaturedMatches = useCallback(async () => {
     setIsLoadingFeatured(true);
     try {
-      const data = await matchesService.getFeatured();
+      const data = await featuredMatchesService.getFeaturedMatches();
       setFeaturedMatches(data);
     } catch (error) {
       console.error('Failed to fetch featured matches:', error);
@@ -75,193 +100,44 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const fetchMatches = useCallback(async (page = 1, append = false) => {
-    if (page === 1) {
-      setIsLoadingMatches(true);
-    } else {
-      setIsLoadingMore(true);
+  const handleLeagueSelect = useCallback((league: League | null) => {
+    if (!league) {
+      setSelectedCountry(null);
+      return;
     }
-    
-    try {
-      let data: Match[] = [];
-      let total = 0;
-      let totalPages = 1;
-      
-      switch (activeMatchTab) {
-        case 'upcoming': {
-          const res = await matchesService.getAll({ 
-            status: 'scheduled', 
-            page, 
-            limit: MATCHES_PER_PAGE,
-            sortBy: 'startTime',
-            sortOrder: 'asc'
-          });
-          data = res.data;
-          total = res.meta.total;
-          totalPages = res.meta.totalPages;
-          break;
-        }
-        case 'live':
-          data = await matchesService.getLive();
-          total = data.length;
-          totalPages = 1;
-          break;
-        case 'finished': {
-          const finishedRes = await matchesService.getAll({ 
-            status: 'finished', 
-            page, 
-            limit: MATCHES_PER_PAGE,
-            sortBy: 'startTime',
-            sortOrder: 'desc'
-          });
-          data = finishedRes.data;
-          total = finishedRes.meta.total;
-          totalPages = finishedRes.meta.totalPages;
-          break;
-        }
-        default: {
-          const defaultRes = await matchesService.getAll({ 
-            status: 'scheduled', 
-            page, 
-            limit: MATCHES_PER_PAGE 
-          });
-          data = defaultRes.data;
-          total = defaultRes.meta.total;
-          totalPages = defaultRes.meta.totalPages;
-          break;
-        }
-      }
-      
-      if (searchQuery.trim()) {
-        const query = normalizeForSearch(searchQuery);
-        data = data.filter((m) => {
-          const haystack = normalizeForSearch(
-            [m.homeTeam?.name, m.awayTeam?.name, m.league?.name, m.league?.country]
-              .filter(Boolean)
-              .join(' '),
-          );
-          return haystack.includes(query);
-        });
-      }
 
-      if (append) {
-        setMatches((prev) => {
-          const seen = new Set(prev.map((m) => m.id));
-          const next = data.filter((m) => !seen.has(m.id));
-          return [...prev, ...next];
-        });
-      } else {
-        setMatches(data);
-      }
-      
-      setTotalMatches(total);
-      setHasMore(page < totalPages && activeMatchTab !== 'live');
-      setCurrentPage(page);
-    } catch (error) {
-      console.error('Failed to fetch matches:', error);
-      if (!append) {
-        setMatches([]);
-      }
-      setHasMore(false);
-    } finally {
-      setIsLoadingMatches(false);
-      setIsLoadingMore(false);
-    }
-  }, [activeMatchTab, searchQuery]);
-
-  const loadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
-      fetchMatches(currentPage + 1, true);
-    }
-  }, [fetchMatches, currentPage, isLoadingMore, hasMore]);
+    setSelectedCountry({
+      countryCode: league.countryCode || '',
+      countryName: league.country || '',
+    });
+  }, []);
 
   useEffect(() => {
     void checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    setCurrentPage(1);
-    setHasMore(true);
-    fetchMatches(1, false);
-  }, [activeMatchTab, searchQuery]);
-
-  useEffect(() => {
     fetchFeaturedMatches();
   }, [fetchFeaturedMatches]);
 
-  useEffect(() => {
-    if (activeMatchTab === 'live') {
-      const interval = setInterval(() => fetchMatches(1, false), 30000);
-      return () => clearInterval(interval);
-    }
-  }, [activeMatchTab, fetchMatches]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasMore && !isLoadingMore && !isLoadingMatches) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1, rootMargin: '100px' }
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [loadMore, hasMore, isLoadingMore, isLoadingMatches]);
-
-  const groupedMatches = matches.reduce((acc, match) => {
-    const leagueName = match.league?.name || 'Other Leagues';
-    if (!acc[leagueName]) {
-      acc[leagueName] = {
-        matches: [],
-        logoUrl: match.league?.logoUrl,
-        country: match.league?.country
-      };
-    }
-    acc[leagueName].matches.push(match);
-    return acc;
-  }, {} as Record<string, { matches: Match[]; logoUrl?: string; country?: string }>);
-
-  const liveCount = matches.filter(m => m.status === 'live' || m.isLive).length;
-
-  const matchTabs: { key: MatchTabType; label: string; icon: React.ReactNode; count?: number }[] = [
-    // Show upcoming first
-    { key: 'upcoming', label: 'Upcoming', icon: <Calendar size={14} /> },
-    { key: 'live', label: 'Live Now', icon: <Wifi size={14} />, count: activeMatchTab === 'live' ? liveCount : undefined },
-    { key: 'finished', label: 'Finished', icon: <CheckCircle2 size={14} /> },
-  ];
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-200 transition-colors duration-300">
-      <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="min-h-screen max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-200 transition-colors duration-300">
+      <div className="flex min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] overflow-hidden flex-col lg:flex-row pb-16 lg:pb-0">
         <aside className="hidden lg:flex w-64 flex-col border-r border-slate-200 bg-white/50 dark:border-white/5 dark:bg-slate-950/50">
           <div className="p-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Sports</h3>
             <div className="space-y-1">
-              {sportsCategories.map((sport) => (
-                <button
-                  key={sport.id}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
-                    sport.active 
-                      ? 'bg-emerald-500/10 text-emerald-600 font-medium dark:text-emerald-500'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span>{sport.icon}</span>
-                    <span>{sport.name}</span>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-md ${
-                    sport.active ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-500' : 'bg-slate-200 text-slate-600 dark:bg-slate-900'
-                  }`}>
-                    {sport.count}
-                  </span>
-                </button>
-              ))}
+              <button
+                className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all bg-emerald-500/10 text-emerald-600 font-medium dark:text-emerald-500"
+              >
+                <div className="flex items-center gap-3">
+                  <span>⚽</span>
+                  <span>Football</span>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-500">
+                  {footballCount}
+                </span>
+              </button>
             </div>
           </div>
           
@@ -277,12 +153,12 @@ export default function DashboardPage() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 scrollbar-hide">
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+        <main className="flex-1 overflow-y-auto overflow-x-clip p-3 sm:p-4 lg:p-6 scrollbar-hide">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-amber-500" />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Featured Matches</h2>
+                <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Featured Matches</h2>
                 {featuredMatches.length > 0 && (
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                     {featuredMatches.length}
@@ -326,7 +202,7 @@ export default function DashboardPage() {
             ) : (
               <div 
                 ref={featuredScrollRef}
-                className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 lg:-mx-6 lg:px-6 scrollbar-hide snap-x snap-mandatory"
+                className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
               >
                 {featuredMatches.slice(0, 10).map((match, index) => {
                   const isLive = match.status === 'live' || match.isLive;
@@ -364,7 +240,7 @@ export default function DashboardPage() {
                       key={match.id}
                       href={`/matches/${match.id}`}
                       className={cn(
-                        "group relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 w-[320px] snap-start",
+                        "group relative overflow-hidden rounded-2xl bg-gradient-to-br p-3 sm:p-4 md:p-5 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 w-[240px] sm:w-[280px] md:w-[320px] snap-start active:scale-[0.98] tap-highlight-none",
                         gradient
                       )}
                     >
@@ -391,7 +267,7 @@ export default function DashboardPage() {
                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
                               </span>
-                                                            LIVE <LiveMatchTimer 
+                              LIVE <LiveMatchTimer 
                                 startTime={match.startTime}
                                 period={match.period}
                                 liveMinute={match.liveMinute}
@@ -408,45 +284,45 @@ export default function DashboardPage() {
                           )}
                         </div>
                         
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center justify-between gap-1 sm:gap-2 md:gap-3">
                           <div className="flex-1 flex flex-col items-center text-center">
-                            <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 group-hover:bg-white/30 transition-colors">
+                            <div className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-1.5 sm:mb-2 group-hover:bg-white/30 transition-colors">
                               {match.homeTeam?.logoUrl ? (
-                                <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="h-10 w-10 object-contain" />
+                                <img src={match.homeTeam.logoUrl} alt={match.homeTeam.name} className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 object-contain" />
                               ) : (
-                                <span className="text-white font-bold text-sm">{match.homeTeam?.name?.substring(0, 3).toUpperCase()}</span>
+                                <span className="text-white font-bold text-[10px] sm:text-xs md:text-sm">{match.homeTeam?.name?.substring(0, 3).toUpperCase()}</span>
                               )}
                             </div>
-                            <span className="text-white font-semibold text-sm line-clamp-1">{match.homeTeam?.name || 'Home'}</span>
+                            <span className="text-white font-semibold text-[10px] sm:text-xs md:text-sm line-clamp-1">{match.homeTeam?.name || 'Home'}</span>
                           </div>
                           
-                          <div className="flex flex-col items-center min-w-[60px]">
+                          <div className="flex flex-col items-center min-w-[40px] sm:min-w-[50px] md:min-w-[60px]">
                             {isLive || isFinished ? (
-                              <div className="flex items-center gap-2 text-3xl font-bold text-white">
+                              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-xl sm:text-2xl md:text-3xl font-bold text-white">
                                 <span>{match.homeScore ?? 0}</span>
                                 <span className="text-white/50">-</span>
                                 <span>{match.awayScore ?? 0}</span>
                               </div>
                             ) : (
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-white">{formatTime(match.startTime)}</div>
+                                <div className="text-lg sm:text-xl md:text-2xl font-bold text-white">{formatTime(match.startTime)}</div>
                               </div>
                             )}
                           </div>
                           
                           <div className="flex-1 flex flex-col items-center text-center">
-                            <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 group-hover:bg-white/30 transition-colors">
+                            <div className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-1.5 sm:mb-2 group-hover:bg-white/30 transition-colors">
                               {match.awayTeam?.logoUrl ? (
-                                <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="h-10 w-10 object-contain" />
+                                <img src={match.awayTeam.logoUrl} alt={match.awayTeam.name} className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 object-contain" />
                               ) : (
-                                <span className="text-white font-bold text-sm">{match.awayTeam?.name?.substring(0, 3).toUpperCase()}</span>
+                                <span className="text-white font-bold text-[10px] sm:text-xs md:text-sm">{match.awayTeam?.name?.substring(0, 3).toUpperCase()}</span>
                               )}
                             </div>
-                            <span className="text-white font-semibold text-sm line-clamp-1">{match.awayTeam?.name || 'Away'}</span>
+                            <span className="text-white font-semibold text-[10px] sm:text-xs md:text-sm line-clamp-1">{match.awayTeam?.name || 'Away'}</span>
                           </div>
                         </div>
                         
-                        <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-center gap-4">
+                        <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-white/20 flex items-center justify-center gap-3 sm:gap-4">
                           <div className="flex items-center gap-1 text-white/80 text-xs">
                             <Star className="h-3 w-3 text-yellow-300" />
                             <span>Featured</span>
@@ -466,112 +342,31 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <UpcomingMatchesTabs />
-
-          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex gap-2 bg-slate-100 p-1 rounded-lg dark:bg-slate-900 overflow-x-auto">
-              {matchTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveMatchTab(tab.key)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap",
-                    activeMatchTab === tab.key 
-                      ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' 
-                      : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
-                    tab.key === 'live' && activeMatchTab === 'live' && 'text-red-600 dark:text-red-500'
-                  )}
-                >
-                  {tab.icon}
-                  {tab.label}
-                  {tab.count !== undefined && tab.count > 0 && (
-                    <span className={cn(
-                      "ml-1 text-[10px] px-1.5 py-0.5 rounded-full",
-                      tab.key === 'live' && activeMatchTab === 'live' 
-                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 animate-pulse"
-                        : "bg-slate-200 dark:bg-slate-700"
-                    )}>
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-            
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-              {matches.length}{totalMatches > matches.length ? ` / ${totalMatches}` : ''} match{matches.length !== 1 ? 'es' : ''}
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <UpcomingMatchesTabs 
+                onLeagueSelect={handleLeagueSelect}
+                selectedLeagueId={null}
+                liveCount={liveCount}
+              />
+              <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                {totalMatches} match{totalMatches !== 1 ? 'es' : ''}
+              </div>
             </div>
           </div>
 
-          {isLoadingMatches ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-              <span className="ml-3 text-slate-500 dark:text-slate-400">Loading matches...</span>
-            </div>
-          ) : matches.length === 0 ? (
-            <div className="text-center py-20 bg-slate-100/50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-              <Trophy className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No matches found</h3>
-              <p className="text-slate-500 dark:text-slate-400">
-                {activeMatchTab === 'live' 
-                  ? 'No live matches at the moment. Check back later!' 
-                  : searchQuery 
-                    ? 'Try adjusting your search query.' 
-                    : 'Check back later for new matches.'
-                }
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {Object.entries(groupedMatches).map(([leagueName, leagueData]) => (
-                <div key={leagueName} className="space-y-4">
-                  <div className="flex items-center gap-3 sticky top-0 bg-slate-50/95 dark:bg-slate-950/95 py-2 -mx-2 px-2 backdrop-blur-sm z-10">
-                    {leagueData.logoUrl ? (
-                      <img 
-                        src={leagueData.logoUrl} 
-                        alt={leagueName} 
-                        className="h-6 w-6 object-contain"
-                      />
-                    ) : (
-                      <div className="h-6 w-6 rounded bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
-                        <Trophy className="h-3 w-3 text-slate-400" />
-                      </div>
-                    )}
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">{leagueName}</h2>
-                    {leagueData.country && (
-                      <span className="text-xs text-slate-400 dark:text-slate-500">{leagueData.country}</span>
-                    )}
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                      {leagueData.matches.length}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {leagueData.matches.map((match) => (
-                      <MatchCard key={match.id} match={match} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              <div ref={loadMoreRef} className="h-10" />
-
-              {isLoadingMore && (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-                  <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">Loading more...</span>
-                </div>
-              )}
-
-              {!isLoadingMore && !hasMore && activeMatchTab !== 'live' && (
-                <div className="flex items-center justify-center py-6">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">No more matches</span>
-                </div>
-              )}
-            </div>
-          )}
+          <Bet365OddsTable
+            leagues={filteredLeagues}
+            isLoading={isLoadingOdds}
+            selectedBets={selectedBetsMap}
+            onSelectBet={handleSelectBet}
+            onRefresh={() => refetchOdds()}
+            lastUpdate={oddsData?.lastUpdate}
+          />
         </main>
       </div>
+      
+      <FloatingBetSlip />
     </div>
   );
 }

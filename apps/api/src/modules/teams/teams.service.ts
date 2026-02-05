@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateTeamDto, UpdateTeamDto, QueryTeamDto } from './dto';
-import { Prisma } from '@prisma/client';
+import { CreateTeamDto, UpdateTeamDto, QueryTeamDto, QueryTeamMatchesDto, MatchListType } from './dto';
+import { Prisma, MatchStatus } from '@prisma/client';
 
 @Injectable()
 export class TeamsService {
@@ -90,6 +90,36 @@ export class TeamsService {
     }
 
     return team;
+  }
+
+  async findTeamMatches(id: string, query: QueryTeamMatchesDto) {
+    await this.findOne(id);
+
+    const limit = query.limit ?? 10;
+    const where: Prisma.MatchWhereInput = {
+      OR: [{ homeTeamId: id }, { awayTeamId: id }],
+    };
+
+    let order: Prisma.SortOrder = 'desc';
+
+    if (query.type === MatchListType.UPCOMING) {
+      where.status = MatchStatus.scheduled;
+      order = 'asc';
+    } else if (query.type === MatchListType.FINISHED) {
+      where.status = MatchStatus.finished;
+      order = 'desc';
+    }
+
+    return this.prisma.match.findMany({
+      where,
+      take: limit,
+      orderBy: { startTime: order },
+      include: {
+        league: true,
+        homeTeam: true,
+        awayTeam: true,
+      },
+    });
   }
 
   async update(id: string, updateTeamDto: UpdateTeamDto) {

@@ -29,6 +29,14 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface Wallet {
+  id: string;
+  realBalance: number;
+  bonusBalance: number;
+  pendingBalance: number;
+  currency: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -38,6 +46,7 @@ export interface User {
     code: string;
     name: string;
   };
+  wallet?: Wallet;
 }
 
 export const authService = {

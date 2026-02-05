@@ -33,6 +33,19 @@ export const BOOKMAKER_IDS = {
 
 export const DEFAULT_BOOKMAKER_ID = BOOKMAKER_IDS.BET365;
 
+/**
+ * Football seasons run Aug-May. API-Football uses the starting year (e.g., 2025 for 2025-2026).
+ * Jan-Jul → previous year's season | Aug-Dec → current year's season
+ */
+export function getCurrentFootballSeason(): number {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  const SEASON_START_MONTH = 7; // August (0-indexed)
+  
+  return month < SEASON_START_MONTH ? year - 1 : year;
+}
+
 export enum BetTypeCode {
   MATCH_WINNER = 'match_winner',
   ASIAN_HANDICAP = 'asian_handicap',
@@ -122,6 +135,12 @@ export interface ApiFootballSyncConfig {
     enabled: boolean;
   };
 
+  // Standings sync settings
+  standings: {
+    intervalMinutes: number;      // Auto sync interval (default: 720 = twice per day)
+    enabled: boolean;
+  };
+
   // Rate limiting
   rateLimit: {
     requestsPerMinute: number;    // Max requests per minute (default: 300)
@@ -158,6 +177,10 @@ export const DEFAULT_SYNC_CONFIG: ApiFootballSyncConfig = {
   },
   team: {
     intervalMinutes: 1440,        // Once per day
+    enabled: true,
+  },
+  standings: {
+    intervalMinutes: 720,
     enabled: true,
   },
   rateLimit: {

@@ -16,7 +16,8 @@ import {
   Shield,
   AlertTriangle,
   RefreshCw,
-  X
+  X,
+  Trophy
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,7 +31,7 @@ export default function SyncSettingsPage() {
   const [config, setConfig] = useState<ApiFootballSyncConfig | null>(null);
   const [originalConfig, setOriginalConfig] = useState<ApiFootballSyncConfig | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState<'fixtures' | 'live' | 'upcoming' | 'general'>('fixtures');
+  const [activeTab, setActiveTab] = useState<'fixtures' | 'live' | 'upcoming' | 'standings' | 'general'>('fixtures');
 
   useEffect(() => {
     loadConfig();
@@ -127,6 +128,7 @@ export default function SyncSettingsPage() {
 
     if (config.league.enabled) total += (24 * 60) / config.league.intervalMinutes;
     if (config.team.enabled) total += (24 * 60) / config.team.intervalMinutes;
+    if (config.standings?.enabled) total += (24 * 60) / (config.standings.intervalMinutes || 720);
 
     return Math.round(total);
   };
@@ -254,6 +256,7 @@ export default function SyncSettingsPage() {
           { id: 'fixtures', label: 'Fixtures', icon: Calendar },
           { id: 'live', label: 'Live Odds', icon: Activity },
           { id: 'upcoming', label: 'Upcoming Odds', icon: Clock },
+          { id: 'standings', label: 'Standings', icon: Trophy },
           { id: 'general', label: 'General & Limits', icon: Globe },
         ].map((tab) => (
           <button
@@ -502,6 +505,59 @@ export default function SyncSettingsPage() {
                   />
                   <p className="text-xs text-slate-500 mt-1">Maximum upcoming matches to process per sync</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'standings' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Standings Synchronization</h3>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>League table and rankings updates</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={config.standings?.enabled ?? true}
+                  onChange={(e) => updateConfig('standings', 'enabled', e.target.checked)}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Sync Interval (Minutes)
+                  </label>
+                  <input 
+                    type="number" 
+                    min="60" 
+                    max="1440"
+                    value={config.standings?.intervalMinutes ?? 720}
+                    onChange={(e) => updateConfig('standings', 'intervalMinutes', parseInt(e.target.value))}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      isDark 
+                        ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' 
+                        : 'bg-white border-slate-200 text-slate-900 focus:border-emerald-500'
+                    } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">How often to sync standings (60-1440 minutes, recommended: 720 = twice daily)</p>
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-xl border ${isDark ? 'border-slate-800 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+                <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>About Standings Sync</h4>
+                <ul className={`text-xs space-y-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <li>• Syncs league tables and team rankings</li>
+                  <li>• Updates points, goals, wins/draws/losses</li>
+                  <li>• Covers all tracked leagues</li>
+                  <li>• Lower frequency recommended (data changes less often)</li>
+                </ul>
               </div>
             </div>
           </div>

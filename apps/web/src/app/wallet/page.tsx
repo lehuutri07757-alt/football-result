@@ -5,37 +5,52 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   Trophy, 
-  Search, 
-  Bell, 
-  Menu, 
   Wallet, 
   ArrowUpRight, 
   ArrowDownLeft, 
-  History, 
   CreditCard, 
   MoreHorizontal,
   ChevronRight,
   ArrowLeft,
   Smartphone,
   Banknote,
-  Bitcoin
+  Bitcoin,
+  Loader2,
+  RefreshCw,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { useLanguageStore } from '@/stores/language.store';
-import { t } from '@/lib/i18n';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { 
+  walletService, 
+  Transaction, 
+  TransactionType,
+  TRANSACTION_TYPE_LABELS,
+  TRANSACTION_STATUS_LABELS,
+  isPositiveTransaction,
+} from '@/services/wallet.service';
+import { formatRelativeTime } from '@/lib/date';
 
-const TRANSACTIONS = [
-  { id: 1, type: 'DEPOSIT', amount: 500000, date: 'Today, 14:30', status: 'COMPLETED', method: 'Momo', icon: Smartphone, color: 'bg-pink-100 text-pink-600' },
-  { id: 2, type: 'WITHDRAW', amount: 200000, date: 'Yesterday, 09:15', status: 'PENDING', method: 'Vietcombank', icon: Banknote, color: 'bg-green-100 text-green-600' },
-  { id: 3, type: 'DEPOSIT', amount: 1000000, date: 'Mar 15, 20:45', status: 'COMPLETED', method: 'USDT (TRC20)', icon: Bitcoin, color: 'bg-orange-100 text-orange-600' },
-  { id: 4, type: 'BET_WIN', amount: 450000, date: 'Mar 14, 22:00', status: 'COMPLETED', method: 'Premier League', icon: Trophy, color: 'bg-blue-100 text-blue-600' },
-];
+const TRANSACTION_ICONS: Record<string, { icon: typeof Trophy; color: string }> = {
+  [TransactionType.DEPOSIT]: { icon: ArrowDownLeft, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' },
+  [TransactionType.WITHDRAWAL]: { icon: ArrowUpRight, color: 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400' },
+  [TransactionType.BET_PLACED]: { icon: Banknote, color: 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' },
+  [TransactionType.BET_WON]: { icon: Trophy, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' },
+  [TransactionType.BET_REFUND]: { icon: RefreshCw, color: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' },
+  [TransactionType.BONUS]: { icon: CreditCard, color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400' },
+  [TransactionType.TRANSFER]: { icon: ArrowUpRight, color: 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400' },
+  [TransactionType.ADJUSTMENT]: { icon: Banknote, color: 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400' },
+};
 
 export default function WalletPage() {
   const router = useRouter();
   const [activeAction, setActiveAction] = useState<'deposit' | 'withdraw' | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -50,10 +65,53 @@ export default function WalletPage() {
     if (!isAuthenticated) router.push('/');
   }, [isAuthenticated, router]);
 
-  const balance = (user as any)?.balance ?? 0;
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTransactions();
+    }
+  }, [isAuthenticated]);
+
+  const fetchTransactions = async (pageNum: number = 1, append: boolean = false) => {
+    if (pageNum === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    try {
+      const response = await walletService.getMyHistory({ page: pageNum, limit: 10 });
+      
+      if (append) {
+        setTransactions(prev => [...prev, ...response.data]);
+      } else {
+        setTransactions(response.data);
+      }
+      
+      setPage(pageNum);
+      setHasMore(pageNum < response.meta.totalPages);
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchTransactions(page + 1, true);
+    }
+  };
+
+  const balance = user?.wallet?.realBalance ?? 0;
   
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+  const getTransactionIcon = (type: string) => {
+    const config = TRANSACTION_ICONS[type] || TRANSACTION_ICONS[TransactionType.ADJUSTMENT];
+    return config;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
@@ -186,30 +244,78 @@ export default function WalletPage() {
         <div>
           <div className="flex items-center justify-between mb-4 px-2">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white">Recent Transactions</h3>
-            <Link href="#" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-500">See All</Link>
+            <button 
+              onClick={() => fetchTransactions(1, false)}
+              className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 flex items-center gap-1"
+            >
+              <RefreshCw size={14} />
+              Refresh
+            </button>
           </div>
 
-          <div className="space-y-4">
-            {TRANSACTIONS.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
-                <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${tx.color} dark:bg-opacity-20`}>
-                    <tx.icon size={20} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-900 dark:text-white">{tx.method}</div>
-                    <div className="text-xs text-gray-500 dark:text-slate-400">{tx.date}</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={`font-bold ${tx.type === 'WITHDRAW' ? 'text-gray-900 dark:text-white' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                    {tx.type === 'WITHDRAW' ? '-' : '+'}{formatCurrency(tx.amount)}
-                  </div>
-                  <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mt-0.5">{tx.status}</div>
-                </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12">
+              <Wallet className="mx-auto h-12 w-12 text-gray-300 dark:text-slate-600 mb-3" />
+              <p className="text-gray-500 dark:text-slate-400">No transactions yet</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {transactions.map((tx) => {
+                  const iconConfig = getTransactionIcon(tx.type);
+                  const IconComponent = iconConfig.icon;
+                  const isPositive = isPositiveTransaction(tx.type);
+                  
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow dark:bg-slate-900 dark:shadow-none dark:border dark:border-slate-800">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${iconConfig.color}`}>
+                          <IconComponent size={20} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900 dark:text-white">
+                            {TRANSACTION_TYPE_LABELS[tx.type] || tx.type}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400">
+                            {formatRelativeTime(tx.createdAt, language)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-bold ${isPositive ? 'text-emerald-600 dark:text-emerald-500' : 'text-gray-900 dark:text-white'}`}>
+                          {isPositive ? '+' : '-'}{formatCurrency(tx.amount)}
+                        </div>
+                        <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mt-0.5">
+                          {TRANSACTION_STATUS_LABELS[tx.status] || tx.status}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+
+              {hasMore && (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="w-full mt-6 py-3 rounded-2xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  {loadingMore ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <ChevronDown size={18} />
+                      Load More
+                    </>
+                  )}
+                </button>
+              )}
+            </>
+          )}
         </div>
 
       </main>

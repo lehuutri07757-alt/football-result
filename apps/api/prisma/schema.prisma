@@ -280,7 +280,8 @@ model League {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  matches Match[]
+  matches   Match[]
+  standings Standing[]
 
   @@unique([sportId, externalId])
   @@index([searchKey])
@@ -304,11 +305,15 @@ model Team {
 
   isActive    Boolean  @default(true) @map("is_active")
 
+  // Recent form - array of last 5 match results: W (win), L (loss), D (draw)
+  recentForm  Json     @default("[]") @map("recent_form")
+
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   homeMatches Match[] @relation("HomeTeam")
   awayMatches Match[] @relation("AwayTeam")
+  standings   Standing[]
 
   @@unique([sportId, externalId])
   @@map("teams")
@@ -765,6 +770,7 @@ enum SyncJobType {
   fixture
   odds_upcoming
   odds_live
+  standings
   full_sync
 }
 
@@ -830,4 +836,44 @@ model SyncJob {
   @@index([scheduledAt])
   @@index([createdAt])
   @@map("sync_jobs")
+}
+
+model Standing {
+  id            String   @id @default(uuid())
+  
+  leagueId      String   @map("league_id")
+  league        League   @relation(fields: [leagueId], references: [id])
+  
+  teamId        String   @map("team_id")
+  team          Team     @relation(fields: [teamId], references: [id])
+  
+  season        String
+  
+  position      Int
+  played        Int      @default(0)
+  won           Int      @default(0)
+  drawn         Int      @default(0)
+  lost          Int      @default(0)
+  goalsFor      Int      @default(0) @map("goals_for")
+  goalsAgainst  Int      @default(0) @map("goals_against")
+  goalDiff      Int      @default(0) @map("goal_diff")
+  points        Int      @default(0)
+  
+  form          String?
+  description   String?
+  
+  group         String?
+  
+  homeRecord    Json     @default("{}") @map("home_record")
+  awayRecord    Json     @default("{}") @map("away_record")
+  
+  lastUpdated   DateTime @default(now()) @map("last_updated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  @@unique([leagueId, teamId, season])
+  @@index([leagueId])
+  @@index([season])
+  @@index([position])
+  @@map("standings")
 }

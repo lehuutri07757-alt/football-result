@@ -5,6 +5,7 @@ import { LeagueSyncService } from './league-sync.service';
 import { TeamSyncService } from './team-sync.service';
 import { FixtureSyncService } from './fixture-sync.service';
 import { OddsSyncService } from './odds-sync.service';
+import { StandingsSyncService } from './standings-sync.service';
 import { SyncJobService } from './sync-job.service';
 import {
   SyncJobType,
@@ -12,6 +13,7 @@ import {
   TeamSyncParams,
   FixtureSyncParams,
   OddsSyncParams,
+  StandingsSyncParams,
   FullSyncParams,
   SyncJobResult,
 } from './interfaces';
@@ -32,6 +34,7 @@ export class SyncJobProcessor {
     private readonly teamSyncService: TeamSyncService,
     private readonly fixtureSyncService: FixtureSyncService,
     private readonly oddsSyncService: OddsSyncService,
+    private readonly standingsSyncService: StandingsSyncService,
   ) {}
 
   @Process(SyncJobType.league)
@@ -207,6 +210,39 @@ export class SyncJobProcessor {
       totalOdds: result.totalOdds,
       created: result.created,
       updated: result.updated,
+    };
+  }
+
+  @Process(SyncJobType.standings)
+  async processStandingsSync(job: Job<SyncJobData>): Promise<SyncJobResult> {
+    const { syncJobId, params } = job.data;
+    const startTime = Date.now();
+
+    this.logger.log(`Processing standings sync job: ${syncJobId}`);
+    await this.syncJobService.markAsProcessing(syncJobId);
+
+    const standingsParams = params as StandingsSyncParams;
+
+    const updateProgress = async (progress: number, processedItems: number, totalItems: number) => {
+      await this.syncJobService.updateJob(syncJobId, {
+        progress,
+        totalItems,
+        processedItems,
+      });
+      await job.progress(progress);
+    };
+
+    const result = await this.standingsSyncService.syncAllActiveLeagues(updateProgress);
+
+    return {
+      success: result.errors.length === 0,
+      syncedAt: result.syncedAt,
+      durationMs: Date.now() - startTime,
+      errors: result.errors,
+      totalFetched: result.totalFetched,
+      created: result.created,
+      updated: result.updated,
+      skipped: result.skipped,
     };
   }
 

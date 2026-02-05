@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Trophy, Users, Calendar, Loader2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/services/api';
+import { useLanguageStore } from '@/stores/language.store';
+import { formatDateTime } from '@/lib/date';
 
 interface League {
   id: string;
@@ -49,9 +52,23 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const language = useLanguageStore((s) => s.language);
+
+  const updateDropdownPosition = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  };
 
   const performSearch = async (q: string) => {
     if (q.trim().length < 2) {
@@ -67,6 +84,7 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
       });
 
       setResults(response.data || { leagues: [], teams: [], matches: [] });
+      updateDropdownPosition();
       setIsOpen(true);
       setSelectedIndex(-1);
     } catch (error) {
@@ -148,18 +166,25 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        !inputRef.current?.contains(event.target as Node)
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        inputRef.current && !inputRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isOpen) {
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 0);
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleShortcut = (e: KeyboardEvent) => {
@@ -173,8 +198,165 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
     return () => window.removeEventListener('keydown', handleShortcut);
   }, []);
 
+  const handleFocus = () => {
+    if (query.length >= 2) {
+      updateDropdownPosition();
+      setIsOpen(true);
+    }
+  };
+
+  const dropdownContent = isOpen && query.length >= 2 && (
+    <div
+      ref={dropdownRef}
+      style={{
+        position: 'fixed',
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+      }}
+      className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-[9999] max-h-[500px] overflow-y-auto"
+    >
+      {results.leagues && results.leagues.length > 0 && (
+        <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+          <h3 className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Leagues ({results.leagues.length})
+          </h3>
+          {results.leagues.map((league, idx) => (
+            <Link
+              key={league.id}
+              href={`/leagues/${league.id}`}
+              onClick={clearSearch}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                selectedIndex === idx
+                  ? 'bg-emerald-50 dark:bg-emerald-500/10'
+                  : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+              }`}
+            >
+              {league.logoUrl ? (
+                <img src={league.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
+              ) : (
+                <Trophy className="w-5 h-5 text-amber-500" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                  {league.name}
+                </p>
+                {league.country && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {league.country}
+                  </p>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {results.teams && results.teams.length > 0 && (
+        <div className="p-2 border-b border-slate-100 dark:border-slate-800">
+          <h3 className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Teams ({results.teams.length})
+          </h3>
+          {results.teams.map((team, idx) => {
+            const currentIndex = results.leagues.length + idx;
+            return (
+              <Link
+                key={team.id}
+                href={`/teams/${team.id}`}
+                onClick={clearSearch}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  selectedIndex === currentIndex
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                {team.logoUrl ? (
+                  <img src={team.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
+                ) : (
+                  <Users className="w-5 h-5 text-blue-500" />
+                )}
+                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                  {team.name}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {results.matches && results.matches.length > 0 && (
+        <div className="p-2">
+          <h3 className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Matches ({results.matches.length})
+          </h3>
+          {results.matches.map((match, idx) => {
+            const currentIndex = results.leagues.length + results.teams.length + idx;
+            return (
+              <Link
+                key={match.id}
+                href={`/matches/${match.id}`}
+                onClick={clearSearch}
+                className={`w-full block px-3 py-2.5 rounded-lg transition-colors ${
+                  selectedIndex === currentIndex
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="font-medium text-slate-900 dark:text-white truncate flex-1">
+                    {match.homeTeam.name}
+                  </span>
+                  <span className="text-xs text-slate-400">vs</span>
+                  <span className="font-medium text-slate-900 dark:text-white truncate flex-1 text-right">
+                    {match.awayTeam.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {formatDateTime(match.startTime, language)}
+                  </span>
+                  {match.league && (
+                    <>
+                      <span className="text-xs text-slate-300 dark:text-slate-600">•</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {match.league.name}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {!isLoading && !hasResults && (
+        <div className="p-8 text-center">
+          <Search className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+          <p className="text-sm font-medium text-slate-900 dark:text-white">
+            No results found
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Try searching for a different term
+          </p>
+        </div>
+      )}
+
+      {hasResults && (
+        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>Use ↑↓ to navigate</span>
+            <span>↵ to select</span>
+            <span>ESC to close</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${className}`}>
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
         <input
@@ -183,9 +365,9 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
           placeholder="Search matches, leagues, teams..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.length >= 2 && setIsOpen(true)}
+          onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          className="w-full pl-12 pr-24 py-4 text-base rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500"
+          className="w-full pl-12 pr-24 py-4 text-base lg:rounded-xl border-x-0 lg:border-x border-y border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-0 lg:focus:ring-2 focus:ring-emerald-500/20 transition-all dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500"
         />
 
         {isLoading && (
@@ -194,6 +376,7 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
 
         {query && (
           <button
+            type="button"
             onClick={clearSearch}
             className="absolute right-12 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
@@ -208,154 +391,7 @@ export function GlobalSearch({ className = '' }: GlobalSearchProps) {
         </div>
       </div>
 
-      {isOpen && query.length >= 2 && (
-        <div
-          ref={dropdownRef}
-          className="absolute top-full mt-2 w-full bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-50 max-h-[500px] overflow-y-auto"
-        >
-          {results.leagues && results.leagues.length > 0 && (
-            <div className="p-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Leagues ({results.leagues.length})
-              </h3>
-              {results.leagues.map((league, idx) => (
-                <Link
-                  key={league.id}
-                  href={`/leagues/${league.id}`}
-                  onClick={clearSearch}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    selectedIndex === idx
-                      ? 'bg-emerald-50 dark:bg-emerald-500/10'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {league.logoUrl ? (
-                    <img src={league.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
-                  ) : (
-                    <Trophy className="w-5 h-5 text-amber-500" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                      {league.name}
-                    </p>
-                    {league.country && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                        {league.country}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-
-          {results.teams && results.teams.length > 0 && (
-            <div className="p-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Teams ({results.teams.length})
-              </h3>
-              {results.teams.map((team, idx) => {
-                const currentIndex = results.leagues.length + idx;
-                return (
-                  <Link
-                    key={team.id}
-                    href={`/teams/${team.id}`}
-                    onClick={clearSearch}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                      selectedIndex === currentIndex
-                        ? 'bg-emerald-50 dark:bg-emerald-500/10'
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {team.logoUrl ? (
-                      <img src={team.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
-                    ) : (
-                      <Users className="w-5 h-5 text-blue-500" />
-                    )}
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                      {team.name}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
-          {results.matches && results.matches.length > 0 && (
-            <div className="p-2">
-              <h3 className="px-3 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Matches ({results.matches.length})
-              </h3>
-              {results.matches.map((match, idx) => {
-                const currentIndex = results.leagues.length + results.teams.length + idx;
-                return (
-                  <Link
-                    key={match.id}
-                    href={`/matches/${match.id}`}
-                    onClick={clearSearch}
-                    className={`w-full block px-3 py-2.5 rounded-lg transition-colors ${
-                      selectedIndex === currentIndex
-                        ? 'bg-emerald-50 dark:bg-emerald-500/10'
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="font-medium text-slate-900 dark:text-white truncate flex-1">
-                        {match.homeTeam.name}
-                      </span>
-                      <span className="text-xs text-slate-400">vs</span>
-                      <span className="font-medium text-slate-900 dark:text-white truncate flex-1 text-right">
-                        {match.awayTeam.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {new Date(match.startTime).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                      {match.league && (
-                        <>
-                          <span className="text-xs text-slate-300 dark:text-slate-600">•</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                            {match.league.name}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
-          {!isLoading && !hasResults && (
-            <div className="p-8 text-center">
-              <Search className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
-              <p className="text-sm font-medium text-slate-900 dark:text-white">
-                No results found
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Try searching for a different term
-              </p>
-            </div>
-          )}
-
-          {hasResults && (
-            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>Use ↑↓ to navigate</span>
-                <span>↵ to select</span>
-                <span>ESC to close</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {typeof window !== 'undefined' && createPortal(dropdownContent, document.body)}
     </div>
   );
 }

@@ -66,128 +66,8 @@ async function main() {
   }
 
   const football = await prisma.sport.findUnique({ where: { slug: 'football' } });
-  
+
   if (football) {
-    const leagues = [
-      { sportId: football.id, name: 'Premier League', slug: 'premier-league', country: 'England', countryCode: 'GB', sortOrder: 1, isFeatured: true },
-      { sportId: football.id, name: 'La Liga', slug: 'la-liga', country: 'Spain', countryCode: 'ES', sortOrder: 2, isFeatured: true },
-      { sportId: football.id, name: 'Bundesliga', slug: 'bundesliga', country: 'Germany', countryCode: 'DE', sortOrder: 3, isFeatured: true },
-      { sportId: football.id, name: 'Serie A', slug: 'serie-a', country: 'Italy', countryCode: 'IT', sortOrder: 4, isFeatured: true },
-      { sportId: football.id, name: 'Ligue 1', slug: 'ligue-1', country: 'France', countryCode: 'FR', sortOrder: 5, isFeatured: false },
-      { sportId: football.id, name: 'Champions League', slug: 'champions-league', country: 'Europe', countryCode: 'EU', sortOrder: 0, isFeatured: true },
-    ];
-
-    for (const league of leagues) {
-      const existing = await prisma.league.findFirst({ where: { slug: league.slug, sportId: league.sportId } });
-      if (!existing) {
-        await prisma.league.create({ data: league });
-      }
-    }
-
-    const teams = [
-      { sportId: football.id, name: 'Manchester United', shortName: 'MUN', slug: 'manchester-united', country: 'England', countryCode: 'GB' },
-      { sportId: football.id, name: 'Liverpool', shortName: 'LIV', slug: 'liverpool', country: 'England', countryCode: 'GB' },
-      { sportId: football.id, name: 'Arsenal', shortName: 'ARS', slug: 'arsenal', country: 'England', countryCode: 'GB' },
-      { sportId: football.id, name: 'Chelsea', shortName: 'CHE', slug: 'chelsea', country: 'England', countryCode: 'GB' },
-      { sportId: football.id, name: 'Manchester City', shortName: 'MCI', slug: 'manchester-city', country: 'England', countryCode: 'GB' },
-      { sportId: football.id, name: 'Real Madrid', shortName: 'RMA', slug: 'real-madrid', country: 'Spain', countryCode: 'ES' },
-      { sportId: football.id, name: 'Barcelona', shortName: 'BAR', slug: 'barcelona', country: 'Spain', countryCode: 'ES' },
-      { sportId: football.id, name: 'Bayern Munich', shortName: 'BAY', slug: 'bayern-munich', country: 'Germany', countryCode: 'DE' },
-      { sportId: football.id, name: 'Borussia Dortmund', shortName: 'BVB', slug: 'borussia-dortmund', country: 'Germany', countryCode: 'DE' },
-      { sportId: football.id, name: 'Juventus', shortName: 'JUV', slug: 'juventus', country: 'Italy', countryCode: 'IT' },
-      { sportId: football.id, name: 'AC Milan', shortName: 'ACM', slug: 'ac-milan', country: 'Italy', countryCode: 'IT' },
-      { sportId: football.id, name: 'Inter Milan', shortName: 'INT', slug: 'inter-milan', country: 'Italy', countryCode: 'IT' },
-      { sportId: football.id, name: 'PSG', shortName: 'PSG', slug: 'psg', country: 'France', countryCode: 'FR' },
-      { sportId: football.id, name: 'Lyon', shortName: 'LYO', slug: 'lyon', country: 'France', countryCode: 'FR' },
-    ];
-
-    for (const team of teams) {
-      const existing = await prisma.team.findFirst({ where: { slug: team.slug, sportId: team.sportId } });
-      if (!existing) {
-        await prisma.team.create({ data: team });
-      }
-    }
-
-    const premierLeague = await prisma.league.findFirst({ where: { slug: 'premier-league' } });
-    const laLiga = await prisma.league.findFirst({ where: { slug: 'la-liga' } });
-    const bundesliga = await prisma.league.findFirst({ where: { slug: 'bundesliga' } });
-
-    const manUtd = await prisma.team.findFirst({ where: { slug: 'manchester-united' } });
-    const liverpool = await prisma.team.findFirst({ where: { slug: 'liverpool' } });
-    const realMadrid = await prisma.team.findFirst({ where: { slug: 'real-madrid' } });
-    const barcelona = await prisma.team.findFirst({ where: { slug: 'barcelona' } });
-    const bayern = await prisma.team.findFirst({ where: { slug: 'bayern-munich' } });
-    const dortmund = await prisma.team.findFirst({ where: { slug: 'borussia-dortmund' } });
-
-    if (premierLeague && manUtd && liverpool) {
-      const existingMatch = await prisma.match.findFirst({
-        where: { homeTeamId: manUtd.id, awayTeamId: liverpool.id, leagueId: premierLeague.id }
-      });
-      if (!existingMatch) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(22, 0, 0, 0);
-        
-        await prisma.match.create({
-          data: {
-            leagueId: premierLeague.id,
-            homeTeamId: manUtd.id,
-            awayTeamId: liverpool.id,
-            startTime: tomorrow,
-            status: 'scheduled',
-            bettingEnabled: true,
-            isFeatured: true,
-          }
-        });
-      }
-    }
-
-    if (laLiga && realMadrid && barcelona) {
-      const existingMatch = await prisma.match.findFirst({
-        where: { homeTeamId: realMadrid.id, awayTeamId: barcelona.id, leagueId: laLiga.id }
-      });
-      if (!existingMatch) {
-        const dayAfter = new Date();
-        dayAfter.setDate(dayAfter.getDate() + 2);
-        dayAfter.setHours(2, 0, 0, 0);
-        
-        await prisma.match.create({
-          data: {
-            leagueId: laLiga.id,
-            homeTeamId: realMadrid.id,
-            awayTeamId: barcelona.id,
-            startTime: dayAfter,
-            status: 'scheduled',
-            bettingEnabled: true,
-            isFeatured: true,
-          }
-        });
-      }
-    }
-
-    if (bundesliga && bayern && dortmund) {
-      const existingMatch = await prisma.match.findFirst({
-        where: { homeTeamId: bayern.id, awayTeamId: dortmund.id, leagueId: bundesliga.id }
-      });
-      if (!existingMatch) {
-        const threeDays = new Date();
-        threeDays.setDate(threeDays.getDate() + 3);
-        threeDays.setHours(0, 30, 0, 0);
-        
-        await prisma.match.create({
-          data: {
-            leagueId: bundesliga.id,
-            homeTeamId: bayern.id,
-            awayTeamId: dortmund.id,
-            startTime: threeDays,
-            status: 'scheduled',
-            bettingEnabled: true,
-            isFeatured: true,
-          }
-        });
-      }
-    }
-
     const betTypes = [
       { sportId: football.id, name: 'Match Winner', code: 'match_winner', description: '1X2 - Home, Draw, Away', sortOrder: 1 },
       { sportId: football.id, name: 'Asian Handicap', code: 'asian_handicap', description: 'Asian Handicap betting', sortOrder: 2 },
@@ -247,58 +127,58 @@ async function main() {
 
   const featuredLeagues = await prisma.league.findMany({
     where: {
-      slug: {
-        in: [
-          'premier-league',
-          'la-liga',
-          'bundesliga',
-          'serie-a',
-          'champions-league',
-        ],
-      },
+      OR: [
+        { name: 'Premier League', country: 'England' },
+        { name: 'La Liga', country: 'Spain' },
+        { name: 'Bundesliga', country: 'Germany' },
+        { name: 'Serie A', country: 'Italy' },
+        { name: 'UEFA Champions League' },
+      ],
+      externalId: { not: null },
     },
-    select: { id: true },
+    select: { id: true, name: true },
   });
+
+  const topTeamNames = [
+    'Manchester United',
+    'Manchester City',
+    'Liverpool',
+    'Arsenal',
+    'Chelsea',
+    'Real Madrid',
+    'FC Barcelona',
+    'Bayern München',
+    'Borussia Dortmund',
+    'Juventus',
+    'AC Milan',
+    'Inter',
+    'Paris Saint Germain',
+  ];
 
   const topTeams = await prisma.team.findMany({
     where: {
-      slug: {
-        in: [
-          'manchester-united',
-          'manchester-city',
-          'liverpool',
-          'arsenal',
-          'chelsea',
-          'real-madrid',
-          'barcelona',
-          'bayern-munich',
-          'borussia-dortmund',
-          'juventus',
-          'ac-milan',
-          'inter-milan',
-          'psg',
-        ],
-      },
+      name: { in: topTeamNames },
+      externalId: { not: null },
     },
-    select: { id: true, slug: true },
+    select: { id: true, name: true },
   });
 
-  const teamIdMap = new Map(topTeams.map(t => [t.slug, t.id]));
+  const teamIdMap = new Map(topTeams.map((t) => [t.name, t.id]));
 
-  const derbyPairs = [];
-  
-  const manUtdId = teamIdMap.get('manchester-united');
-  const manCityId = teamIdMap.get('manchester-city');
-  const liverpoolId = teamIdMap.get('liverpool');
-  const arsenalId = teamIdMap.get('arsenal');
-  const chelseaId = teamIdMap.get('chelsea');
-  const realMadridId = teamIdMap.get('real-madrid');
-  const barcelonaId = teamIdMap.get('barcelona');
-  const bayernId = teamIdMap.get('bayern-munich');
-  const dortmundId = teamIdMap.get('borussia-dortmund');
-  const juventusId = teamIdMap.get('juventus');
-  const acMilanId = teamIdMap.get('ac-milan');
-  const interMilanId = teamIdMap.get('inter-milan');
+  const derbyPairs: Array<{ homeTeamId: string; awayTeamId: string; name: string }> = [];
+
+  const manUtdId = teamIdMap.get('Manchester United');
+  const manCityId = teamIdMap.get('Manchester City');
+  const liverpoolId = teamIdMap.get('Liverpool');
+  const arsenalId = teamIdMap.get('Arsenal');
+  const chelseaId = teamIdMap.get('Chelsea');
+  const realMadridId = teamIdMap.get('Real Madrid');
+  const barcelonaId = teamIdMap.get('FC Barcelona');
+  const bayernId = teamIdMap.get('Bayern München');
+  const dortmundId = teamIdMap.get('Borussia Dortmund');
+  const juventusId = teamIdMap.get('Juventus');
+  const acMilanId = teamIdMap.get('AC Milan');
+  const interMilanId = teamIdMap.get('Inter');
 
   if (manUtdId && manCityId) {
     derbyPairs.push({ homeTeamId: manUtdId, awayTeamId: manCityId, name: 'Manchester Derby' });
@@ -319,13 +199,13 @@ async function main() {
     derbyPairs.push({ homeTeamId: acMilanId, awayTeamId: interMilanId, name: 'Derby della Madonnina' });
   }
   if (juventusId && interMilanId) {
-    derbyPairs.push({ homeTeamId: juventusId, awayTeamId: interMilanId, name: 'Derby d\'Italia' });
+    derbyPairs.push({ homeTeamId: juventusId, awayTeamId: interMilanId, name: "Derby d'Italia" });
   }
 
   const featuredMatchesSettings = {
-    featuredLeagueIds: featuredLeagues.map(l => l.id),
+    featuredLeagueIds: featuredLeagues.map((l) => l.id),
     topTeamRankThreshold: 4,
-    topTeamIds: topTeams.map(t => t.id),
+    topTeamIds: topTeams.map((t) => t.id),
     derbyPairs,
     maxFeaturedMatches: 10,
     autoSelectEnabled: true,
@@ -338,21 +218,20 @@ async function main() {
     where: { key: 'featured_matches_settings' },
     update: {
       value: featuredMatchesSettings,
-      description: 'Featured Matches Settings - Auto-configured with top leagues, teams and derby matches',
       category: 'matches',
       isPublic: false,
     },
     create: {
       key: 'featured_matches_settings',
       value: featuredMatchesSettings,
-      description: 'Featured Matches Settings - Auto-configured with top leagues, teams and derby matches',
+      description: 'Featured matches configuration',
       category: 'matches',
       isPublic: false,
     },
   });
 
-  console.log('Featured Matches Settings seeded:');
-  console.log(`  - Featured Leagues: ${featuredLeagues.length}`);
+  console.log('Featured Matches Settings:');
+  console.log(`  - Leagues: ${featuredLeagues.length} (${featuredLeagues.map((l) => l.name).join(', ')})`);
   console.log(`  - Top Teams: ${topTeams.length}`);
   console.log(`  - Derby Pairs: ${derbyPairs.length}`);
 

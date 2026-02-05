@@ -17,6 +17,8 @@ import {
   TopLeaguesResponse,
   ApiLeagueInfo,
   ApiTeamInfo,
+  ApiStandingsResponse,
+  ApiTeamStatistics,
 } from './interfaces';
 import { parseApiFootballErrors, ParsedApiError } from './interceptors/api-football-response.interceptor';
 import {
@@ -128,6 +130,233 @@ export class ApiFootballService implements OnModuleInit {
       totalMatches: rows.length,
       lastUpdate: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Get odds table from database (synced data) instead of external API
+   * This is more efficient and doesn't consume API quota
+   */
+  async getOddsTableFromDb(query: QueryOddsDto): Promise<OddsTableResponse> {
+    const { live, date, leagueIds } = query;
+
+    // Build date range for query
+    let dateStart: Date;
+    let dateEnd: Date;
+
+    if (live) {
+      // For live matches, get all currently live
+      dateStart = new Date();
+      dateStart.setHours(0, 0, 0, 0);
+      dateEnd = new Date();
+      dateEnd.setHours(23, 59, 59, 999);
+    } else if (date) {
+      dateStart = new Date(date);
+      dateStart.setHours(0, 0, 0, 0);
+      dateEnd = new Date(date);
+      dateEnd.setHours(23, 59, 59, 999);
+    } else {
+      // Default to today
+      dateStart = new Date();
+      dateStart.setHours(0, 0, 0, 0);
+      dateEnd = new Date();
+      dateEnd.setHours(23, 59, 59, 999);
+    }
+
+    // Query matches with odds from database
+    const matches = await this.prisma.match.findMany({
+      where: {
+        startTime: {
+          gte: dateStart,
+          lte: dateEnd,
+        },
+        ...(live && { isLive: true }),
+        ...(leagueIds?.length && {
+          league: {
+            externalId: { in: leagueIds.map(String) },
+          },
+        }),
+      },
+      include: {
+        league: true,
+        homeTeam: true,
+        awayTeam: true,
+        odds: {
+          where: {
+            status: 'active',
+          },
+          include: {
+            betType: true,
+          },
+        },
+      },
+      orderBy: [
+        { startTime: 'asc' },
+      ],
+    });
+
+    // Transform to OddsTableRow format
+    const rows: OddsTableRow[] = matches.map((match) => {
+      const isLive = match.isLive;
+      const matchTime = isLive
+        ? `${match.liveMinute || 0}'`
+        : new Date(match.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+      // Group odds by bet type code
+      const oddsByType = new Map<string, typeof match.odds>();
+      for (const odd of match.odds) {
+        const code = odd.betType.code;
+        if (!oddsByType.has(code)) {
+          oddsByType.set(code, []);
+        }
+        oddsByType.get(code)!.push(odd);
+      }
+
+      return {
+        fixtureId: match.externalId ? parseInt(match.externalId, 10) : 0,
+        externalId: match.externalId ? parseInt(match.externalId, 10) : 0,
+        leagueId: match.league.externalId ? parseInt(match.league.externalId, 10) : 0,
+        leagueName: match.league.name,
+        country: match.league.country || '',
+        matchTime,
+        startTime: match.startTime.toISOString(),
+        isLive,
+        status: match.status,
+        period: match.period || undefined,
+
+        homeTeam: {
+          id: match.homeTeam.id,
+          name: match.homeTeam.name,
+          shortName: match.homeTeam.shortName || undefined,
+          logo: match.homeTeam.logoUrl || undefined,
+          score: match.homeScore,
+        },
+        awayTeam: {
+          id: match.awayTeam.id,
+          name: match.awayTeam.name,
+          shortName: match.awayTeam.shortName || undefined,
+          logo: match.awayTeam.logoUrl || undefined,
+          score: match.awayScore,
+        },
+
+        hdp: this.extractOddsFromDb(oddsByType.get('asian_handicap'), 'hdp'),
+        overUnder: this.extractOddsFromDb(oddsByType.get('over_under'), 'ou'),
+        oneXTwo: this.extractOddsFromDb(oddsByType.get('match_winner'), '1x2'),
+        homeGoalOU: this.extractOddsFromDb(oddsByType.get('home_total'), 'ou'),
+        awayGoalOU: this.extractOddsFromDb(oddsByType.get('away_total'), 'ou'),
+        btts: this.extractOddsFromDb(oddsByType.get('btts'), 'btts'),
+
+        htHdp: isLive ? this.extractOddsFromDb(oddsByType.get('ht_asian_handicap'), 'hdp') : undefined,
+        htOverUnder: isLive ? this.extractOddsFromDb(oddsByType.get('ht_over_under'), 'ou') : undefined,
+        htOneXTwo: isLive ? this.extractOddsFromDb(oddsByType.get('ht_match_winner'), '1x2') : undefined,
+
+        totalMarkets: match.odds.length,
+      };
+    });
+
+    const leagues = this.groupByLeagueFromDb(rows, matches);
+
+    return {
+      leagues,
+      totalMatches: rows.length,
+      lastUpdate: new Date().toISOString(),
+    };
+  }
+
+  private extractOddsFromDb(
+    odds: Array<{
+      selection: string;
+      selectionName: string | null;
+      oddsValue: { toNumber(): number };
+      handicap: { toNumber(): number } | null;
+      status: string;
+    }> | undefined,
+    type: 'hdp' | 'ou' | '1x2' | 'btts',
+  ): MatchOdds | undefined {
+    if (!odds || odds.length === 0) return undefined;
+
+    const createCell = (odd: typeof odds[0], label: string): OddsCell => ({
+      label,
+      odds: odd.oddsValue.toNumber(),
+      handicap: odd.handicap ? odd.handicap.toNumber().toString() : undefined,
+      suspended: odd.status !== 'active',
+    });
+
+    if (type === 'hdp') {
+      const home = odds.find((o) => o.selection === 'Home');
+      const away = odds.find((o) => o.selection === 'Away');
+      if (!home || !away) return undefined;
+      return {
+        home: createCell(home, home.handicap ? home.handicap.toNumber().toString() : ''),
+        away: createCell(away, away.handicap ? away.handicap.toNumber().toString() : ''),
+      };
+    }
+
+    if (type === 'ou') {
+      const over = odds.find((o) => o.selection === 'Over' || o.selection.includes('Over'));
+      const under = odds.find((o) => o.selection === 'Under' || o.selection.includes('Under'));
+      if (!over || !under) return undefined;
+      const handicap = over.handicap ? over.handicap.toNumber().toString() : '2.5';
+      return {
+        home: createCell(over, `O ${handicap}`),
+        away: createCell(under, `U ${handicap}`),
+      };
+    }
+
+    if (type === '1x2') {
+      const home = odds.find((o) => o.selection === 'Home');
+      const draw = odds.find((o) => o.selection === 'Draw');
+      const away = odds.find((o) => o.selection === 'Away');
+      if (!home || !away) return undefined;
+      return {
+        home: createCell(home, 'H'),
+        away: createCell(away, 'A'),
+        draw: draw ? createCell(draw, 'D') : undefined,
+      };
+    }
+
+    if (type === 'btts') {
+      const yes = odds.find((o) => o.selection === 'Yes');
+      const no = odds.find((o) => o.selection === 'No');
+      if (!yes || !no) return undefined;
+      return {
+        home: createCell(yes, 'Yes'),
+        away: createCell(no, 'No'),
+      };
+    }
+
+    return undefined;
+  }
+
+  private groupByLeagueFromDb(
+    rows: OddsTableRow[],
+    matches: Array<{
+      league: {
+        externalId: string | null;
+        name: string;
+        country: string | null;
+        logoUrl: string | null;
+      };
+    }>,
+  ): LeagueOddsGroup[] {
+    const leagueMap = new Map<number, LeagueOddsGroup>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const match = matches[i];
+
+      if (!leagueMap.has(row.leagueId)) {
+        leagueMap.set(row.leagueId, {
+          leagueId: row.leagueId,
+          leagueName: row.leagueName,
+          country: row.country,
+          leagueLogo: match.league.logoUrl || undefined,
+          matches: [],
+        });
+      }
+      leagueMap.get(row.leagueId)!.matches.push(row);
+    }
+
+    return Array.from(leagueMap.values()).sort((a, b) => a.leagueName.localeCompare(b.leagueName));
   }
 
   async getFixtureOdds(fixtureId: number): Promise<OddsTableRow | null> {
@@ -1134,5 +1363,34 @@ export class ApiFootballService implements OnModuleInit {
 
     const response = await this.makeApiRequest<ApiTeamInfo>('/teams', params);
     return response.response;
+  }
+
+  async fetchStandings(leagueId: number, season?: number): Promise<ApiStandingsResponse | null> {
+    const effectiveSeason = season ?? new Date().getFullYear();
+
+    const params: Record<string, string> = {
+      league: leagueId.toString(),
+      season: effectiveSeason.toString(),
+    };
+
+    const response = await this.makeApiRequest<ApiStandingsResponse>('/standings', params);
+    return response.response[0] || null;
+  }
+
+  async fetchTeamStatistics(
+    teamId: number,
+    leagueId: number,
+    season?: number,
+  ): Promise<ApiTeamStatistics | null> {
+    const effectiveSeason = season ?? new Date().getFullYear();
+
+    const params: Record<string, string> = {
+      team: teamId.toString(),
+      league: leagueId.toString(),
+      season: effectiveSeason.toString(),
+    };
+
+    const response = await this.makeApiRequest<ApiTeamStatistics>('/teams/statistics', params);
+    return response.response[0] || null;
   }
 }

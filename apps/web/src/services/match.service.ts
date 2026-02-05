@@ -29,6 +29,7 @@ export interface League {
   isActive: boolean;
   isFeatured: boolean;
   createdAt: string;
+  updatedAt: string;
   _count?: {
     matches: number;
   };
@@ -45,6 +46,7 @@ export interface Team {
   country?: string;
   countryCode?: string;
   isActive: boolean;
+  recentForm?: string[];
   createdAt: string;
   _count?: {
     homeMatches: number;
@@ -73,6 +75,7 @@ export interface Match {
   period?: string;
   externalId?: string;
   createdAt: string;
+  updatedAt: string;
   _count?: {
     odds: number;
     betSelections: number;
@@ -178,6 +181,11 @@ export const leaguesService = {
     return response.data;
   },
 
+  async getBySlug(slug: string): Promise<League> {
+    const response = await api.get<League>(`/leagues/slug/${slug}`);
+    return response.data;
+  },
+
   async create(data: Partial<League>): Promise<League> {
     const response = await api.post<League>('/leagues', data);
     return response.data;
@@ -251,6 +259,11 @@ export const teamsService = {
 export const matchesService = {
   async getAll(params?: MatchQueryParams): Promise<PaginatedResponse<Match>> {
     const response = await api.get<PaginatedResponse<Match>>('/matches', { params });
+    return response.data;
+  },
+
+  async getStatistics(): Promise<{ total: number; live: number; upcoming: number; finished: number }> {
+    const response = await api.get<{ total: number; live: number; upcoming: number; finished: number }>('/matches/statistics');
     return response.data;
   },
 
@@ -377,6 +390,14 @@ export interface OddsSyncResult {
   syncedAt: string;
 }
 
+export interface TeamStatisticsSyncResult {
+  totalFetched: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  syncedAt: string;
+}
+
 export const apiFootballSyncService = {
   /**
    * Sync fixtures (matches) from API-Football
@@ -453,6 +474,24 @@ export const apiFootballSyncService = {
     const response = await api.get<{ total: number; byStatus: Record<string, number> }>('/api-football/fixtures/stats');
     return response.data;
   },
+
+  /**
+   * Sync team statistics (form) for all active leagues
+   */
+  async syncTeamStatistics(): Promise<TeamStatisticsSyncResult> {
+    const response = await api.post<TeamStatisticsSyncResult>('/api-football/teams/statistics/sync');
+    return response.data;
+  },
+
+  /**
+   * Sync team statistics (form) for a specific league
+   */
+  async syncTeamStatisticsByLeague(leagueExternalId: string, season?: string): Promise<TeamStatisticsSyncResult> {
+    const params: Record<string, string> = {};
+    if (season) params.season = season;
+    const response = await api.post<TeamStatisticsSyncResult>(`/api-football/teams/statistics/sync/${leagueExternalId}`, null, { params });
+    return response.data;
+  },
 };
 
 export interface FeaturedMatchesSettings {
@@ -474,6 +513,75 @@ export interface FeaturedMatchesStats {
   liveCount: number;
   upcomingCount: number;
 }
+
+export interface StandingTeam {
+  position: number;
+  team: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+  };
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDiff: number;
+  points: number;
+  form: string | null;
+}
+
+export interface StandingsResponse {
+  standings: StandingTeam[];
+  league: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+  } | null;
+}
+
+export interface StandingsSyncResult {
+  totalFetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export const standingsService = {
+  async getByLeagueId(leagueId: string, season?: string): Promise<StandingsResponse> {
+    const params: Record<string, string> = {};
+    if (season) params.season = season;
+    const response = await api.get<StandingsResponse>(`/standings/league/${leagueId}`, { params });
+    return response.data;
+  },
+
+  async getByExternalLeagueId(externalLeagueId: string, season?: string): Promise<StandingsResponse> {
+    const params: Record<string, string> = {};
+    if (season) params.season = season;
+    const response = await api.get<StandingsResponse>(`/standings/external/${externalLeagueId}`, { params });
+    return response.data;
+  },
+
+  async syncAll(): Promise<StandingsSyncResult> {
+    const response = await api.post<StandingsSyncResult>('/standings/sync');
+    return response.data;
+  },
+
+  async syncByLeague(externalLeagueId: string, season?: string): Promise<StandingsSyncResult> {
+    const params: Record<string, string> = {};
+    if (season) params.season = season;
+    const response = await api.post<StandingsSyncResult>(`/standings/sync/${externalLeagueId}`, null, { params });
+    return response.data;
+  },
+
+  async invalidateCache(): Promise<{ success: boolean; message: string }> {
+    const response = await api.post<{ success: boolean; message: string }>('/standings/cache/invalidate');
+    return response.data;
+  },
+};
 
 export const featuredMatchesService = {
   async getFeaturedMatches(): Promise<Match[]> {

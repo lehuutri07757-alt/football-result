@@ -260,3 +260,105 @@ export interface LeagueSyncConfig {
   enableAutoSync: boolean;
   onlyCurrentSeason: boolean;
 }
+
+export interface ApiTeamStatistics {
+  league: {
+    id: number;
+    name: string;
+    country: string;
+    logo: string;
+    flag: string | null;
+    season: number;
+  };
+  team: {
+    id: number;
+    name: string;
+    logo: string;
+  };
+  form: string;
+  fixtures: {
+    played: { home: number; away: number; total: number };
+    wins: { home: number; away: number; total: number };
+    draws: { home: number; away: number; total: number };
+    loses: { home: number; away: number; total: number };
+  };
+  goals: {
+    for: {
+      total: { home: number; away: number; total: number };
+      average: { home: string; away: string; total: string };
+    };
+    against: {
+      total: { home: number; away: number; total: number };
+      average: { home: string; away: string; total: string };
+    };
+  };
+  biggest: {
+    streak: { wins: number | null; draws: number | null; loses: number | null };
+    wins: { home: string | null; away: string | null };
+    loses: { home: string | null; away: string | null };
+    goals: { for: { home: number | null; away: number | null }; against: { home: number | null; away: number | null } };
+  };
+  clean_sheet: { home: number; away: number; total: number };
+  failed_to_score: { home: number; away: number; total: number };
+}
+
+export interface TeamStatisticsSyncResult {
+  totalFetched: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  syncedAt: string;
+}
+
+export interface ApiStandingTeam {
+  id: number;
+  name: string;
+  logo: string;
+}
+
+export interface ApiStandingStats {
+  played: number;
+  win: number;
+  draw: number;
+  lose: number;
+  goals: {
+    for: number;
+    against: number;
+  };
+}
+
+export interface ApiStandingEntry {
+  rank: number;
+  team: ApiStandingTeam;
+  points: number;
+  goalsDiff: number;
+  group: string;
+  form: string | null;
+  status: string;
+  description: string | null;
+  all: ApiStandingStats;
+  home: ApiStandingStats;
+  away: ApiStandingStats;
+  update: string;
+}
+
+export interface ApiStandingsResponse {
+  league: {
+    id: number;
+    name: string;
+    country: string;
+    logo: string;
+    flag: string | null;
+    season: number | null;
+    standings: ApiStandingEntry[][];
+  };
+}
+
+export interface StandingsSyncResult {
+  totalFetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  syncedAt: string;
+}

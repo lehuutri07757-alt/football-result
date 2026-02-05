@@ -4,6 +4,7 @@ export enum SyncJobType {
   fixture = 'fixture',
   odds_upcoming = 'odds_upcoming',
   odds_live = 'odds_live',
+  standings = 'standings',
   full_sync = 'full_sync',
 }
 
@@ -46,6 +47,11 @@ export interface OddsSyncParams {
 
 export interface LiveOddsSyncParams {}
 
+export interface StandingsSyncParams {
+  externalLeagueId?: string;
+  season?: string;
+}
+
 export interface FullSyncParams {
   syncLeagues?: boolean;
   syncTeams?: boolean;
@@ -61,6 +67,7 @@ export type SyncJobParams =
   | FixtureSyncParams
   | OddsSyncParams
   | LiveOddsSyncParams
+  | StandingsSyncParams
   | FullSyncParams;
 
 export interface BaseSyncResult {
@@ -97,6 +104,13 @@ export interface OddsSyncJobResult extends BaseSyncResult {
   updated: number;
 }
 
+export interface StandingsSyncJobResult extends BaseSyncResult {
+  totalFetched: number;
+  created: number;
+  updated: number;
+  skipped: number;
+}
+
 export interface FullSyncJobResult extends BaseSyncResult {
   leagues?: LeagueSyncJobResult;
   teams?: TeamSyncJobResult;
@@ -109,6 +123,7 @@ export type SyncJobResult =
   | TeamSyncJobResult
   | FixtureSyncJobResult
   | OddsSyncJobResult
+  | StandingsSyncJobResult
   | FullSyncJobResult;
 
 export interface CreateSyncJobDto {
@@ -197,6 +212,12 @@ export const SYNC_JOB_OPTIONS: Record<SyncJobType, {
     removeOnComplete: 20,
     removeOnFail: 20,
     priority: 1,
+  },
+  [SyncJobType.standings]: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: 50,
+    removeOnFail: 30,
   },
   [SyncJobType.full_sync]: {
     attempts: 1,

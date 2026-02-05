@@ -216,28 +216,28 @@ export class ApiFootballController {
   }
 
   @Get('odds')
-  @ApiOperation({ summary: 'Get odds table with matches grouped by league' })
+  @ApiOperation({ summary: 'Get odds table with matches grouped by league (from database)' })
   @ApiResponse({ status: 200, description: 'Odds table data' })
   @ApiQuery({ name: 'date', required: false, description: 'Date in YYYY-MM-DD format' })
   @ApiQuery({ name: 'live', required: false, description: 'Get live matches only' })
   @ApiQuery({ name: 'leagueIds', required: false, type: [Number], description: 'Filter by league IDs' })
   async getOddsTable(@Query() query: QueryOddsDto) {
-    return this.apiFootballService.getOddsTable(query);
+    return this.apiFootballService.getOddsTableFromDb(query);
   }
 
   @Get('odds/live')
-  @ApiOperation({ summary: 'Get live odds table' })
+  @ApiOperation({ summary: 'Get live odds table (from database)' })
   @ApiResponse({ status: 200, description: 'Live odds table data' })
   async getLiveOddsTable() {
-    return this.apiFootballService.getOddsTable({ live: true });
+    return this.apiFootballService.getOddsTableFromDb({ live: true });
   }
 
   @Get('odds/today')
-  @ApiOperation({ summary: 'Get today odds table' })
+  @ApiOperation({ summary: 'Get today odds table (from database)' })
   @ApiResponse({ status: 200, description: 'Today odds table data' })
   async getTodayOddsTable() {
     const today = new Date().toISOString().split('T')[0];
-    return this.apiFootballService.getOddsTable({ date: today });
+    return this.apiFootballService.getOddsTableFromDb({ date: today });
   }
 
   @Get('fixtures/:id/odds')

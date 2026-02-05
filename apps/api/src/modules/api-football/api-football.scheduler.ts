@@ -1,15 +1,108 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { SyncJobService } from './sync-job.service';
+import { SyncConfigService } from './sync-config.service';
 import { SyncJobType, SyncJobPriority } from './interfaces';
 
 @Injectable()
-export class ApiFootballScheduler {
+export class ApiFootballScheduler implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ApiFootballScheduler.name);
 
-  constructor(private readonly syncJobService: SyncJobService) {}
+  private fixtureInterval: NodeJS.Timeout | null = null;
+  private liveOddsInterval: NodeJS.Timeout | null = null;
+  private upcomingOddsInterval: NodeJS.Timeout | null = null;
+  private leagueInterval: NodeJS.Timeout | null = null;
+  private teamInterval: NodeJS.Timeout | null = null;
+  private standingsInterval: NodeJS.Timeout | null = null;
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
-  @Cron(CronExpression.EVERY_DAY_AT_3AM)
+  constructor(
+    private readonly syncJobService: SyncJobService,
+    private readonly syncConfig: SyncConfigService,
+  ) {}
+
+  async onModuleInit() {
+    setTimeout(() => this.setupSchedulers(), 5000);
+  }
+
+  onModuleDestroy() {
+    this.clearAllIntervals();
+  }
+
+  private setupSchedulers(): void {
+    this.clearAllIntervals();
+    const config = this.syncConfig.getConfig();
+
+    if (config.fixture.enabled) {
+      const ms = config.fixture.intervalMinutes * 60 * 1000;
+      this.fixtureInterval = setInterval(() => this.handleFixtureSync(), ms);
+      this.logger.log(`Fixture sync scheduled every ${config.fixture.intervalMinutes} minutes`);
+    }
+
+    if (config.liveOdds.enabled) {
+      const ms = config.liveOdds.intervalMinutes * 60 * 1000;
+      this.liveOddsInterval = setInterval(() => this.handleLiveOddsSync(), ms);
+      this.logger.log(`Live odds sync scheduled every ${config.liveOdds.intervalMinutes} minutes`);
+    }
+
+    if (config.upcomingOdds.enabled) {
+      const ms = config.upcomingOdds.intervalMinutes * 60 * 1000;
+      this.upcomingOddsInterval = setInterval(() => this.handleUpcomingOddsSync(), ms);
+      this.logger.log(`Upcoming odds sync scheduled every ${config.upcomingOdds.intervalMinutes} minutes`);
+    }
+
+    if (config.league.enabled) {
+      const ms = config.league.intervalMinutes * 60 * 1000;
+      this.leagueInterval = setInterval(() => this.handleLeagueSync(), ms);
+      this.logger.log(`League sync scheduled every ${config.league.intervalMinutes} minutes`);
+    }
+
+    if (config.team.enabled) {
+      const ms = config.team.intervalMinutes * 60 * 1000;
+      this.teamInterval = setInterval(() => this.handleTeamSync(), ms);
+      this.logger.log(`Team sync scheduled every ${config.team.intervalMinutes} minutes`);
+    }
+
+    if (config.standings.enabled) {
+      const ms = config.standings.intervalMinutes * 60 * 1000;
+      this.standingsInterval = setInterval(() => this.handleStandingsSync(), ms);
+      this.logger.log(`Standings sync scheduled every ${config.standings.intervalMinutes} minutes`);
+    }
+
+    const cleanupMs = 24 * 60 * 60 * 1000;
+    this.cleanupInterval = setInterval(() => this.handleJobCleanup(), cleanupMs);
+    this.logger.log('Job cleanup scheduled daily');
+  }
+
+  private clearAllIntervals(): void {
+    const intervals = [
+      this.fixtureInterval,
+      this.liveOddsInterval,
+      this.upcomingOddsInterval,
+      this.leagueInterval,
+      this.teamInterval,
+      this.standingsInterval,
+      this.cleanupInterval,
+    ];
+
+    intervals.forEach((interval) => {
+      if (interval) clearInterval(interval);
+    });
+
+    this.fixtureInterval = null;
+    this.liveOddsInterval = null;
+    this.upcomingOddsInterval = null;
+    this.leagueInterval = null;
+    this.teamInterval = null;
+    this.standingsInterval = null;
+    this.cleanupInterval = null;
+  }
+
+  async reloadSchedulers(): Promise<void> {
+    await this.syncConfig.loadConfig();
+    this.setupSchedulers();
+    this.logger.log('Schedulers reloaded with new config');
+  }
+
   async handleLeagueSync(): Promise<void> {
     this.logger.log('Scheduling league sync job...');
     try {
@@ -23,7 +116,6 @@ export class ApiFootballScheduler {
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
   async handleTeamSync(): Promise<void> {
     this.logger.log('Scheduling team sync job...');
     try {
@@ -38,13 +130,18 @@ export class ApiFootballScheduler {
     }
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
   async handleFixtureSync(): Promise<void> {
     this.logger.log('Scheduling fixture sync job...');
     try {
+      const config = this.syncConfig.fixtureConfig;
       const today = new Date();
-      const dateFrom = new Date(today.setDate(today.getDate() - 1)).toISOString().split('T')[0];
-      const dateTo = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const pastDate = new Date(today);
+      pastDate.setDate(pastDate.getDate() - config.pastDays);
+      const futureDate = new Date(today);
+      futureDate.setDate(futureDate.getDate() + config.futureDays);
+
+      const dateFrom = pastDate.toISOString().split('T')[0];
+      const dateTo = futureDate.toISOString().split('T')[0];
 
       const jobId = await this.syncJobService.createJob({
         type: SyncJobType.fixture,
@@ -57,13 +154,13 @@ export class ApiFootballScheduler {
     }
   }
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
   async handleUpcomingOddsSync(): Promise<void> {
     this.logger.log('Scheduling upcoming odds sync job...');
     try {
+      const config = this.syncConfig.upcomingOddsConfig;
       const jobId = await this.syncJobService.createJob({
         type: SyncJobType.odds_upcoming,
-        params: { hoursAhead: 48 },
+        params: { hoursAhead: config.hoursAhead },
         triggeredBy: 'scheduler',
       });
       this.logger.log(`Upcoming odds sync job scheduled: ${jobId}`);
@@ -72,7 +169,6 @@ export class ApiFootballScheduler {
     }
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
   async handleLiveOddsSync(): Promise<void> {
     this.logger.log('Scheduling live odds sync job...');
     try {
@@ -87,7 +183,19 @@ export class ApiFootballScheduler {
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async handleStandingsSync(): Promise<void> {
+    this.logger.log('Scheduling standings sync job...');
+    try {
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.standings,
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`Standings sync job scheduled: ${jobId}`);
+    } catch (error) {
+      this.logger.error(`Failed to schedule standings sync: ${error}`);
+    }
+  }
+
   async handleJobCleanup(): Promise<void> {
     this.logger.log('Cleaning up old sync jobs...');
     try {

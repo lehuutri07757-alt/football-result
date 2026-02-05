@@ -17,6 +17,13 @@ export class MatchesController {
     return this.matchesService.findAll(query);
   }
 
+  @Get('statistics')
+  @ApiOperation({ summary: 'Get matches statistics' })
+  @ApiResponse({ status: 200, description: 'Matches statistics' })
+  async getStatistics() {
+    return this.matchesService.getStatistics();
+  }
+
   @Get('live')
   @ApiOperation({ summary: 'Get live matches' })
   @ApiResponse({ status: 200, description: 'List of live matches' })

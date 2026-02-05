@@ -2,10 +2,18 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMatchDto, UpdateMatchDto, QueryMatchDto, UpdateScoreDto } from './dto';
 import { OddsStatus, Prisma, MatchStatus } from '@prisma/client';
+import { RedisService } from '@/redis/redis.service';
 
 @Injectable()
 export class MatchesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
+
+  private async invalidateStatisticsCache() {
+    await this.redis.getClient().del('matches:statistics');
+  }
 
   async create(createMatchDto: CreateMatchDto) {
     const [league, homeTeam, awayTeam] = await Promise.all([
@@ -22,7 +30,7 @@ export class MatchesService {
       throw new BadRequestException('Home team and away team cannot be the same');
     }
 
-    return this.prisma.match.create({
+    const match = await this.prisma.match.create({
       data: {
         ...createMatchDto,
         startTime: new Date(createMatchDto.startTime),
@@ -33,6 +41,10 @@ export class MatchesService {
         awayTeam: true,
       },
     });
+
+    await this.invalidateStatisticsCache();
+
+    return match;
   }
 
   async findAll(query: QueryMatchDto) {
@@ -54,11 +66,12 @@ export class MatchesService {
     } = query;
     const skip = (page - 1) * limit;
 
-    // Default to only returning matches from today onward.
-    // (User can still query historical data by explicitly providing dateFrom/dateTo.)
+    // Default to only returning matches from today onward for non-finished matches.
+    // For finished matches, we want to see historical results, so skip the date filter.
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const effectiveDateFrom = dateFrom ? new Date(dateFrom) : todayStart;
+    const isFinishedQuery = status === MatchStatus.finished;
+    const effectiveDateFrom = dateFrom ? new Date(dateFrom) : (isFinishedQuery ? undefined : todayStart);
     const effectiveDateTo = dateTo ? new Date(dateTo) : undefined;
 
     const where: Prisma.MatchWhereInput = {
@@ -219,6 +232,44 @@ export class MatchesService {
     return matches;
   }
 
+  async getStatistics() {
+    const cacheKey = 'matches:statistics';
+    
+    const cached = await this.redis.getJson<{
+      total: number;
+      live: number;
+      upcoming: number;
+      finished: number;
+    }>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
+    const [total, live, upcoming, finished] = await Promise.all([
+      this.prisma.match.count(),
+      this.prisma.match.count({ where: { status: MatchStatus.live } }),
+      this.prisma.match.count({ 
+        where: { 
+          status: MatchStatus.scheduled,
+          startTime: { gte: new Date() }
+        } 
+      }),
+      this.prisma.match.count({ where: { status: MatchStatus.finished } }),
+    ]);
+
+    const result = {
+      total,
+      live,
+      upcoming,
+      finished,
+    };
+    
+    await this.redis.setJson(cacheKey, result, 300);
+
+    return result;
+  }
+
   async findOne(id: string) {
     const match = await this.prisma.match.findUnique({
       where: { id },
@@ -304,7 +355,7 @@ export class MatchesService {
   async startMatch(id: string) {
     await this.findOne(id);
 
-    return this.prisma.match.update({
+    const match = await this.prisma.match.update({
       where: { id },
       data: {
         status: MatchStatus.live,
@@ -319,12 +370,16 @@ export class MatchesService {
         awayTeam: true,
       },
     });
+
+    await this.invalidateStatisticsCache();
+
+    return match;
   }
 
   async endMatch(id: string) {
     await this.findOne(id);
 
-    return this.prisma.match.update({
+    const match = await this.prisma.match.update({
       where: { id },
       data: {
         status: MatchStatus.finished,
@@ -337,12 +392,16 @@ export class MatchesService {
         awayTeam: true,
       },
     });
+
+    await this.invalidateStatisticsCache();
+
+    return match;
   }
 
   async cancelMatch(id: string) {
     await this.findOne(id);
 
-    return this.prisma.match.update({
+    const match = await this.prisma.match.update({
       where: { id },
       data: {
         status: MatchStatus.cancelled,
@@ -355,6 +414,10 @@ export class MatchesService {
         awayTeam: true,
       },
     });
+
+    await this.invalidateStatisticsCache();
+
+    return match;
   }
 
   async postponeMatch(id: string) {
@@ -413,6 +476,8 @@ export class MatchesService {
 
     await this.prisma.odds.deleteMany({ where: { matchId: id } });
     await this.prisma.match.delete({ where: { id } });
+
+    await this.invalidateStatisticsCache();
 
     return { message: 'Match deleted successfully' };
   }

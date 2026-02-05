@@ -32,6 +32,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useLanguageStore } from '@/stores/language.store';
 import { t } from '@/lib/i18n';
 import { normalizeForSearch } from '@/lib/search';
+import { useMatchStatistics } from '@/hooks/useMatchStatistics';
 
 type TabType = 'all' | 'live' | 'upcoming' | 'finished';
 
@@ -42,15 +43,6 @@ interface FilterState {
 }
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MASTER_AGENT'];
-
-const sportsCategories = [
-  { id: 1, name: 'Football', icon: '⚽', count: 1046, active: true },
-  { id: 2, name: 'eSports', icon: '🎮', count: 71, active: false },
-  { id: 3, name: 'Basketball', icon: '🏀', count: 306, active: false },
-  { id: 4, name: 'Tennis', icon: '🎾', count: 192, active: false },
-  { id: 5, name: 'Hockey', icon: '🏒', count: 259, active: false },
-  { id: 6, name: 'Baseball', icon: '⚾', count: 89, active: false },
-];
 
 export default function MatchesPage() {
   const router = useRouter();
@@ -66,6 +58,9 @@ export default function MatchesPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useAuthStore((s) => s.logout);
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  
+  const { data: statistics } = useMatchStatistics();
+  const footballCount = statistics?.total ?? 0;
   
   const debouncedSearch = useDebounce(filters.search, 500);
 
@@ -191,7 +186,7 @@ export default function MatchesPage() {
               {[
                 { name: t(language, 'nav.sports'), icon: <Trophy size={14} />, active: true },
                 { name: 'Live', icon: <MonitorPlay size={14} /> },
-                { name: 'My Bets', icon: <Medal size={14} /> },
+                { name: t(language, 'nav.results'), icon: <Medal size={14} /> },
               ].map((item) => (
                 <button
                   key={item.name}
@@ -318,26 +313,17 @@ export default function MatchesPage() {
           <div className="p-4">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Sports</h3>
             <div className="space-y-1">
-              {sportsCategories.map((sport) => (
-                <button
-                  key={sport.id}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all ${
-                    sport.active 
-                      ? 'bg-emerald-500/10 text-emerald-600 font-medium dark:text-emerald-500'
-                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span>{sport.icon}</span>
-                    <span>{sport.name}</span>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-md ${
-                    sport.active ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-500' : 'bg-slate-200 text-slate-600 dark:bg-slate-900'
-                  }`}>
-                    {sport.count}
-                  </span>
-                </button>
-              ))}
+              <button
+                className="w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-lg transition-all bg-emerald-500/10 text-emerald-600 font-medium dark:text-emerald-500"
+              >
+                <div className="flex items-center gap-3">
+                  <span>⚽</span>
+                  <span>Football</span>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-600 dark:text-emerald-500">
+                  {footballCount}
+                </span>
+              </button>
             </div>
           </div>
           

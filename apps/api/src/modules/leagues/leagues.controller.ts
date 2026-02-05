@@ -30,6 +30,13 @@ export class LeaguesController {
     return this.leaguesService.findBySport(sportId);
   }
 
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Get league by slug' })
+  @ApiResponse({ status: 200, description: 'League details' })
+  async findBySlug(@Param('slug') slug: string) {
+    return this.leaguesService.findBySlug(slug);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get league by ID' })
   @ApiResponse({ status: 200, description: 'League details' })

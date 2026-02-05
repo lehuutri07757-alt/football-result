@@ -509,6 +509,8 @@ export default function AdminMatchesPage() {
                     <th className="px-4 py-3 font-medium">Bets</th>
                     <th className="px-4 py-3 font-medium">Betting</th>
                     <th className="px-4 py-3 font-medium">Featured</th>
+                    <th className="px-4 py-3 font-medium">Created At</th>
+                    <th className="px-4 py-3 font-medium">Updated At</th>
                     <th className="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
@@ -631,6 +633,30 @@ export default function AdminMatchesPage() {
                               <StarOff size={18} />
                             )}
                           </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+                            {new Date(match.createdAt).toLocaleString('en-CA', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false,
+                            }).replace(',', '')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+                            {new Date(match.updatedAt).toLocaleString('en-CA', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false,
+                            }).replace(',', '')}
+                          </span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">

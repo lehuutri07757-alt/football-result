@@ -42,12 +42,17 @@ export class LeaguesService {
       }),
     };
 
+    const orderByClause: Prisma.LeagueOrderByWithRelationInput[] = [
+      { isFeatured: 'desc' },
+      { sortOrder: sortOrder },
+    ];
+
     const [data, total] = await Promise.all([
       this.prisma.league.findMany({
         skip,
         take: limit,
         where,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: orderByClause,
         include: {
           sport: true,
           _count: {
@@ -81,13 +86,36 @@ export class LeaguesService {
     return this.prisma.league.findMany({
       where: { isFeatured: true, isActive: true },
       orderBy: { sortOrder: 'asc' },
-      include: { sport: true },
+      include: { 
+        sport: true,
+        _count: {
+          select: { matches: true },
+        },
+      },
     });
   }
 
   async findOne(id: string) {
     const league = await this.prisma.league.findUnique({
       where: { id },
+      include: {
+        sport: true,
+        _count: {
+          select: { matches: true },
+        },
+      },
+    });
+
+    if (!league) {
+      throw new NotFoundException('League not found');
+    }
+
+    return league;
+  }
+
+  async findBySlug(slug: string) {
+    const league = await this.prisma.league.findFirst({
+      where: { slug },
       include: {
         sport: true,
         _count: {

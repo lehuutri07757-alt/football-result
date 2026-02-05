@@ -1,9 +1,13 @@
-import { Controller, Get, Query, UseGuards, Param, Patch, Body, Put, Post } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Param, Patch, Body, Put, Post, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminService } from './admin.service';
 import { UsersService } from '../users/users.service';
+import { WithdrawalsService } from '../withdrawals/withdrawals.service';
+import { DepositsService } from '../deposits/deposits.service';
 import { QueryUserDto, UpdateUserDto } from '../users/dto';
+import { QueryWithdrawalDto, WithdrawalAction } from '../withdrawals/dto';
+import { QueryDepositDto, DepositAction } from '../deposits/dto';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators';
 import { PERMISSIONS } from '../roles/constants/permissions';
@@ -16,6 +20,8 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private usersService: UsersService,
+    private withdrawalsService: WithdrawalsService,
+    private depositsService: DepositsService,
   ) {}
 
   @Get('stats')
@@ -72,5 +78,114 @@ export class AdminController {
     @Body() body: { amount: number; type: 'add' | 'subtract'; balanceType: 'real' | 'bonus'; reason: string }
   ) {
     return this.adminService.adjustUserBalance(id, body.amount, body.type, body.balanceType, body.reason);
+  }
+
+  @Get('withdrawals')
+  @ApiOperation({ summary: 'Get all withdrawal requests (Admin)' })
+  @ApiResponse({ status: 200, description: 'List of withdrawal requests' })
+  @RequirePermissions(PERMISSIONS.WITHDRAWALS.READ)
+  async getWithdrawals(@Query() query: QueryWithdrawalDto) {
+    return this.withdrawalsService.findAll(query);
+  }
+
+  @Get('withdrawals/stats')
+  @ApiOperation({ summary: 'Get withdrawal statistics (Admin)' })
+  @ApiResponse({ status: 200, description: 'Withdrawal statistics' })
+  @RequirePermissions(PERMISSIONS.WITHDRAWALS.READ)
+  async getWithdrawalStats() {
+    return this.withdrawalsService.getStats();
+  }
+
+  @Get('withdrawals/:id')
+  @ApiOperation({ summary: 'Get withdrawal request by ID (Admin)' })
+  @ApiResponse({ status: 200, description: 'Withdrawal request details' })
+  @RequirePermissions(PERMISSIONS.WITHDRAWALS.READ)
+  async getWithdrawal(@Param('id') id: string) {
+    return this.withdrawalsService.findById(id);
+  }
+
+  @Post('withdrawals/:id/approve')
+  @ApiOperation({ summary: 'Approve withdrawal request (Admin)' })
+  @ApiResponse({ status: 200, description: 'Withdrawal approved' })
+  @RequirePermissions(PERMISSIONS.WITHDRAWALS.APPROVE)
+  async approveWithdrawal(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { transactionRef?: string; notes?: string }
+  ) {
+    return this.withdrawalsService.process(id, {
+      action: WithdrawalAction.APPROVE,
+      transactionRef: body.transactionRef,
+      notes: body.notes,
+    }, req.user.sub);
+  }
+
+  @Post('withdrawals/:id/reject')
+  @ApiOperation({ summary: 'Reject withdrawal request (Admin)' })
+  @ApiResponse({ status: 200, description: 'Withdrawal rejected' })
+  @RequirePermissions(PERMISSIONS.WITHDRAWALS.REJECT)
+  async rejectWithdrawal(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { reason: string }
+  ) {
+    return this.withdrawalsService.process(id, {
+      action: WithdrawalAction.REJECT,
+      rejectReason: body.reason,
+    }, req.user.sub);
+  }
+
+  @Get('deposits')
+  @ApiOperation({ summary: 'Get all deposit requests (Admin)' })
+  @ApiResponse({ status: 200, description: 'List of deposit requests' })
+  @RequirePermissions(PERMISSIONS.DEPOSITS.READ)
+  async getDeposits(@Query() query: QueryDepositDto) {
+    return this.depositsService.findAll(query);
+  }
+
+  @Get('deposits/stats')
+  @ApiOperation({ summary: 'Get deposit statistics (Admin)' })
+  @ApiResponse({ status: 200, description: 'Deposit statistics' })
+  @RequirePermissions(PERMISSIONS.DEPOSITS.READ)
+  async getDepositStats() {
+    return this.depositsService.getStats();
+  }
+
+  @Get('deposits/:id')
+  @ApiOperation({ summary: 'Get deposit request by ID (Admin)' })
+  @ApiResponse({ status: 200, description: 'Deposit request details' })
+  @RequirePermissions(PERMISSIONS.DEPOSITS.READ)
+  async getDeposit(@Param('id') id: string) {
+    return this.depositsService.findById(id);
+  }
+
+  @Post('deposits/:id/approve')
+  @ApiOperation({ summary: 'Approve deposit request (Admin)' })
+  @ApiResponse({ status: 200, description: 'Deposit approved' })
+  @RequirePermissions(PERMISSIONS.DEPOSITS.APPROVE)
+  async approveDeposit(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { notes?: string }
+  ) {
+    return this.depositsService.process(id, {
+      action: DepositAction.APPROVE,
+      notes: body.notes,
+    }, req.user.sub);
+  }
+
+  @Post('deposits/:id/reject')
+  @ApiOperation({ summary: 'Reject deposit request (Admin)' })
+  @ApiResponse({ status: 200, description: 'Deposit rejected' })
+  @RequirePermissions(PERMISSIONS.DEPOSITS.REJECT)
+  async rejectDeposit(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { reason: string }
+  ) {
+    return this.depositsService.process(id, {
+      action: DepositAction.REJECT,
+      rejectReason: body.reason,
+    }, req.user.sub);
   }
 }

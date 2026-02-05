@@ -251,6 +251,10 @@ export interface ApiFootballSyncConfig {
     intervalMinutes: number;
     enabled: boolean;
   };
+  standings: {
+    intervalMinutes: number;
+    enabled: boolean;
+  };
   rateLimit: {
     requestsPerMinute: number;
     dailyLimit: number;

@@ -43,6 +43,7 @@ export class SyncConfigService implements OnModuleInit {
       upcomingOdds: { ...DEFAULT_SYNC_CONFIG.upcomingOdds, ...partial.upcomingOdds },
       league: { ...DEFAULT_SYNC_CONFIG.league, ...partial.league },
       team: { ...DEFAULT_SYNC_CONFIG.team, ...partial.team },
+      standings: { ...DEFAULT_SYNC_CONFIG.standings, ...partial.standings },
       rateLimit: { ...DEFAULT_SYNC_CONFIG.rateLimit, ...partial.rateLimit },
     };
   }
@@ -86,5 +87,6 @@ export class SyncConfigService implements OnModuleInit {
   get upcomingOddsConfig() { return this.config.upcomingOdds; }
   get leagueConfig() { return this.config.league; }
   get teamConfig() { return this.config.team; }
+  get standingsConfig() { return this.config.standings; }
   get rateLimitConfig() { return this.config.rateLimit; }
 }
