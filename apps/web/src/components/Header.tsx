@@ -71,7 +71,7 @@ export function Header(_: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-[60] w-full border-b border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-950/80 backdrop-blur-md">
-      <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 lg:px-6 max-w-full overflow-x-hidden">
+      <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-8">
           <Link href="/dashboard" className="flex items-center gap-2 group flex-shrink-0">
             <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-all">

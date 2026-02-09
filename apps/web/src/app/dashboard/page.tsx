@@ -121,7 +121,7 @@ export default function DashboardPage() {
   }, [fetchFeaturedMatches]);
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-200 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-200 transition-colors duration-300">
       <div className="flex min-h-[calc(100vh-56px)] sm:min-h-[calc(100vh-64px)] overflow-hidden flex-col lg:flex-row pb-16 lg:pb-0">
         <aside className="hidden lg:flex w-64 flex-col border-r border-slate-200 bg-white/50 dark:border-white/5 dark:bg-slate-950/50">
           <div className="p-4">

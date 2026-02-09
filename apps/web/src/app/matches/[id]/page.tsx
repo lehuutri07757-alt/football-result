@@ -25,18 +25,9 @@ import { useLiveMatchTime } from '@/hooks/useLiveMatchTime';
 import { useMatchStatistics } from '@/hooks/useMatchStatistics';
 import { cn } from '@/lib/utils';
 import { useLanguageStore } from '@/stores/language.store';
+import { useBetSlipStore } from '@/stores/betslip.store';
 import { t } from '@/lib/i18n';
 import { formatDay, formatMonth, formatTime } from '@/lib/date';
-
-interface BetSelection {
-  id: string;
-  marketName: string;
-  selectionName: string;
-  odds: number;
-  matchId: string;
-  matchName: string;
-  handicap?: string;
-}
 
 type TabType = 'popular' | 'custom' | 'handicap' | 'goals' | 'intervals' | 'corners' | 'all';
 
@@ -45,6 +36,7 @@ export default function MatchDetailPage() {
   const id = params.id as string;
   
   const language = useLanguageStore((s) => s.language);
+  const toggleSelection = useBetSlipStore((s) => s.toggleSelection);
   
   const [match, setMatch] = useState<Match | null>(null);
   const [odds, setOdds] = useState<OddsTableRow | null>(null);
@@ -52,8 +44,6 @@ export default function MatchDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('popular');
-  
-  const [betSlip, setBetSlip] = useState<BetSelection[]>([]);
   
   const { data: statistics } = useMatchStatistics();
   const footballCount = statistics?.total ?? 0;
@@ -114,17 +104,15 @@ export default function MatchDetailPage() {
   ) => {
     if (oddsCell.suspended) return;
     
-    const selection: BetSelection = {
-      id: `${marketName}-${selectionName}`,
-      marketName,
-      selectionName,
-      odds: oddsCell.odds,
-      matchId: match?.id || '',
+    toggleSelection({
+      fixtureId: match?.externalId ? parseInt(match.externalId) : 0,
       matchName: `${match?.homeTeam?.name} vs ${match?.awayTeam?.name}`,
-      handicap: oddsCell.handicap
-    };
-    
-    setBetSlip([selection]);
+      market: marketName,
+      selection: selectionName,
+      odds: oddsCell.odds,
+      handicap: oddsCell.handicap,
+      oddsId: oddsCell.oddsId,
+    });
   };
 
   const tabs: { id: TabType; label: string }[] = [

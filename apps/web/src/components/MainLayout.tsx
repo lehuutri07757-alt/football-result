@@ -23,9 +23,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       {!shouldHideHeader && <Header />}
-      <main className="relative z-0">
+      <main className="container mx-auto relative z-0">
         {children}
       </main>
       {!shouldHideBottomNav && <MobileBottomNav />}
