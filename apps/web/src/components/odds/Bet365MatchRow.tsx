@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OddsTableRow, OddsCell } from '@/types/odds';
-import { Bet365OddsPair, Bet365ThreeWayOdds } from './Bet365OddsButton';
+import { Bet365ThreeWayOdds } from './Bet365OddsButton';
 
 export interface BetSelection {
   fixtureId: number;
@@ -13,6 +13,7 @@ export interface BetSelection {
   selection: string;
   odds: number;
   handicap?: string;
+  oddsId?: string;
 }
 
 export interface Bet365MatchRowProps {
@@ -62,6 +63,7 @@ export function Bet365MatchRow({
     selection: selectionName,
     odds: cell.odds,
     handicap: cell.handicap,
+    oddsId: cell.oddsId,
   });
 
   const getBetKey = (market: string, selection: string) =>
@@ -69,12 +71,6 @@ export function Bet365MatchRow({
 
   const isSelected = (market: string, selection: string) =>
     selectedBets?.has(getBetKey(market, selection));
-
-  const handleHdpSelect = (key: 'home' | 'away', cell: OddsCell) => {
-    const selectionName = key === 'home' ? match.homeTeam.name : match.awayTeam.name;
-    const selection = createSelection('hdp', key, `HDP ${selectionName} ${cell.handicap}`, cell);
-    onSelectBet?.(selection);
-  };
 
   const handle1X2Select = (key: '1' | 'X' | '2', cell: OddsCell) => {
     const selectionNames: Record<string, string> = {
@@ -84,12 +80,6 @@ export function Bet365MatchRow({
     };
     const selection = createSelection('1x2', key, selectionNames[key], cell);
     onSelectBet?.(selection);
-  };
-
-  const getHdpSelectedKey = (): string | null => {
-    if (isSelected('hdp', 'home')) return 'home';
-    if (isSelected('hdp', 'away')) return 'away';
-    return null;
   };
 
   const get1X2SelectedKey = (): string | null => {
@@ -174,37 +164,7 @@ export function Bet365MatchRow({
         </div>
       )}
 
-      <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase">
-            HDP
-          </span>
-          {match.hdp ? (
-            <Bet365OddsPair
-              homeLabel="H"
-              awayLabel="A"
-              homeOdds={match.hdp.home}
-              awayOdds={match.hdp.away}
-              selectedKey={getHdpSelectedKey()}
-              onSelect={handleHdpSelect}
-              size="sm"
-            />
-          ) : (
-            <div className="flex gap-1">
-              <div className="min-w-[52px] py-1.5 px-2 bg-slate-100 dark:bg-slate-800 rounded-md text-center text-slate-400 text-sm">
-                -
-              </div>
-              <div className="min-w-[52px] py-1.5 px-2 bg-slate-100 dark:bg-slate-800 rounded-md text-center text-slate-400 text-sm">
-                -
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase">
-            1X2
-          </span>
+      <div className="hidden sm:flex items-center flex-shrink-0">
           {match.oneXTwo ? (
             <Bet365ThreeWayOdds
               homeOdds={match.oneXTwo.home}
@@ -212,27 +172,20 @@ export function Bet365MatchRow({
               awayOdds={match.oneXTwo.away}
               selectedKey={get1X2SelectedKey()}
               onSelect={handle1X2Select}
-              size="sm"
+              size="md"
             />
           ) : (
             <div className="flex gap-1">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="min-w-[52px] py-1.5 px-2 bg-slate-100 dark:bg-slate-800 rounded-md text-center text-slate-400 text-sm"
+                  className="min-w-[60px] py-2 px-2.5 bg-slate-100 dark:bg-slate-800 rounded-md text-center text-slate-400 text-sm"
                 >
                   -
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        <div className="hidden lg:flex items-center justify-center w-12 flex-shrink-0">
-          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            +{match.totalMarkets}
-          </span>
-        </div>
       </div>
 
       <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
@@ -243,14 +196,14 @@ export function Bet365MatchRow({
             awayOdds={match.oneXTwo.away}
             selectedKey={get1X2SelectedKey()}
             onSelect={handle1X2Select}
-            size="sm"
+            size="md"
           />
         ) : (
           <div className="flex gap-1">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="min-w-[44px] py-1.5 px-1 bg-slate-100 dark:bg-slate-800 rounded text-center text-slate-400 text-xs"
+                className="min-w-[52px] py-2 px-2 bg-slate-100 dark:bg-slate-800 rounded text-center text-slate-400 text-xs"
               >
                 -
               </div>

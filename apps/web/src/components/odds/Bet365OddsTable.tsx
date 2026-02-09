@@ -2,7 +2,7 @@
 
 import { Trophy, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LeagueOddsGroup, OddsTableRow } from '@/types/odds';
+import { LeagueOddsGroup } from '@/types/odds';
 import { Bet365MatchRow, BetSelection } from './Bet365MatchRow';
 
 export interface Bet365OddsTableProps {
@@ -51,17 +51,9 @@ export function Bet365OddsTable({
           <span className="flex-1">Match</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-3">
-            <span className="w-[116px] text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">
-              Asian HDP
-            </span>
-            <span className="w-[168px] text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">
-              1X2
-            </span>
-            <span className="hidden lg:block w-12 text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">
-              More
-            </span>
-          </div>
+          <span className="hidden sm:flex w-[196px] text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">
+            1X2
+          </span>
         </div>
       </div>
 
