@@ -1,4 +1,5 @@
 export interface OddsCell {
+  oddsId?: string;
   label: string;
   odds: number;
   handicap?: string;

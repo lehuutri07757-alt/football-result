@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { betService } from '@/services/bet.service';
+import { Bet } from '@/types/bet';
 
 export interface BetSlipItem {
   id: string;
@@ -10,11 +12,17 @@ export interface BetSlipItem {
   odds: number;
   handicap?: string;
   addedAt: number;
+  oddsId?: string;
 }
 
 interface BetSlipState {
   items: BetSlipItem[];
   isOpen: boolean;
+  stake: number;
+  isPlacing: boolean;
+  error: string | null;
+  lastPlacedBet: Bet | null;
+  showConfirmation: boolean;
   
   addSelection: (item: Omit<BetSlipItem, 'id' | 'addedAt'>) => void;
   removeSelection: (id: string) => void;
@@ -25,9 +33,14 @@ interface BetSlipState {
   getSelectionKey: (fixtureId: number, market: string, selection: string) => string;
   
   setOpen: (open: boolean) => void;
+  setStake: (amount: number) => void;
   
   getTotalOdds: () => number;
   getItemCount: () => number;
+  
+  placeBet: () => Promise<void>;
+  resetAfterPlacement: () => void;
+  dismissConfirmation: () => void;
 }
 
 const createSelectionKey = (fixtureId: number, market: string, selection: string) =>
@@ -38,6 +51,11 @@ export const useBetSlipStore = create<BetSlipState>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      stake: 0,
+      isPlacing: false,
+      error: null,
+      lastPlacedBet: null,
+      showConfirmation: false,
 
       addSelection: (item) => {
         const id = createSelectionKey(item.fixtureId, item.market, item.selection);
@@ -65,10 +83,6 @@ export const useBetSlipStore = create<BetSlipState>()(
             items: state.items.filter((i) => i.id !== id),
           }));
         } else {
-          const existingMatchMarket = get().items.find(
-            (i) => i.fixtureId === item.fixtureId && i.market === item.market
-          );
-          
           set((state) => ({
             items: [
               ...state.items.filter(
@@ -81,7 +95,7 @@ export const useBetSlipStore = create<BetSlipState>()(
       },
 
       clearAll: () => {
-        set({ items: [] });
+        set({ items: [], stake: 0, error: null });
       },
 
       isSelected: (fixtureId, market, selection) => {
@@ -95,6 +109,10 @@ export const useBetSlipStore = create<BetSlipState>()(
         set({ isOpen: open });
       },
 
+      setStake: (amount) => {
+        set({ stake: amount, error: null });
+      },
+
       getTotalOdds: () => {
         const items = get().items;
         if (items.length === 0) return 0;
@@ -102,6 +120,59 @@ export const useBetSlipStore = create<BetSlipState>()(
       },
 
       getItemCount: () => get().items.length,
+
+      placeBet: async () => {
+        const { items, stake } = get();
+        if (items.length === 0 || stake <= 0) return;
+
+        set({ isPlacing: true, error: null });
+
+        try {
+          // For single bet, place bet for the first item
+          const item = items[0];
+          if (!item.oddsId) {
+            set({ isPlacing: false, error: 'Không tìm thấy thông tin kèo. Vui lòng chọn lại.' });
+            return;
+          }
+
+          const idempotencyKey = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+          const response = await betService.placeBet({
+            oddsId: item.oddsId,
+            stake,
+            idempotencyKey,
+          });
+
+           set({
+             isPlacing: false,
+             lastPlacedBet: response.data.bet,
+             items: [],
+             stake: 0,
+             error: null,
+             showConfirmation: true,
+           });
+         } catch (err: unknown) {
+           const error = err as { response?: { data?: { message?: string; code?: string } } };
+           const code = error?.response?.data?.message || '';
+           const errorMessages: Record<string, string> = {
+             'ODDS_SUSPENDED': 'Kèo đã tạm ngưng. Vui lòng chọn kèo khác.',
+             'MATCH_NOT_BETTABLE': 'Trận đấu không cho phép đặt cược.',
+             'INSUFFICIENT_FUNDS': 'Số dư không đủ. Vui lòng nạp thêm tiền.',
+             'LIMIT_EXCEEDED': 'Vượt quá giới hạn cược. Kiểm tra hạn mức của bạn.',
+             'DUPLICATE_BET': 'Cược này đã được đặt trước đó.',
+           };
+           const message = Object.entries(errorMessages).find(([key]) => code.includes(key))?.[1]
+             || 'Đặt cược thất bại. Vui lòng thử lại.';
+           set({ isPlacing: false, error: message });
+         }
+      },
+
+       resetAfterPlacement: () => {
+         set({ lastPlacedBet: null, error: null });
+       },
+
+       dismissConfirmation: () => {
+         set({ showConfirmation: false, lastPlacedBet: null, error: null });
+       },
     }),
     {
       name: 'bet-slip-storage',
