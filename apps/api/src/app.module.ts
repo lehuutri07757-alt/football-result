@@ -24,6 +24,7 @@ import { RedisModule } from "./redis/redis.module";
 import { HomeModule } from "./modules/home/home.module";
 import { FeaturedMatchesModule } from "./modules/featured-matches/featured-matches.module";
 import { SearchModule } from "./modules/search/search.module";
+import { BetsModule } from "./modules/bets/bets.module";
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { SearchModule } from "./modules/search/search.module";
     HomeModule,
     FeaturedMatchesModule,
     SearchModule,
+    BetsModule,
   ],
 })
 export class AppModule {}
