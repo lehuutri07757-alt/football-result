@@ -264,6 +264,7 @@ export class ApiFootballService implements OnModuleInit {
 
   private extractOddsFromDb(
     odds: Array<{
+      id: string;
       selection: string;
       selectionName: string | null;
       oddsValue: { toNumber(): number };
@@ -275,6 +276,7 @@ export class ApiFootballService implements OnModuleInit {
     if (!odds || odds.length === 0) return undefined;
 
     const createCell = (odd: typeof odds[0], label: string): OddsCell => ({
+      oddsId: odd.id,
       label,
       odds: odd.oddsValue.toNumber(),
       handicap: odd.handicap ? odd.handicap.toNumber().toString() : undefined,
@@ -1113,6 +1115,7 @@ export class ApiFootballService implements OnModuleInit {
 
   private createOddsCell(value: OddsValue, label: string): OddsCell {
     return {
+      oddsId: (value as any).id || undefined,
       label,
       odds: parseFloat(value.odd),
       handicap: value.handicap || undefined,
