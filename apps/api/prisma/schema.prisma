@@ -769,6 +769,7 @@ enum SyncJobType {
   team
   fixture
   odds_upcoming
+  odds_far
   odds_live
   standings
   full_sync
