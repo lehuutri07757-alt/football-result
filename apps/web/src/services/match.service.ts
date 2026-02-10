@@ -35,6 +35,13 @@ export interface League {
   };
 }
 
+export interface LeagueStats {
+  total: number;
+  active: number;
+  featured: number;
+  matches: number;
+}
+
 export interface Team {
   id: string;
   sportId: string;
@@ -163,6 +170,11 @@ export const sportsService = {
 export const leaguesService = {
   async getAll(params?: PaginationParams & { sportId?: string; isActive?: boolean; isFeatured?: boolean }): Promise<PaginatedResponse<League>> {
     const response = await api.get<PaginatedResponse<League>>('/leagues', { params });
+    return response.data;
+  },
+
+  async getStats(params?: { search?: string; sportId?: string; country?: string; isActive?: boolean; isFeatured?: boolean }): Promise<LeagueStats> {
+    const response = await api.get<LeagueStats>('/leagues/stats', { params });
     return response.data;
   },
 

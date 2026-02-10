@@ -131,7 +131,7 @@ export const useBetSlipStore = create<BetSlipState>()(
           // For single bet, place bet for the first item
           const item = items[0];
           if (!item.oddsId) {
-            set({ isPlacing: false, error: 'Không tìm thấy thông tin kèo. Vui lòng chọn lại.' });
+            set({ isPlacing: false, error: 'Odds information not found. Please select again.' });
             return;
           }
 
@@ -154,14 +154,14 @@ export const useBetSlipStore = create<BetSlipState>()(
            const error = err as { response?: { data?: { message?: string; code?: string } } };
            const code = error?.response?.data?.message || '';
            const errorMessages: Record<string, string> = {
-             'ODDS_SUSPENDED': 'Kèo đã tạm ngưng. Vui lòng chọn kèo khác.',
-             'MATCH_NOT_BETTABLE': 'Trận đấu không cho phép đặt cược.',
-             'INSUFFICIENT_FUNDS': 'Số dư không đủ. Vui lòng nạp thêm tiền.',
-             'LIMIT_EXCEEDED': 'Vượt quá giới hạn cược. Kiểm tra hạn mức của bạn.',
-             'DUPLICATE_BET': 'Cược này đã được đặt trước đó.',
+             'ODDS_SUSPENDED': 'Odds have been suspended. Please select different odds.',
+             'MATCH_NOT_BETTABLE': 'This match is not available for betting.',
+             'INSUFFICIENT_FUNDS': 'Insufficient balance. Please deposit more funds.',
+             'LIMIT_EXCEEDED': 'Bet limit exceeded. Please check your limits.',
+             'DUPLICATE_BET': 'This bet has already been placed.',
            };
            const message = Object.entries(errorMessages).find(([key]) => code.includes(key))?.[1]
-             || 'Đặt cược thất bại. Vui lòng thử lại.';
+             || 'Failed to place bet. Please try again.';
            set({ isPlacing: false, error: message });
          }
       },

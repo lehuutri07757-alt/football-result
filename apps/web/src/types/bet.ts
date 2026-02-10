@@ -17,7 +17,7 @@ export interface BetSelectionItem {
   id: string;
   oddsId: string;
   matchId: string;
-  oddsValue: number;
+  oddsValue: number | string;
   selection: string;
   selectionName?: string | null;
   handicap?: number | null;

@@ -1,6 +1,6 @@
 import api from './api';
 
-export type SyncJobType = 'league' | 'team' | 'fixture' | 'odds_upcoming' | 'odds_live' | 'standings' | 'full_sync';
+export type SyncJobType = 'league' | 'team' | 'fixture' | 'odds_upcoming' | 'odds_far' | 'odds_live' | 'standings' | 'full_sync';
 export type SyncJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
 export type SyncJobPriority = 'low' | 'normal' | 'high' | 'critical';
 
@@ -55,13 +55,27 @@ export interface CreateJobResponse {
 export interface SyncJobFilter {
   type?: SyncJobType;
   status?: SyncJobStatus;
+  priority?: SyncJobPriority;
+  triggeredBy?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
   limit?: number;
-  offset?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export const syncJobService = {
-  async getJobs(filter?: SyncJobFilter): Promise<SyncJob[]> {
-    const response = await api.get<SyncJob[]>('/sync-jobs', { params: filter });
+  async getJobs(filter?: SyncJobFilter): Promise<PaginatedResponse<SyncJob>> {
+    const response = await api.get<PaginatedResponse<SyncJob>>('/sync-jobs', { params: filter });
     return response.data;
   },
 
@@ -98,6 +112,11 @@ export const syncJobService = {
 
   async triggerUpcomingOddsSync(hoursAhead?: number): Promise<CreateJobResponse> {
     const response = await api.post<CreateJobResponse>('/sync-jobs/odds/upcoming', undefined, { params: hoursAhead ? { hoursAhead } : undefined });
+    return response.data;
+  },
+
+  async triggerFarOddsSync(maxDaysAhead?: number): Promise<CreateJobResponse> {
+    const response = await api.post<CreateJobResponse>('/sync-jobs/odds/far', undefined, { params: maxDaysAhead ? { maxDaysAhead } : undefined });
     return response.data;
   },
 

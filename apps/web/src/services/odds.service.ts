@@ -12,8 +12,8 @@ export const oddsService = {
     return response.data;
   },
 
-  async getTodayOdds(): Promise<OddsTableResponse> {
-    const response = await api.get<OddsTableResponse>('/api-football/odds/today');
+  async getAllOdds(params?: { page?: number; limit?: number }): Promise<OddsTableResponse> {
+    const response = await api.get<OddsTableResponse>('/api-football/odds/all', { params });
     return response.data;
   },
 

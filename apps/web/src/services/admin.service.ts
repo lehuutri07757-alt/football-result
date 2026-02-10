@@ -243,6 +243,12 @@ export interface ApiFootballSyncConfig {
     maxMatchesPerSync: number;
     enabled: boolean;
   };
+  farOdds: {
+    intervalMinutes: number;
+    maxDaysAhead: number;
+    maxMatchesPerSync: number;
+    enabled: boolean;
+  };
   league: {
     intervalMinutes: number;
     enabled: boolean;
@@ -260,6 +266,50 @@ export interface ApiFootballSyncConfig {
     dailyLimit: number;
     delayBetweenRequests: number;
   };
+}
+
+export interface AdminBetSelection {
+  id: string;
+  oddsId: string;
+  matchId: string;
+  oddsValue: number;
+  selection: string;
+  selectionName?: string | null;
+  handicap?: number | null;
+  result: string;
+  odds?: {
+    betType?: { code: string; name: string };
+  };
+  match: {
+    id: string;
+    startTime: string;
+    status: string;
+    homeScore?: number | null;
+    awayScore?: number | null;
+    homeTeam: { id: string; name: string };
+    awayTeam: { id: string; name: string };
+    league?: { id: string; name: string };
+  };
+}
+
+export interface AdminBet {
+  id: string;
+  userId: string;
+  user?: {
+    id: string;
+    username: string;
+    email?: string;
+  };
+  betType: string;
+  stake: number;
+  totalOdds: number;
+  potentialWin: number;
+  actualWin: number;
+  status: string;
+  placedAt: string;
+  settledAt?: string | null;
+  ipAddress?: string | null;
+  selections: AdminBetSelection[];
 }
 
 export const adminService = {
@@ -377,6 +427,21 @@ export const adminService = {
       balanceType,
       description,
     });
+    return response.data;
+  },
+
+  async getBets(params?: PaginationParams & { fromDate?: string; toDate?: string }): Promise<PaginatedResponse<AdminBet>> {
+    const response = await api.get<PaginatedResponse<AdminBet>>('/admin/bets', { params });
+    return response.data;
+  },
+
+  async getBet(id: string): Promise<AdminBet> {
+    const response = await api.get<AdminBet>(`/admin/bets/${id}`);
+    return response.data;
+  },
+
+  async voidBet(id: string): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>(`/admin/bets/${id}/void`);
     return response.data;
   },
 
