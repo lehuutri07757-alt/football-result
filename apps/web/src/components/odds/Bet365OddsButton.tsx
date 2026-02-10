@@ -11,6 +11,8 @@ export interface Bet365OddsButtonProps {
   selected?: boolean;
   onClick?: () => void;
   size?: 'sm' | 'md';
+  fullWidth?: boolean;
+  hideLabel?: boolean;
 }
 
 export function Bet365OddsButton({
@@ -21,6 +23,8 @@ export function Bet365OddsButton({
   selected = false,
   onClick,
   size = 'md',
+  fullWidth = false,
+  hideLabel = false,
 }: Bet365OddsButtonProps) {
   const isDisabled = suspended || odds === null;
 
@@ -32,7 +36,7 @@ export function Bet365OddsButton({
         'relative flex flex-col items-center justify-center transition-all duration-150',
         'border border-slate-200 dark:border-slate-700',
         'rounded-md font-medium',
-        size === 'sm' ? 'min-w-[52px] py-1.5 px-2' : 'min-w-[60px] py-2 px-2.5',
+        fullWidth ? 'w-full py-2 px-2.5' : (size === 'sm' ? 'min-w-[52px] py-1.5 px-2' : 'min-w-[60px] py-2 px-2.5'),
         !isDisabled && !selected && [
           'bg-white dark:bg-slate-900',
           'hover:bg-emerald-50 hover:border-emerald-400 dark:hover:bg-emerald-950/30',
@@ -47,15 +51,17 @@ export function Bet365OddsButton({
         ]
       )}
     >
-      <span
-        className={cn(
-          'text-[10px] font-medium leading-none',
-          selected ? 'text-emerald-100' : 'text-slate-500 dark:text-slate-400',
-          isDisabled && 'text-slate-400 dark:text-slate-500'
-        )}
-      >
-        {handicap || label}
-      </span>
+      {!hideLabel && (
+        <span
+          className={cn(
+            'text-[10px] font-medium leading-none',
+            selected ? 'text-emerald-100' : 'text-slate-500 dark:text-slate-400',
+            isDisabled && 'text-slate-400 dark:text-slate-500'
+          )}
+        >
+          {handicap || label}
+        </span>
+      )}
 
       <span
         className={cn(
@@ -121,6 +127,8 @@ export interface Bet365ThreeWayOddsProps {
   selectedKey?: string | null;
   onSelect?: (key: '1' | 'X' | '2', cell: OddsCell) => void;
   size?: 'sm' | 'md';
+  fullWidth?: boolean;
+  hideLabel?: boolean;
 }
 
 export function Bet365ThreeWayOdds({
@@ -130,9 +138,11 @@ export function Bet365ThreeWayOdds({
   selectedKey,
   onSelect,
   size = 'md',
+  fullWidth = false,
+  hideLabel = false,
 }: Bet365ThreeWayOddsProps) {
   return (
-    <div className="flex gap-1">
+    <div className={cn('grid grid-cols-3 gap-1', fullWidth && 'w-full')}>
       <Bet365OddsButton
         label="1"
         odds={homeOdds?.odds ?? null}
@@ -140,6 +150,8 @@ export function Bet365ThreeWayOdds({
         selected={selectedKey === '1'}
         onClick={() => homeOdds && onSelect?.('1', homeOdds)}
         size={size}
+        fullWidth={fullWidth}
+        hideLabel={hideLabel}
       />
       <Bet365OddsButton
         label="X"
@@ -148,6 +160,8 @@ export function Bet365ThreeWayOdds({
         selected={selectedKey === 'X'}
         onClick={() => drawOdds && onSelect?.('X', drawOdds)}
         size={size}
+        fullWidth={fullWidth}
+        hideLabel={hideLabel}
       />
       <Bet365OddsButton
         label="2"
@@ -156,6 +170,8 @@ export function Bet365ThreeWayOdds({
         selected={selectedKey === '2'}
         onClick={() => awayOdds && onSelect?.('2', awayOdds)}
         size={size}
+        fullWidth={fullWidth}
+        hideLabel={hideLabel}
       />
     </div>
   );

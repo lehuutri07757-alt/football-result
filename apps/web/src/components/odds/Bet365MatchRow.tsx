@@ -40,17 +40,6 @@ export function Bet365MatchRow({
     }).format(date);
   };
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    if (date.toDateString() === tomorrow.toDateString()) return 'Tmr';
-    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date);
-  };
-
   const createSelection = (
     market: string,
     selectionKey: string,
@@ -92,79 +81,78 @@ export function Bet365MatchRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 py-2 px-3 border-b border-slate-100 dark:border-slate-800',
+        'grid grid-cols-[1fr_minmax(0,1fr)] sm:grid-cols-[1fr_minmax(0,1.2fr)] items-center py-2 px-3 border-b border-slate-100 dark:border-slate-800',
         'hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors',
         isLive && 'bg-red-50/50 dark:bg-red-950/10'
       )}
     >
-      <div className="w-14 flex-shrink-0 text-center">
-        {isLive ? (
-          <div className="flex flex-col items-center">
-            <span className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-14 flex-shrink-0 text-center">
+          {isLive ? (
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                </span>
+                Live
               </span>
-              Live
-            </span>
-            <span className="text-xs font-bold text-slate-900 dark:text-white">
-              {match.homeTeam.score ?? 0} - {match.awayTeam.score ?? 0}
-            </span>
+              <span className="text-xs font-bold text-slate-900 dark:text-white">
+                {match.homeTeam.score ?? 0} - {match.awayTeam.score ?? 0}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                {formatTime(match.startTime)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <Link
+          href={match.matchId ? `/matches/${match.matchId}` : '#'}
+          className="flex-1 min-w-0 group"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              {match.homeTeam.logo ? (
+                <img src={match.homeTeam.logo} alt="" className="h-4 w-4 object-contain flex-shrink-0" />
+              ) : (
+                <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+              )}
+              <span className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                {match.homeTeam.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {match.awayTeam.logo ? (
+                <img src={match.awayTeam.logo} alt="" className="h-4 w-4 object-contain flex-shrink-0" />
+              ) : (
+                <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+              )}
+              <span className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                {match.awayTeam.name}
+              </span>
+            </div>
           </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <span className="text-xs font-semibold text-slate-900 dark:text-white">
-              {formatTime(match.startTime)}
-            </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">
-              {formatDate(match.startTime)}
-            </span>
+        </Link>
+
+        {showLeague && (
+          <div className="hidden sm:flex items-center gap-1.5 w-36 flex-shrink-0">
+            {match.leagueName && (
+              <>
+                <Trophy className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {match.leagueName}
+                </span>
+              </>
+            )}
           </div>
         )}
       </div>
 
-      <Link
-        href={`/matches/${match.fixtureId}`}
-        className="flex-1 min-w-0 group"
-      >
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            {match.homeTeam.logo ? (
-              <img src={match.homeTeam.logo} alt="" className="h-4 w-4 object-contain flex-shrink-0" />
-            ) : (
-              <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
-            )}
-            <span className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-              {match.homeTeam.name}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {match.awayTeam.logo ? (
-              <img src={match.awayTeam.logo} alt="" className="h-4 w-4 object-contain flex-shrink-0" />
-            ) : (
-              <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
-            )}
-            <span className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-              {match.awayTeam.name}
-            </span>
-          </div>
-        </div>
-      </Link>
-
-      {showLeague && (
-        <div className="hidden xl:flex items-center gap-1.5 w-32 flex-shrink-0">
-          {match.leagueName && (
-            <>
-              <Trophy className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-              <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                {match.leagueName}
-              </span>
-            </>
-          )}
-        </div>
-      )}
-
-      <div className="hidden sm:flex items-center flex-shrink-0">
+      <div className="flex items-center">
           {match.oneXTwo ? (
             <Bet365ThreeWayOdds
               homeOdds={match.oneXTwo.home}
@@ -173,43 +161,21 @@ export function Bet365MatchRow({
               selectedKey={get1X2SelectedKey()}
               onSelect={handle1X2Select}
               size="md"
+              fullWidth
+              hideLabel
             />
           ) : (
-            <div className="flex gap-1">
+            <div className="grid grid-cols-3 gap-1 w-full">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="min-w-[60px] py-2 px-2.5 bg-slate-100 dark:bg-slate-800 rounded-md text-center text-slate-400 text-sm"
+                  className="py-2 px-2.5 bg-slate-100 dark:bg-slate-800 rounded-md text-center text-slate-400 text-sm"
                 >
                   -
                 </div>
               ))}
             </div>
           )}
-      </div>
-
-      <div className="flex sm:hidden items-center gap-1 flex-shrink-0">
-        {match.oneXTwo ? (
-          <Bet365ThreeWayOdds
-            homeOdds={match.oneXTwo.home}
-            drawOdds={match.oneXTwo.draw ?? null}
-            awayOdds={match.oneXTwo.away}
-            selectedKey={get1X2SelectedKey()}
-            onSelect={handle1X2Select}
-            size="md"
-          />
-        ) : (
-          <div className="flex gap-1">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="min-w-[52px] py-2 px-2 bg-slate-100 dark:bg-slate-800 rounded text-center text-slate-400 text-xs"
-              >
-                -
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

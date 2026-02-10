@@ -1,29 +1,39 @@
 'use client';
 
-import { Trophy, Loader2, RefreshCw } from 'lucide-react';
+import { Calendar, Trophy, Loader2, RefreshCw, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LeagueOddsGroup } from '@/types/odds';
+import { t } from '@/lib/i18n';
+import { useLanguageStore } from '@/stores/language.store';
+import { DateOddsGroup } from '@/types/odds';
 import { Bet365MatchRow, BetSelection } from './Bet365MatchRow';
 
 export interface Bet365OddsTableProps {
-  leagues: LeagueOddsGroup[];
+  dateGroups: DateOddsGroup[];
   isLoading?: boolean;
   selectedBets?: Map<string, BetSelection>;
   onSelectBet?: (selection: BetSelection) => void;
   onRefresh?: () => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isFetchingMore?: boolean;
   lastUpdate?: string;
   className?: string;
 }
 
 export function Bet365OddsTable({
-  leagues,
+  dateGroups,
   isLoading = false,
   selectedBets,
   onSelectBet,
   onRefresh,
+  onLoadMore,
+  hasMore = false,
+  isFetchingMore = false,
   lastUpdate,
   className,
 }: Bet365OddsTableProps) {
+  const language = useLanguageStore((s) => s.language);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -33,7 +43,7 @@ export function Bet365OddsTable({
     );
   }
 
-  if (leagues.length === 0) {
+  if (dateGroups.length === 0) {
     return (
       <div className="text-center py-20 bg-slate-100/50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
         <Trophy className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
@@ -45,51 +55,60 @@ export function Bet365OddsTable({
 
   return (
     <div className={cn('space-y-4', className)}>
-      <div className="hidden sm:flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
-        <div className="flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">
-          <span className="w-14 text-center">Time</span>
-          <span className="flex-1">Match</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:flex w-[196px] text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">
-            1X2
-          </span>
-        </div>
-      </div>
-
-      {leagues.map((league) => (
-        <div key={league.leagueId} className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-          <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700">
-            {league.leagueLogo ? (
-              <img src={league.leagueLogo} alt={league.leagueName} className="h-5 w-5 object-contain" />
-            ) : (
-              <Trophy className="h-4 w-4 text-slate-400" />
-            )}
-            <span className="font-semibold text-sm text-slate-900 dark:text-white">
-              {league.leagueName}
-            </span>
-            {league.country && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                • {league.country}
+      {dateGroups.map((group) => (
+        <div key={group.date} className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+          <div className="grid grid-cols-[1fr_minmax(0,1.2fr)] items-center px-3 py-2.5 bg-slate-100 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+              <span className="font-semibold text-sm text-slate-900 dark:text-white">
+                {group.dateLabel}
               </span>
-            )}
-            <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              {league.matches.length}
-            </span>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                {group.matches.length}
+              </span>
+            </div>
+            <div className="hidden sm:grid grid-cols-3 gap-1">
+              <span className="text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">1</span>
+              <span className="text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">X</span>
+              <span className="text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">2</span>
+            </div>
           </div>
 
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {league.matches.map((match) => (
+            {group.matches.map((match) => (
               <Bet365MatchRow
                 key={match.fixtureId}
                 match={match}
                 selectedBets={selectedBets}
                 onSelectBet={onSelectBet}
+                showLeague
               />
             ))}
           </div>
         </div>
       ))}
+
+      {hasMore && (
+        <div className="flex justify-center py-4">
+          <button
+            onClick={onLoadMore}
+            disabled={isFetchingMore}
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isFetchingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{t(language, 'common.loading')}</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                <span>{t(language, 'results.loadMore')}</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {lastUpdate && (
         <div className="flex items-center justify-center gap-2 py-3 text-xs text-slate-500 dark:text-slate-400">

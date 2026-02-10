@@ -1,6 +1,6 @@
 'use client';
 
-import { useTodayOdds, useLiveOdds } from '@/hooks/useOdds';
+import { useAllOdds, useLiveOdds } from '@/hooks/useOdds';
 import { LeagueGroup } from './LeagueGroup';
 
 interface OddsTableProps {
@@ -8,7 +8,7 @@ interface OddsTableProps {
 }
 
 export function OddsTable({ live = false }: OddsTableProps) {
-  const { data, isLoading, error } = live ? useLiveOdds() : useTodayOdds();
+  const { data, isLoading, error } = live ? useLiveOdds() : useAllOdds();
 
   if (isLoading) {
     return <OddsTableSkeleton />;
