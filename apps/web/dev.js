@@ -10,6 +10,7 @@ console.log(`🎯 Dashboard: http://localhost:${PORT}`);
 const nextDev = spawn('next', ['dev', '-p', PORT], {
   stdio: 'inherit',
   shell: true,
+  env: { ...process.env, NODE_OPTIONS: '--no-deprecation' },
 });
 
 nextDev.on('close', (code) => {

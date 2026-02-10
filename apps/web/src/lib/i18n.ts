@@ -41,6 +41,7 @@ export type I18nKey =
   | 'market.no'
   | 'market.updating'
   | 'market.checkBack'
+  | 'market.noOdds'
   // Results page
   | 'results.title'
   | 'results.subtitle'
@@ -64,7 +65,8 @@ export type I18nKey =
   | 'results.searchLeagues'
   | 'results.loadMore'
   | 'results.noLeaguesFound'
-  | 'results.form';
+  | 'results.form'
+  | 'common.loading';
 
 const dictionaries: Record<Language, Record<I18nKey, string>> = {
   en: {
@@ -108,6 +110,7 @@ const dictionaries: Record<Language, Record<I18nKey, string>> = {
     'market.no': 'No',
     'market.updating': 'Markets updating',
     'market.checkBack': 'Please check back later',
+    'market.noOdds': 'No odds available',
     // Results page
     'results.title': 'Results & Standings',
     'results.subtitle': 'Match results and league standings',
@@ -132,6 +135,7 @@ const dictionaries: Record<Language, Record<I18nKey, string>> = {
     'results.loadMore': 'Load more',
     'results.noLeaguesFound': 'No leagues found',
     'results.form': 'Form',
+    'common.loading': 'Loading...',
   },
   vi: {
     'nav.sports': 'THỂ THAO',
@@ -174,6 +178,7 @@ const dictionaries: Record<Language, Record<I18nKey, string>> = {
     'market.no': 'Không',
     'market.updating': 'Thị trường đang được cập nhật',
     'market.checkBack': 'Vui lòng quay lại sau',
+    'market.noOdds': 'Chưa có kèo',
     // Results page
     'results.title': 'Kết quả & Bảng xếp hạng',
     'results.subtitle': 'Kết quả trận đấu và bảng xếp hạng giải đấu',
@@ -198,6 +203,7 @@ const dictionaries: Record<Language, Record<I18nKey, string>> = {
     'results.loadMore': 'Xem thêm',
     'results.noLeaguesFound': 'Không tìm thấy giải đấu',
     'results.form': 'Phong độ',
+    'common.loading': 'Đang tải...',
   },
 };
 
