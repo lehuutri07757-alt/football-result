@@ -17,7 +17,6 @@ import {
   Shield,
   MonitorPlay,
   Medal,
-  Star,
   Loader2
 } from 'lucide-react';
 import { MatchCard } from '@/components/matches/MatchCard';
@@ -158,8 +157,8 @@ export default function MatchesPage() {
   const balance = (user as any)?.balance ?? 0;
   const avatarUrl = (user as any)?.avatarUrl ?? (user as any)?.avatar ?? undefined;
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+   const formatCurrency = (amount: number) =>
+     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   const matchTabs: { key: TabType; label: string; icon: React.ReactNode; count?: number }[] = [
     { key: 'all', label: 'All Matches', icon: <ListFilter size={14} /> },
@@ -327,16 +326,7 @@ export default function MatchesPage() {
             </div>
           </div>
           
-          <div className="mt-auto p-4 border-t border-slate-200 dark:border-white/5">
-            <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-center dark:from-indigo-600">
-              <Star className="h-8 w-8 text-yellow-300 mx-auto mb-2" />
-              <h4 className="font-bold text-white mb-1">VIP Club</h4>
-              <p className="text-xs text-indigo-100 mb-3">Unlock exclusive bonuses</p>
-              <button className="w-full py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition-colors backdrop-blur-sm">
-                View Status
-              </button>
-            </div>
-          </div>
+
         </aside>
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 scrollbar-hide">

@@ -202,36 +202,7 @@ function formatMatchDate(startTime: string, language: 'en' | 'vi'): string {
   return `${day} ${month}, ${time}`;
 }
 
-function TeamFormIndicator({ form }: { form?: string[] }) {
-  if (!form || form.length === 0) {
-    return (
-      <div className="flex gap-1 mt-3 justify-center">
-        {Array(5).fill(null).map((_, i) => (
-          <span key={i} className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-        ))}
-      </div>
-    );
-  }
 
-  return (
-    <div className="flex gap-1 mt-3 justify-center">
-      {form.slice(0, 5).map((result, index) => {
-        const colorClass = result === 'W'
-          ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
-          : result === 'L'
-          ? 'bg-red-500'
-          : 'bg-slate-400 dark:bg-slate-600';
-        return (
-          <span
-            key={index}
-            className={`w-2 h-2 rounded-full ${colorClass}`}
-            title={result === 'W' ? 'Win' : result === 'L' ? 'Loss' : 'Draw'}
-          />
-        );
-      })}
-    </div>
-  );
-}
 
 function MatchContent({
   match,
@@ -328,7 +299,7 @@ function MatchContent({
                 <h2 className="text-base lg:text-xl font-bold text-white leading-tight max-w-[160px]">
                   {homeTeamName}
                 </h2>
-                <TeamFormIndicator form={match.homeTeam?.recentForm} />
+
               </div>
 
               <div className="flex flex-col items-center px-4 lg:px-12">
@@ -382,7 +353,7 @@ function MatchContent({
                 <h2 className="text-base lg:text-xl font-bold text-white leading-tight max-w-[160px]">
                   {awayTeamName}
                 </h2>
-                <TeamFormIndicator form={match.awayTeam?.recentForm} />
+
               </div>
             </div>
           </div>
@@ -455,120 +426,175 @@ function MainMarketSection({
   onSelect: (market: string, selection: string, odds: OddsCell) => void;
   language: 'en' | 'vi';
 }) {
-  const mockOdds = {
-    handicap: [
-      { home: { handicap: '+0/0.5', odds: 0.59 }, away: { handicap: '-0/0.5', odds: 1.44 }, over: { handicap: 'O0.5', odds: 0.82 }, under: { handicap: 'U0.5', odds: 1.06 } },
-      { home: { handicap: '0', odds: 1.58 }, away: { handicap: '0', odds: 0.53 }, over: { handicap: 'O0.5/1', odds: 1.20 }, under: { handicap: 'U0.5/1', odds: 0.71 } },
-    ],
-    oneXTwo: { home: 4.85, draw: 1.74, away: 3.15 },
-    team1OU: { over: { handicap: 'O0.5', odds: 2.12 }, under: { handicap: 'U0.5', odds: 0.30 } },
-    team2OU: { over: { handicap: 'O0.5', odds: 1.44 }, under: { handicap: 'U0.5', odds: 0.52 } },
-    oddEven: { odd: 1.38, even: 0.59 },
-    bothScore: { yes: 9.3, no: 1.02 },
-  };
+  const hasOdds = odds !== null;
+  const hdp = odds?.hdp;
+  const ou = odds?.overUnder;
+  const oneXTwo = odds?.oneXTwo;
+  const homeGoalOU = odds?.homeGoalOU;
+  const awayGoalOU = odds?.awayGoalOU;
+  const btts = odds?.btts;
 
-  const createOddsCell = (label: string, oddsValue: number, handicap: string): OddsCell => ({
-    label,
-    odds: oddsValue,
-    handicap,
-    suspended: false
-  });
+  const hasMainTable = hdp || ou;
 
   return (
     <div className="grid gap-6">
-      <Card className="overflow-hidden border-0 shadow-md ring-1 ring-slate-200 dark:ring-slate-800">
-        <div className="bg-slate-100/50 dark:bg-slate-900/50 px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <span className="w-1 h-5 bg-emerald-500 rounded-full"></span>
-            {t(language, 'market.main')}
-          </h3>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-yellow-400">
-            <Star className="h-4 w-4" />
-          </Button>
-        </div>
+      {hasMainTable && (
+        <Card className="overflow-hidden border-0 shadow-md ring-1 ring-slate-200 dark:ring-slate-800">
+          <div className="bg-slate-100/50 dark:bg-slate-900/50 px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <span className="w-1 h-5 bg-emerald-500 rounded-full"></span>
+              {t(language, 'market.main')}
+            </h3>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-yellow-400">
+              <Star className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 dark:bg-slate-900/80 text-xs uppercase text-slate-500 dark:text-slate-400 font-semibold">
-              <tr>
-                <th className="px-4 py-3 min-w-[140px]">{homeTeamName}</th>
-                <th className="px-4 py-3 min-w-[140px]">{awayTeamName}</th>
-                <th className="px-4 py-3 min-w-[120px] border-l border-slate-200 dark:border-slate-800 text-center">{t(language, 'market.over')}</th>
-                <th className="px-4 py-3 min-w-[120px] text-center">{t(language, 'market.under')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {[0, 1].map((idx) => (
-                <tr key={idx} className="bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 dark:bg-slate-900/80 text-xs uppercase text-slate-500 dark:text-slate-400 font-semibold">
+                <tr>
+                  <th className="px-4 py-3 min-w-[140px]">{homeTeamName}</th>
+                  <th className="px-4 py-3 min-w-[140px]">{awayTeamName}</th>
+                  <th className="px-4 py-3 min-w-[120px] border-l border-slate-200 dark:border-slate-800 text-center">{t(language, 'market.over')}</th>
+                  <th className="px-4 py-3 min-w-[120px] text-center">{t(language, 'market.under')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr className="bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
                   <td className="p-3">
-                    <OddsButtonCell 
-                      handicap={idx === 0 ? "+0/0.5" : "0"}
-                      odds={mockOdds.handicap[idx].home.odds}
-                      onClick={() => onSelect('Handicap', homeTeamName, createOddsCell(homeTeamName, mockOdds.handicap[idx].home.odds, idx === 0 ? '+0/0.5' : '0'))}
-                    />
+                    {hdp?.home ? (
+                      <OddsButtonCell
+                        handicap={hdp.home.handicap || ''}
+                        odds={hdp.home.odds}
+                        onClick={() => onSelect('Handicap', homeTeamName, hdp.home)}
+                      />
+                    ) : <SuspendedCell />}
                   </td>
                   <td className="p-3">
-                    <OddsButtonCell 
-                      handicap={idx === 0 ? "-0/0.5" : "0"}
-                      odds={mockOdds.handicap[idx].away.odds}
-                      onClick={() => onSelect('Handicap', awayTeamName, createOddsCell(awayTeamName, mockOdds.handicap[idx].away.odds, idx === 0 ? '-0/0.5' : '0'))}
-                    />
+                    {hdp?.away ? (
+                      <OddsButtonCell
+                        handicap={hdp.away.handicap || ''}
+                        odds={hdp.away.odds}
+                        onClick={() => onSelect('Handicap', awayTeamName, hdp.away)}
+                      />
+                    ) : <SuspendedCell />}
                   </td>
                   <td className="p-3 border-l border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
-                    <OddsButtonCell 
-                      handicap={idx === 0 ? "O0.5" : "O0.5/1"}
-                      odds={mockOdds.handicap[idx].over.odds}
-                      isOverUnder
-                      label="O"
-                      onClick={() => onSelect('Over/Under', idx === 0 ? 'Over 0.5' : 'Over 0.5/1', createOddsCell(idx === 0 ? 'Over 0.5' : 'Over 0.5/1', mockOdds.handicap[idx].over.odds, idx === 0 ? '0.5' : '0.5/1'))}
-                    />
+                    {ou?.home ? (
+                      <OddsButtonCell
+                        handicap={ou.home.handicap || ''}
+                        odds={ou.home.odds}
+                        isOverUnder
+                        label="O"
+                        onClick={() => onSelect('Over/Under', ou.home.label, ou.home)}
+                      />
+                    ) : <SuspendedCell />}
                   </td>
                   <td className="p-3 bg-slate-50/30 dark:bg-slate-900/30">
-                    <OddsButtonCell 
-                      handicap={idx === 0 ? "U0.5" : "U0.5/1"}
-                      odds={mockOdds.handicap[idx].under.odds}
-                      isOverUnder
-                      label="U"
-                      onClick={() => onSelect('Over/Under', idx === 0 ? 'Under 0.5' : 'Under 0.5/1', createOddsCell(idx === 0 ? 'Under 0.5' : 'Under 0.5/1', mockOdds.handicap[idx].under.odds, idx === 0 ? '0.5' : '0.5/1'))}
-                    />
+                    {ou?.away ? (
+                      <OddsButtonCell
+                        handicap={ou.away.handicap || ''}
+                        odds={ou.away.odds}
+                        isOverUnder
+                        label="U"
+                        onClick={() => onSelect('Over/Under', ou.away.label, ou.away)}
+                      />
+                    ) : <SuspendedCell />}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MarketCard title={t(language, 'market.1x2')}>
-          <div className="grid grid-cols-3 gap-2">
-            <SelectionButton label="1" value={mockOdds.oneXTwo.home} onClick={() => {}} />
-            <SelectionButton label="X" value={mockOdds.oneXTwo.draw} onClick={() => {}} />
-            <SelectionButton label="2" value={mockOdds.oneXTwo.away} onClick={() => {}} />
-          </div>
-        </MarketCard>
+        {oneXTwo && (
+          <MarketCard title={t(language, 'market.1x2')}>
+            <div className="grid grid-cols-3 gap-2">
+              <SelectionButton
+                label="1"
+                value={oneXTwo.home.odds}
+                onClick={() => onSelect('1x2', homeTeamName, oneXTwo.home)}
+              />
+              <SelectionButton
+                label="X"
+                value={oneXTwo.draw?.odds ?? 0}
+                onClick={() => oneXTwo.draw && onSelect('1x2', 'Draw', oneXTwo.draw)}
+              />
+              <SelectionButton
+                label="2"
+                value={oneXTwo.away.odds}
+                onClick={() => onSelect('1x2', awayTeamName, oneXTwo.away)}
+              />
+            </div>
+          </MarketCard>
+        )}
 
-        <MarketCard title={`${t(language, 'market.teamOU')} ${homeTeamName}`}>
-          <div className="grid grid-cols-2 gap-2">
-            <SelectionButton label={`${language === 'vi' ? 'Tài' : 'O'} 0.5`} value={mockOdds.team1OU.over.odds} onClick={() => {}} />
-            <SelectionButton label={`${language === 'vi' ? 'Xỉu' : 'U'} 0.5`} value={mockOdds.team1OU.under.odds} onClick={() => {}} />
-          </div>
-        </MarketCard>
+        {homeGoalOU && (
+          <MarketCard title={`${t(language, 'market.teamOU')} ${homeTeamName}`}>
+            <div className="grid grid-cols-2 gap-2">
+              <SelectionButton
+                label={`${language === 'vi' ? 'Tài' : 'O'} ${homeGoalOU.home.handicap?.replace('O ', '') ?? '0.5'}`}
+                value={homeGoalOU.home.odds}
+                onClick={() => onSelect('Home Total', homeGoalOU.home.label, homeGoalOU.home)}
+              />
+              <SelectionButton
+                label={`${language === 'vi' ? 'Xỉu' : 'U'} ${homeGoalOU.away.handicap?.replace('U ', '') ?? '0.5'}`}
+                value={homeGoalOU.away.odds}
+                onClick={() => onSelect('Home Total', homeGoalOU.away.label, homeGoalOU.away)}
+              />
+            </div>
+          </MarketCard>
+        )}
 
-        <MarketCard title={`${t(language, 'market.teamOU')} ${awayTeamName}`}>
-          <div className="grid grid-cols-2 gap-2">
-            <SelectionButton label={`${language === 'vi' ? 'Tài' : 'O'} 0.5`} value={mockOdds.team2OU.over.odds} onClick={() => {}} />
-            <SelectionButton label={`${language === 'vi' ? 'Xỉu' : 'U'} 0.5`} value={mockOdds.team2OU.under.odds} onClick={() => {}} />
-          </div>
-        </MarketCard>
+        {awayGoalOU && (
+          <MarketCard title={`${t(language, 'market.teamOU')} ${awayTeamName}`}>
+            <div className="grid grid-cols-2 gap-2">
+              <SelectionButton
+                label={`${language === 'vi' ? 'Tài' : 'O'} ${awayGoalOU.home.handicap?.replace('O ', '') ?? '0.5'}`}
+                value={awayGoalOU.home.odds}
+                onClick={() => onSelect('Away Total', awayGoalOU.home.label, awayGoalOU.home)}
+              />
+              <SelectionButton
+                label={`${language === 'vi' ? 'Xỉu' : 'U'} ${awayGoalOU.away.handicap?.replace('U ', '') ?? '0.5'}`}
+                value={awayGoalOU.away.odds}
+                onClick={() => onSelect('Away Total', awayGoalOU.away.label, awayGoalOU.away)}
+              />
+            </div>
+          </MarketCard>
+        )}
 
-        <MarketCard title={t(language, 'market.bothScore')}>
-          <div className="grid grid-cols-2 gap-2">
-            <SelectionButton label={t(language, 'market.yes')} value={mockOdds.bothScore.yes} onClick={() => {}} />
-            <SelectionButton label={t(language, 'market.no')} value={mockOdds.bothScore.no} onClick={() => {}} />
-          </div>
-        </MarketCard>
+        {btts && (
+          <MarketCard title={t(language, 'market.bothScore')}>
+            <div className="grid grid-cols-2 gap-2">
+              <SelectionButton
+                label={t(language, 'market.yes')}
+                value={btts.home.odds}
+                onClick={() => onSelect('Both Teams Score', 'Yes', btts.home)}
+              />
+              <SelectionButton
+                label={t(language, 'market.no')}
+                value={btts.away.odds}
+                onClick={() => onSelect('Both Teams Score', 'No', btts.away)}
+              />
+            </div>
+          </MarketCard>
+        )}
       </div>
+
+      {!hasOdds && (
+        <Card className="border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-slate-500 dark:text-slate-400">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="h-6 w-6 opacity-50" />
+            </div>
+            <p className="font-medium">{t(language, 'market.noOdds') || 'No odds available'}</p>
+            <p className="text-sm mt-1">{t(language, 'market.checkBack')}</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -638,6 +664,14 @@ function OddsButtonCell({
         {odds.toFixed(2)}
       </span>
     </button>
+  );
+}
+
+function SuspendedCell() {
+  return (
+    <div className="flex items-center justify-center w-full px-3 py-2 rounded-md bg-slate-100 dark:bg-slate-800/50 text-slate-400 dark:text-slate-600 text-xs font-medium">
+      —
+    </div>
   );
 }
 

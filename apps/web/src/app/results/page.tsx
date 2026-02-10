@@ -301,8 +301,7 @@ export default function ResultsPage() {
               </span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="space-y-6">
+            <div className="space-y-6">
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                     <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -397,11 +396,9 @@ export default function ResultsPage() {
                     </div>
                   )}
                 </div>
-              </div>
-
               {selectedLeagueId !== 'all' && (
-                <div className="space-y-6">
-                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <>
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                     <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                       <h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Trophy size={18} className="text-amber-500" />
@@ -523,7 +520,7 @@ export default function ResultsPage() {
                       </div>
                     </div>
                   )}
-                </div>
+                </>
               )}
             </div>
           )}

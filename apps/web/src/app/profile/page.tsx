@@ -35,8 +35,8 @@ export default function ProfilePage() {
   const avatarUrl = (user as any)?.avatarUrl ?? (user as any)?.avatar ?? undefined;
   const balance = (user as any)?.balance ?? 0;
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+   const formatCurrency = (amount: number) =>
+     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   return (
       <main className="container mx-auto px-4 py-8 lg:px-6">

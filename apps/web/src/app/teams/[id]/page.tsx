@@ -131,15 +131,15 @@ export default function TeamDetailPage() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Error Loading Team</h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-6">{error || 'Team not found'}</p>
-            <Button onClick={() => fetchData(true)} className="bg-emerald-500 hover:bg-emerald-600">
-              Thử lại
-            </Button>
-            <div className="mt-4">
-              <Link href="/matches" className="text-emerald-500 hover:underline text-sm">
-                Quay lại danh sách trận đấu
-              </Link>
-            </div>
+             <p className="text-slate-500 dark:text-slate-400 mb-6">{error || 'Team not found'}</p>
+             <Button onClick={() => fetchData(true)} className="bg-emerald-500 hover:bg-emerald-600">
+               Try Again
+             </Button>
+             <div className="mt-4">
+               <Link href="/matches" className="text-emerald-500 hover:underline text-sm">
+                 Back to Matches
+               </Link>
+             </div>
           </CardContent>
         </Card>
       </div>
@@ -150,22 +150,22 @@ export default function TeamDetailPage() {
     <div className="min-h-full pb-12">
       <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between px-4 lg:px-6 py-3 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
-            <Link href="/matches" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Chi tiết đội bóng</span>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => fetchData(false)}
-            disabled={isRefreshing}
-            className={isRefreshing ? 'opacity-50' : ''}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Cập nhật</span>
-          </Button>
+           <div className="flex items-center gap-2">
+             <Link href="/matches" className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+               <ChevronLeft className="h-5 w-5" />
+             </Link>
+             <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Team Details</span>
+           </div>
+           <Button 
+             variant="ghost" 
+             size="sm" 
+             onClick={() => fetchData(false)}
+             disabled={isRefreshing}
+             className={isRefreshing ? 'opacity-50' : ''}
+           >
+             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+             <span className="hidden sm:inline">Refresh</span>
+           </Button>
         </div>
       </div>
 
@@ -176,36 +176,36 @@ export default function TeamDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Trận đấu sắp tới</h2>
-            </div>
-            
-            {upcomingMatches.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingMatches.map(match => (
-                  <MatchCard key={match.id} match={match} currentTeamId={team.id} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState message="Không có trận đấu sắp tới" />
+             <div className="flex items-center gap-2">
+               <Calendar className="h-5 w-5 text-emerald-500" />
+               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Upcoming Matches</h2>
+             </div>
+             
+             {upcomingMatches.length > 0 ? (
+               <div className="space-y-3">
+                 {upcomingMatches.map(match => (
+                   <MatchCard key={match.id} match={match} currentTeamId={team.id} />
+                 ))}
+               </div>
+             ) : (
+               <EmptyState message="No upcoming matches" />
             )}
           </section>
 
           <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Lịch sử trận đấu</h2>
-            </div>
+             <div className="flex items-center gap-2">
+               <History className="h-5 w-5 text-emerald-500" />
+               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Match History</h2>
+             </div>
 
-            {finishedMatches.length > 0 ? (
-              <div className="space-y-3">
-                {finishedMatches.map(match => (
-                  <MatchCard key={match.id} match={match} currentTeamId={team.id} isFinished />
-                ))}
-              </div>
-            ) : (
-              <EmptyState message="Chưa có lịch sử trận đấu" />
+             {finishedMatches.length > 0 ? (
+               <div className="space-y-3">
+                 {finishedMatches.map(match => (
+                   <MatchCard key={match.id} match={match} currentTeamId={team.id} isFinished />
+                 ))}
+               </div>
+             ) : (
+               <EmptyState message="No match history yet" />
             )}
           </section>
         </div>
@@ -257,30 +257,30 @@ function TeamHeader({ team }: { team: Team }) {
 function StatsSection({ stats }: { stats: TeamStats }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+       <StatsCard 
+         label="Matches Played" 
+         value={stats.matchesPlayed} 
+         icon={<Trophy className="h-5 w-5 text-purple-500" />}
+         className="bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/20"
+       />
       <StatsCard 
-        label="Trận đã đấu" 
-        value={stats.matchesPlayed} 
-        icon={<Trophy className="h-5 w-5 text-purple-500" />}
-        className="bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-900/20"
-      />
-      <StatsCard 
-        label="Tỉ lệ thắng" 
+        label="Win Rate" 
         value={`${stats.winRate.toFixed(0)}%`} 
         icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
         className="bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20"
       />
       <StatsCard 
-        label="Bàn thắng" 
+        label="Goals" 
         value={stats.goalsFor} 
-        subValue={`Thủng lưới: ${stats.goalsAgainst}`}
+        subValue={`Goals Against: ${stats.goalsAgainst}`}
         icon={<div className="h-5 w-5 flex items-center justify-center font-bold text-blue-500">⚽</div>}
         className="bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20"
       />
       <Card className="border-slate-200 dark:border-slate-800">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phong độ</span>
-            <span className="text-xs text-slate-400">5 trận gần nhất</span>
+           <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Form</span>
+             <span className="text-xs text-slate-400">Last 5 matches</span>
           </div>
           <div className="flex items-center justify-between h-8">
             {stats.form.length > 0 ? (

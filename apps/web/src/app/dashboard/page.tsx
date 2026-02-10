@@ -15,11 +15,10 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useBetSlipStore } from '@/stores/betslip.store';
 import { UpcomingMatchesTabs } from '@/components/dashboard/UpcomingMatchesTabs';
 import { LiveMatchTimer } from '@/components/matches/LiveMatchTimer';
-import { FloatingBetSlip } from '@/components/mobile';
 import { Bet365OddsTable } from '@/components/odds/Bet365OddsTable';
 import { BetSelection } from '@/components/odds/Bet365MatchRow';
 import { featuredMatchesService, Match, League } from '@/services/match.service';
-import { useTodayOdds } from '@/hooks/useOdds';
+import { useAllOdds } from '@/hooks/useOdds';
 import { cn } from '@/lib/utils';
 import { useMatchStatistics } from '@/hooks/useMatchStatistics';
 
@@ -34,7 +33,14 @@ export default function DashboardPage() {
   const footballCount = statistics?.total ?? 0;
   const liveCount = statistics?.live ?? 0;
 
-  const { data: oddsData, isLoading: isLoadingOdds, refetch: refetchOdds } = useTodayOdds();
+  const {
+    data: oddsData,
+    isLoading: isLoadingOdds,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch: refetchOdds,
+  } = useAllOdds();
 
   const { items: betSlipItems, toggleSelection } = useBetSlipStore();
 
@@ -61,21 +67,27 @@ export default function DashboardPage() {
       selection: selection.selection,
       odds: selection.odds,
       handicap: selection.handicap,
+      oddsId: selection.oddsId,
     });
   }, [toggleSelection]);
 
-  const filteredLeagues = useMemo(() => {
-    if (!oddsData?.leagues) return [];
+  const filteredDateGroups = useMemo(() => {
+    if (!oddsData?.dateGroups) return [];
     if (!selectedCountry || selectedCountry.countryCode === 'TOP') {
-      return oddsData.leagues;
+      return oddsData.dateGroups;
     }
-    return oddsData.leagues.filter((league) => {
-      return league.country === selectedCountry.countryName || 
-             league.country === selectedCountry.countryCode;
-    });
-  }, [oddsData?.leagues, selectedCountry]);
+    return oddsData.dateGroups
+      .map((group) => ({
+        ...group,
+        matches: group.matches.filter(
+          (match) =>
+            match.country === selectedCountry.countryName ||
+            match.country === selectedCountry.countryCode,
+        ),
+      }))
+      .filter((group) => group.matches.length > 0);
+  }, [oddsData?.dateGroups, selectedCountry]);
 
-  const totalMatches = filteredLeagues.reduce((sum, league) => sum + league.matches.length, 0);
 
   const scrollFeatured = (direction: 'left' | 'right') => {
     if (featuredScrollRef.current) {
@@ -99,6 +111,14 @@ export default function DashboardPage() {
       setIsLoadingFeatured(false);
     }
   }, []);
+
+  const handleRefreshOdds = useCallback(() => {
+    void refetchOdds();
+  }, [refetchOdds]);
+
+  const handleLoadMore = useCallback(() => {
+    void fetchNextPage();
+  }, [fetchNextPage]);
 
   const handleLeagueSelect = useCallback((league: League | null) => {
     if (!league) {
@@ -141,16 +161,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="mt-auto p-4 border-t border-slate-200 dark:border-white/5">
-            <div className="rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-center dark:from-indigo-600">
-              <Star className="h-8 w-8 text-yellow-300 mx-auto mb-2" />
-              <h4 className="font-bold text-white mb-1">VIP Club</h4>
-              <p className="text-xs text-indigo-100 mb-3">Unlock exclusive bonuses</p>
-              <button className="w-full py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition-colors backdrop-blur-sm">
-                View Status
-              </button>
-            </div>
-          </div>
+
         </aside>
 
         <main className="flex-1 overflow-y-auto overflow-x-clip p-3 sm:p-4 lg:p-6 scrollbar-hide">
@@ -349,24 +360,23 @@ export default function DashboardPage() {
                 selectedLeagueId={null}
                 liveCount={liveCount}
               />
-              <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                {totalMatches} match{totalMatches !== 1 ? 'es' : ''}
-              </div>
+
             </div>
           </div>
 
           <Bet365OddsTable
-            leagues={filteredLeagues}
+            dateGroups={filteredDateGroups}
             isLoading={isLoadingOdds}
             selectedBets={selectedBetsMap}
             onSelectBet={handleSelectBet}
-            onRefresh={() => refetchOdds()}
+            onRefresh={handleRefreshOdds}
+            onLoadMore={handleLoadMore}
+            hasMore={hasNextPage}
+            isFetchingMore={isFetchingNextPage}
             lastUpdate={oddsData?.lastUpdate}
           />
         </main>
       </div>
-      
-      <FloatingBetSlip />
     </div>
   );
 }

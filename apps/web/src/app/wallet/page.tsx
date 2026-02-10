@@ -105,8 +105,8 @@ export default function WalletPage() {
 
   const balance = user?.wallet?.realBalance ?? 0;
   
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+   const formatCurrency = (amount: number) =>
+     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   const getTransactionIcon = (type: string) => {
     const config = TRANSACTION_ICONS[type] || TRANSACTION_ICONS[TransactionType.ADJUSTMENT];

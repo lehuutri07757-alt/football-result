@@ -17,11 +17,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const STATUS_OPTIONS: { label: string; value: BetStatus | 'all' }[] = [
-  { label: 'Tất cả', value: 'all' },
-  { label: 'Chờ xử lý', value: 'pending' },
-  { label: 'Thắng', value: 'won' },
-  { label: 'Thua', value: 'lost' },
-  { label: 'Hủy', value: 'void' },
+  { label: 'All', value: 'all' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Won', value: 'won' },
+  { label: 'Lost', value: 'lost' },
+  { label: 'Void', value: 'void' },
 ];
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
@@ -34,20 +34,20 @@ const STATUS_BADGE_STYLES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Chờ xử lý',
-  won: 'Thắng',
-  lost: 'Thua',
-  void: 'Hủy',
-  partial_won: 'Thắng 1 phần',
+  pending: 'Pending',
+  won: 'Won',
+  lost: 'Lost',
+  void: 'Void',
+  partial_won: 'Partial Won',
   cashout: 'Cashout',
 };
 
 const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('vi-VN').format(amount);
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('vi-VN', {
+  return date.toLocaleDateString('en-US', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -118,11 +118,11 @@ export default function BetsHistoryPage() {
             <Link href="/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Lịch sử cá cược</h1>
+             <h1 className="text-lg font-bold text-gray-900 dark:text-white">Bet History</h1>
           </div>
-          <div className="text-sm text-slate-500 dark:text-slate-400">
-            {!loading && `${total} cược`}
-          </div>
+           <div className="text-sm text-slate-500 dark:text-slate-400">
+             {!loading && `${total} bets`}
+           </div>
         </div>
       </header>
 
@@ -168,21 +168,21 @@ export default function BetsHistoryPage() {
             <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
               <Receipt className="h-8 w-8 text-slate-400 dark:text-slate-500" />
             </div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-              Chưa có cược nào
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-              {statusFilter !== 'all'
-                ? `Không tìm thấy cược nào với trạng thái "${STATUS_LABELS[statusFilter] || statusFilter}".`
-                : 'Bạn chưa đặt cược nào. Hãy chọn kèo và đặt cược ngay!'}
-            </p>
+             <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
+               No bets yet
+             </h3>
+             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+               {statusFilter !== 'all'
+                 ? `No bets found with status "${STATUS_LABELS[statusFilter] || statusFilter}".`
+                 : 'You haven\'t placed any bets yet. Select odds and place a bet now!'}
+             </p>
             {statusFilter !== 'all' && (
-              <button
-                onClick={() => handleStatusChange('all')}
-                className="mt-4 px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-full hover:bg-emerald-600 transition-colors"
-              >
-                Xem tất cả
-              </button>
+               <button
+                 onClick={() => handleStatusChange('all')}
+                 className="mt-4 px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded-full hover:bg-emerald-600 transition-colors"
+               >
+                 View All
+               </button>
             )}
           </div>
         ) : (
@@ -198,7 +198,7 @@ export default function BetsHistoryPage() {
                     {bet.selections.map((sel) => (
                       <div key={sel.id} className="mb-1">
                         <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                          {sel.match.homeTeam.name} vs {sel.match.awayTeam.name}
+                          {sel.match?.homeTeam?.name ?? 'Home'} vs {sel.match?.awayTeam?.name ?? 'Away'}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {sel.selectionName || sel.selection}
@@ -217,19 +217,19 @@ export default function BetsHistoryPage() {
                   <div className="text-xs text-slate-400 dark:text-slate-500">
                     {formatDate(bet.placedAt)}
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 mr-2">Cược:</span>
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">
-                      {formatCurrency(bet.stake)} ₫
-                    </span>
+                   <div className="text-right">
+                     <span className="text-xs text-slate-500 dark:text-slate-400 mr-2">Stake:</span>
+                     <span className="text-sm font-bold text-slate-900 dark:text-white">
+                       {formatCurrency(bet.stake)}
+                     </span>
                     <span className="mx-1.5 text-slate-300 dark:text-slate-600">→</span>
-                    <span className={`text-sm font-bold ${
-                      bet.status === 'won' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
-                    }`}>
-                      {bet.status === 'won'
-                        ? `${formatCurrency(bet.actualWin)} ₫`
-                        : `${formatCurrency(bet.potentialWin)} ₫`}
-                    </span>
+                     <span className={`text-sm font-bold ${
+                       bet.status === 'won' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+                     }`}>
+                       {bet.status === 'won'
+                         ? `${formatCurrency(bet.actualWin)}`
+                         : `${formatCurrency(bet.potentialWin)}`}
+                     </span>
                   </div>
                 </div>
               </div>
@@ -240,25 +240,25 @@ export default function BetsHistoryPage() {
         {/* Pagination */}
         {!loading && totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 mt-6 pb-4">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-slate-200 dark:border-slate-700"
-            >
-              <ChevronLeft size={16} />
-              Trước
-            </button>
+             <button
+               onClick={() => setPage((p) => Math.max(1, p - 1))}
+               disabled={page <= 1}
+               className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-slate-200 dark:border-slate-700"
+             >
+               <ChevronLeft size={16} />
+               Previous
+             </button>
             <span className="text-sm text-slate-500 dark:text-slate-400">
               {page} / {totalPages}
             </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-slate-200 dark:border-slate-700"
-            >
-              Sau
-              <ChevronRight size={16} />
-            </button>
+             <button
+               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+               disabled={page >= totalPages}
+               className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-slate-200 dark:border-slate-700"
+             >
+               Next
+               <ChevronRight size={16} />
+             </button>
           </div>
         )}
       </main>
