@@ -202,7 +202,7 @@ export default function FeaturedMatchesSettingsPage() {
 
   const formatMatchTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', {
+    return date.toLocaleString('en-US', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',

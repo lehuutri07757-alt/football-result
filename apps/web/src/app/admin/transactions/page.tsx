@@ -64,7 +64,7 @@ export default function AdminTransactionsPage() {
   }, [searchQuery]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
   const formatDate = (date: string) => {

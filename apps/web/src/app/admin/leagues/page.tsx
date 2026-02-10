@@ -22,7 +22,14 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { leaguesService, sportsService, League, Sport, apiFootballSyncService } from '@/services/match.service';
+import {
+  leaguesService,
+  sportsService,
+  League,
+  Sport,
+  LeagueStats,
+  apiFootballSyncService,
+} from '@/services/match.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import {
@@ -55,6 +62,7 @@ export default function AdminLeaguesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState<LeagueStats | null>(null);
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -74,6 +82,10 @@ export default function AdminLeaguesPage() {
   const [featuredSaving, setFeaturedSaving] = useState<Record<string, boolean>>({});
   const [inactiveAllLoading, setInactiveAllLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+
+  const [selectedLeagueIds, setSelectedLeagueIds] = useState<Set<string>>(() => new Set());
+  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null);
+  const [bulkActionLoading, setBulkActionLoading] = useState<null | 'activate' | 'deactivate' | 'delete'>(null);
 
   const [editForm, setEditForm] = useState({
     sportId: '',
@@ -115,11 +127,21 @@ export default function AdminLeaguesPage() {
         sortBy: 'sortOrder',
         sortOrder: 'asc',
       };
-      const response = await leaguesService.getAll(params);
+      const [response, statsResponse] = await Promise.all([
+        leaguesService.getAll(params),
+        leaguesService.getStats({
+          search: debouncedSearchQuery || undefined,
+          sportId: sportFilter !== 'all' ? sportFilter : undefined,
+          country: countryFilter !== 'all' ? countryFilter : undefined,
+          isActive: statusFilter !== 'all' ? statusFilter === 'active' : undefined,
+          isFeatured: featuredFilter !== 'all' ? featuredFilter === 'featured' : undefined,
+        }),
+      ]);
       setLeagues(response.data);
       setReorderedLeagues(response.data);
       setTotalPages(response.meta.totalPages);
       setTotal(response.meta.total);
+      setStats(statsResponse);
     } catch (error) {
       console.error('Failed to fetch leagues:', error);
       toast.error('Failed to load leagues');
@@ -166,6 +188,23 @@ export default function AdminLeaguesPage() {
   useEffect(() => {
     fetchLeagues();
   }, [fetchLeagues]);
+
+  useEffect(() => {
+    // Keep selection valid after pagination/filter reloads.
+    setSelectedLeagueIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visibleIds = new Set(leagues.map((l) => l.id));
+      const next = new Set<string>();
+      prev.forEach((id) => {
+        if (visibleIds.has(id)) next.add(id);
+      });
+      return next;
+    });
+  }, [leagues]);
+
+  useEffect(() => {
+    if (isReorderMode) setSelectedLeagueIds(new Set());
+  }, [isReorderMode]);
 
   useEffect(() => {
     fetchSports();
@@ -328,6 +367,68 @@ export default function AdminLeaguesPage() {
     }
   };
 
+  const bulkSetActive = async (isActive: boolean) => {
+    const ids = Array.from(selectedLeagueIds);
+    if (ids.length === 0) return;
+
+    const confirmed = confirm(
+      `Set ${ids.length} selected league(s) to ${isActive ? 'Active' : 'Inactive'}?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setBulkActionLoading(isActive ? 'activate' : 'deactivate');
+      const results = await Promise.allSettled(
+        ids.map((id) => leaguesService.update(id, { isActive })),
+      );
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failedCount = results.length - successCount;
+
+      if (failedCount === 0) {
+        toast.success(`Updated ${successCount} league(s)`);
+      } else {
+        toast.error(`Updated ${successCount}; failed ${failedCount}`);
+      }
+
+      setSelectedLeagueIds(new Set());
+      fetchLeagues();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to update selected leagues'));
+    } finally {
+      setBulkActionLoading(null);
+    }
+  };
+
+  const bulkDeleteSelected = async () => {
+    const ids = Array.from(selectedLeagueIds);
+    if (ids.length === 0) return;
+
+    const confirmed = confirm(
+      `Delete ${ids.length} selected league(s)? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setBulkActionLoading('delete');
+      const results = await Promise.allSettled(ids.map((id) => leaguesService.delete(id)));
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failedCount = results.length - successCount;
+
+      if (failedCount === 0) {
+        toast.success(`Deleted ${successCount} league(s)`);
+      } else {
+        toast.error(`Deleted ${successCount}; failed ${failedCount}`);
+      }
+
+      setSelectedLeagueIds(new Set());
+      fetchLeagues();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to delete selected leagues'));
+    } finally {
+      setBulkActionLoading(null);
+    }
+  };
+
   const handleCreate = async () => {
     if (!createForm.sportId || !createForm.name || !createForm.slug) {
       toast.error('Please fill all required fields');
@@ -461,9 +562,19 @@ export default function AdminLeaguesPage() {
 
   const displayLeagues = isReorderMode ? reorderedLeagues : leagues;
 
-  const getActiveCount = () => leagues.filter((l) => l.isActive).length;
-  const getFeaturedCount = () => leagues.filter((l) => l.isFeatured).length;
-  const getMatchesCount = () => leagues.reduce((sum, l) => sum + (l._count?.matches || 0), 0);
+  const selectableLeagueIds = !isReorderMode ? displayLeagues.map((l) => l.id) : [];
+  const allVisibleSelected =
+    selectableLeagueIds.length > 0 && selectableLeagueIds.every((id) => selectedLeagueIds.has(id));
+  const someVisibleSelected = selectableLeagueIds.some((id) => selectedLeagueIds.has(id));
+
+  useEffect(() => {
+    if (!selectAllCheckboxRef.current) return;
+    selectAllCheckboxRef.current.indeterminate = someVisibleSelected && !allVisibleSelected;
+  }, [someVisibleSelected, allVisibleSelected]);
+
+  const activeCount = stats?.active ?? 0;
+  const featuredCount = stats?.featured ?? 0;
+  const matchesCount = stats?.matches ?? 0;
 
   return (
     <div className="space-y-6">
@@ -605,7 +716,7 @@ export default function AdminLeaguesPage() {
             <div>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Active</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                {getActiveCount()}
+                {activeCount}
               </p>
             </div>
           </div>
@@ -622,7 +733,7 @@ export default function AdminLeaguesPage() {
             <div>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Featured</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                {getFeaturedCount()}
+                {featuredCount}
               </p>
             </div>
           </div>
@@ -639,7 +750,7 @@ export default function AdminLeaguesPage() {
             <div>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Matches</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                {getMatchesCount()}
+                {matchesCount}
               </p>
             </div>
           </div>
@@ -686,6 +797,78 @@ export default function AdminLeaguesPage() {
               isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
             }`}
           >
+	            {!isReorderMode && selectedLeagueIds.size > 0 && (
+	              <div
+	                className={`px-6 py-3 border-b flex items-center justify-between ${
+	                  isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'
+	                }`}
+	              >
+	                <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>
+	                  Selected {selectedLeagueIds.size}
+	                </span>
+	                <div className="flex items-center gap-2">
+	                  <button
+	                    onClick={() => void bulkSetActive(true)}
+	                    disabled={bulkActionLoading !== null}
+	                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-60 ${
+	                      isDark
+	                        ? 'bg-slate-700 border-slate-600 text-white hover:border-emerald-500 hover:bg-emerald-500/10'
+	                        : 'bg-white border-slate-200 text-slate-800 hover:border-emerald-500 hover:bg-emerald-50'
+	                    }`}
+	                  >
+	                    {bulkActionLoading === 'activate' ? (
+	                      <Loader2 size={16} className="animate-spin" />
+	                    ) : (
+	                      <CheckCircle size={16} />
+	                    )}
+	                    Active
+	                  </button>
+	                  <button
+	                    onClick={() => void bulkSetActive(false)}
+	                    disabled={bulkActionLoading !== null}
+	                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-60 ${
+	                      isDark
+	                        ? 'bg-slate-700 border-slate-600 text-white hover:border-orange-500 hover:bg-orange-500/10'
+	                        : 'bg-white border-slate-200 text-slate-800 hover:border-orange-500 hover:bg-orange-50'
+	                    }`}
+	                  >
+	                    {bulkActionLoading === 'deactivate' ? (
+	                      <Loader2 size={16} className="animate-spin" />
+	                    ) : (
+	                      <XCircle size={16} />
+	                    )}
+	                    Inactive
+	                  </button>
+	                  <button
+	                    onClick={() => void bulkDeleteSelected()}
+	                    disabled={bulkActionLoading !== null}
+	                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-60 ${
+	                      isDark
+	                        ? 'bg-slate-700 border-slate-600 text-white hover:border-red-500 hover:bg-red-500/10'
+	                        : 'bg-white border-slate-200 text-slate-800 hover:border-red-500 hover:bg-red-50'
+	                    }`}
+	                  >
+	                    {bulkActionLoading === 'delete' ? (
+	                      <Loader2 size={16} className="animate-spin" />
+	                    ) : (
+	                      <Trash2 size={16} />
+	                    )}
+	                    Delete
+	                  </button>
+	                  <button
+	                    onClick={() => setSelectedLeagueIds(new Set())}
+	                    disabled={bulkActionLoading !== null}
+	                    className={`text-sm font-medium underline underline-offset-4 disabled:opacity-60 ${
+	                      isDark
+	                        ? 'text-cyan-300 hover:text-cyan-200'
+	                        : 'text-cyan-700 hover:text-cyan-600'
+	                    }`}
+	                  >
+	                    Clear
+	                  </button>
+	                </div>
+	              </div>
+	            )}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -695,6 +878,32 @@ export default function AdminLeaguesPage() {
                     }`}
                   >
                     {isReorderMode && <th className="px-4 py-3 w-12"></th>}
+                    {!isReorderMode && (
+                      <th className="px-4 py-3 w-12">
+                        <input
+                          ref={selectAllCheckboxRef}
+                          type="checkbox"
+                          aria-label="Select all leagues on this page"
+                          checked={allVisibleSelected}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setSelectedLeagueIds((prev) => {
+                              const next = new Set(prev);
+                              for (const id of selectableLeagueIds) {
+                                if (checked) next.add(id);
+                                else next.delete(id);
+                              }
+                              return next;
+                            });
+                          }}
+                          className={`h-4 w-4 rounded border ${
+                            isDark
+                              ? 'border-slate-500 bg-slate-800 accent-emerald-500'
+                              : 'border-slate-300 bg-white accent-emerald-600'
+                          }`}
+                        />
+                      </th>
+                    )}
                     <th className="px-4 py-3 font-medium">Order</th>
                     <th className="px-4 py-3 font-medium">League</th>
                     <th className="px-4 py-3 font-medium">Sport</th>
@@ -708,29 +917,59 @@ export default function AdminLeaguesPage() {
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
-                  {displayLeagues.map((league, index) => (
-                    <tr
-                      key={league.id}
-                      draggable={isReorderMode}
-                      onDragStart={(e) => handleDragStart(e, league.id, index)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDrop={(e) => handleDrop(e, index)}
-                      className={`transition-all ${
-                        isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'
-                      } ${isReorderMode ? 'cursor-move' : ''} ${
-                        dragOverIndex === index
-                          ? isDark
-                            ? 'bg-blue-500/20 border-t-2 border-blue-500'
-                            : 'bg-blue-50 border-t-2 border-blue-500'
-                          : ''
-                      }`}
-                    >
+	                  {displayLeagues.map((league, index) => (
+	                    <tr
+	                      key={league.id}
+	                      draggable={isReorderMode}
+	                      onDragStart={(e) => handleDragStart(e, league.id, index)}
+	                      onDragEnd={handleDragEnd}
+	                      onDragOver={(e) => handleDragOver(e, index)}
+	                      onDrop={(e) => handleDrop(e, index)}
+	                      className={`transition-all ${
+	                        isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-50'
+	                      } ${isReorderMode ? 'cursor-move' : ''} ${
+	                        !isReorderMode && selectedLeagueIds.has(league.id)
+	                          ? isDark
+	                            ? 'bg-emerald-500/10'
+	                            : 'bg-emerald-50'
+	                          : ''
+	                      } ${
+	                        dragOverIndex === index
+	                          ? isDark
+	                            ? 'bg-blue-500/20 border-t-2 border-blue-500'
+	                            : 'bg-blue-50 border-t-2 border-blue-500'
+	                          : ''
+	                      }`}
+	                    >
                       {isReorderMode && (
                         <td className="px-4 py-3">
                           <GripVertical
                             className={isDark ? 'text-gray-500' : 'text-slate-400'}
                             size={20}
+                          />
+                        </td>
+                      )}
+                      {!isReorderMode && (
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            aria-label={`Select league ${league.name}`}
+                            checked={selectedLeagueIds.has(league.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedLeagueIds((prev) => {
+                                const next = new Set(prev);
+                                if (checked) next.add(league.id);
+                                else next.delete(league.id);
+                                return next;
+                              });
+                            }}
+                            className={`h-4 w-4 rounded border ${
+                              isDark
+                                ? 'border-slate-500 bg-slate-800 accent-emerald-500'
+                                : 'border-slate-300 bg-white accent-emerald-600'
+                            }`}
                           />
                         </td>
                       )}

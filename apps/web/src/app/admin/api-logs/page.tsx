@@ -173,7 +173,7 @@ export default function ApiLogsPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('vi-VN', {
+    return new Date(dateStr).toLocaleString('en-US', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',

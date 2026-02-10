@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   RefreshCw,
   CheckCircle2,
@@ -22,16 +22,17 @@ import {
   Server,
   X,
   Eye,
-  FileText,
-  Hash,
   Calendar,
   ArrowRight,
   Unlock,
   ListOrdered,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { AdminLoading } from '@/components/admin/AdminLoading';
-import { syncJobService, SyncJob, SyncJobStats, QueueStatus, SyncJobType, SyncJobStatus } from '@/services/sync-job.service';
+import { syncJobService, SyncJob, SyncJobStats, QueueStatus, SyncJobType, SyncJobStatus, SyncJobPriority } from '@/services/sync-job.service';
 import { cn } from '@/lib/utils';
 
 const JOB_TYPE_CONFIG: Record<SyncJobType, { label: string; icon: React.ElementType; color: string }> = {
@@ -39,6 +40,7 @@ const JOB_TYPE_CONFIG: Record<SyncJobType, { label: string; icon: React.ElementT
   team: { label: 'Teams', icon: Users, color: 'text-blue-500' },
   fixture: { label: 'Fixtures', icon: Activity, color: 'text-emerald-500' },
   odds_upcoming: { label: 'Upcoming Odds', icon: TrendingUp, color: 'text-amber-500' },
+  odds_far: { label: 'Far Odds', icon: Calendar, color: 'text-orange-500' },
   odds_live: { label: 'Live Odds', icon: Zap, color: 'text-red-500' },
   standings: { label: 'Standings', icon: ListOrdered, color: 'text-cyan-500' },
   full_sync: { label: 'Full Sync', icon: Database, color: 'text-indigo-500' },
@@ -341,16 +343,38 @@ export default function SyncDashboardPage() {
   const [triggering, setTriggering] = useState<SyncJobType | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedJob, setSelectedJob] = useState<SyncJob | null>(null);
-  const hasFetchedInitially = useRef(false);
+  
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const [filterType, setFilterType] = useState<SyncJobType | ''>('');
+  const [filterStatus, setFilterStatus] = useState<SyncJobStatus | ''>('');
+  const [filterPriority, setFilterPriority] = useState<SyncJobPriority | ''>('');
+  const [filterTriggeredBy, setFilterTriggeredBy] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
       const [jobsData, statsData, queueData] = await Promise.all([
-        syncJobService.getJobs({ limit: 20 }),
+        syncJobService.getJobs({
+          page,
+          limit,
+          type: filterType || undefined,
+          status: filterStatus || undefined,
+          priority: filterPriority || undefined,
+          triggeredBy: filterTriggeredBy || undefined,
+          dateFrom: filterDateFrom || undefined,
+          dateTo: filterDateTo || undefined,
+        }),
         syncJobService.getStats(),
         syncJobService.getQueueStatus(),
       ]);
-      setJobs(jobsData);
+      setJobs(jobsData.data);
+      setTotalPages(jobsData.meta.totalPages);
+      setTotal(jobsData.meta.total);
       setStats(statsData);
       setQueueStatus(queueData);
     } catch (error) {
@@ -358,11 +382,9 @@ export default function SyncDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, limit, filterType, filterStatus, filterPriority, filterTriggeredBy, filterDateFrom, filterDateTo]);
 
   useEffect(() => {
-    if (hasFetchedInitially.current) return;
-    hasFetchedInitially.current = true;
     fetchData();
   }, [fetchData]);
 
@@ -387,6 +409,9 @@ export default function SyncDashboardPage() {
           break;
         case 'odds_upcoming':
           await syncJobService.triggerUpcomingOddsSync();
+          break;
+        case 'odds_far':
+          await syncJobService.triggerFarOddsSync();
           break;
         case 'odds_live':
           await syncJobService.triggerLiveOddsSync();
@@ -465,6 +490,18 @@ export default function SyncDashboardPage() {
         return <Pause size={16} className="text-slate-400" />;
     }
   };
+
+  const clearFilters = () => {
+    setFilterType('');
+    setFilterStatus('');
+    setFilterPriority('');
+    setFilterTriggeredBy('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setPage(1);
+  };
+
+  const hasActiveFilters = filterType || filterStatus || filterPriority || filterTriggeredBy || filterDateFrom || filterDateTo;
 
   if (loading) {
     return <AdminLoading text="Loading sync dashboard..." />;
@@ -550,7 +587,7 @@ export default function SyncDashboardPage() {
             Quick Actions
           </h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {(Object.keys(JOB_TYPE_CONFIG) as SyncJobType[]).map((type) => {
             const config = JOB_TYPE_CONFIG[type];
             const Icon = config.icon;
@@ -653,13 +690,119 @@ export default function SyncDashboardPage() {
         isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-100 shadow-sm'
       )}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className={cn('font-semibold', isDark ? 'text-white' : 'text-slate-900')}>
-            Recent Jobs
-          </h3>
-          <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
-            Click on a job to view details
-          </span>
+          <div className="flex flex-col">
+            <h3 className={cn('font-semibold', isDark ? 'text-white' : 'text-slate-900')}>
+              Recent Jobs
+            </h3>
+            <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>
+              Click on a job to view details
+            </span>
+          </div>
         </div>
+
+        <div className={cn('p-4 border-b space-y-4', isDark ? 'border-slate-800' : 'border-slate-200')}>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-slate-500">
+              <Filter size={16} />
+              <span className="text-sm font-medium">Filters:</span>
+            </div>
+            
+            <select
+              value={filterType}
+              onChange={(e) => { setFilterType(e.target.value as SyncJobType | ''); setPage(1); }}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none',
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+              )}
+            >
+              <option value="">All Types</option>
+              {(Object.keys(JOB_TYPE_CONFIG) as SyncJobType[]).map((type) => (
+                <option key={type} value={type}>{JOB_TYPE_CONFIG[type].label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value as SyncJobStatus | ''); setPage(1); }}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none',
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+              )}
+            >
+              <option value="">All Status</option>
+              {(Object.keys(STATUS_CONFIG) as SyncJobStatus[]).map((status) => (
+                <option key={status} value={status}>{STATUS_CONFIG[status].label}</option>
+              ))}
+            </select>
+
+            <select
+              value={filterPriority}
+              onChange={(e) => { setFilterPriority(e.target.value as SyncJobPriority | ''); setPage(1); }}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none',
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+              )}
+            >
+              <option value="">All Priorities</option>
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+
+            <select
+              value={filterTriggeredBy}
+              onChange={(e) => { setFilterTriggeredBy(e.target.value); setPage(1); }}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none',
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+              )}
+            >
+              <option value="">All Triggers</option>
+              <option value="api">API</option>
+              <option value="scheduler">Scheduler</option>
+              <option value="system">System</option>
+            </select>
+
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1); }}
+              placeholder="From Date"
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none',
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+              )}
+            />
+
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => { setFilterDateTo(e.target.value); setPage(1); }}
+              placeholder="To Date"
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm border focus:ring-2 focus:ring-blue-500 outline-none',
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+              )}
+            />
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className={cn(
+                  'px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5',
+                  isDark 
+                    ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20' 
+                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                )}
+              >
+                <X size={14} />
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -812,6 +955,68 @@ export default function SyncDashboardPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className={cn(
+          'flex items-center justify-between px-6 py-4 border-t',
+          isDark ? 'border-slate-800' : 'border-slate-200'
+        )}>
+          <div className={cn('text-sm', isDark ? 'text-slate-400' : 'text-slate-500')}>
+            Showing <span className={cn('font-medium', isDark ? 'text-white' : 'text-slate-900')}>{total === 0 ? 0 : (page - 1) * limit + 1}</span> to <span className={cn('font-medium', isDark ? 'text-white' : 'text-slate-900')}>{Math.min(page * limit, total)}</span> of <span className={cn('font-medium', isDark ? 'text-white' : 'text-slate-900')}>{total}</span> jobs
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className={cn(
+                'p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600'
+              )}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let p = page;
+                if (totalPages <= 5) {
+                  p = i + 1;
+                } else if (page <= 3) {
+                  p = i + 1;
+                } else if (page >= totalPages - 2) {
+                  p = totalPages - 4 + i;
+                } else {
+                  p = page - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={cn(
+                      'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
+                      p === page
+                        ? 'bg-blue-500 text-white'
+                        : isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'
+                    )}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || totalPages === 0}
+              className={cn(
+                'p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600'
+              )}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 

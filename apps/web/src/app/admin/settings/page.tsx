@@ -237,17 +237,17 @@ export default function AdminSettingsPage() {
     loginNotification: false,
     sessionTimeout: 30,
     maxLoginAttempts: 5,
-    minDeposit: 50000,
-    maxDeposit: 100000000,
-    minWithdrawal: 100000,
-    maxWithdrawal: 50000000,
+    minDeposit: 5,
+    maxDeposit: 50000,
+    minWithdrawal: 10,
+    maxWithdrawal: 25000,
     withdrawalFeePercent: 0,
     withdrawalFeeFixed: 0,
-    minBet: 10000,
-    maxBet: 10000000,
+    minBet: 1,
+    maxBet: 10000,
     newBetNotification: true,
     largeTransactionAlert: true,
-    largeTransactionThreshold: 10000000,
+    largeTransactionThreshold: 10000,
     suspiciousActivityAlert: true,
     dailyReportEmail: true,
     maintenanceMode: false,
@@ -272,7 +272,7 @@ export default function AdminSettingsPage() {
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(value);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
   };
 
   return (
@@ -420,7 +420,7 @@ export default function AdminSettingsPage() {
                 </CardHeader>
                 <CardContent className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Min Deposit (VND)</Label>
+                    <Label>Min Deposit (USD)</Label>
                     <Input
                       type="number"
                       value={settings.minDeposit}
@@ -428,7 +428,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Deposit (VND)</Label>
+                    <Label>Max Deposit (USD)</Label>
                     <Input
                       type="number"
                       value={settings.maxDeposit}
@@ -436,7 +436,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Min Withdrawal (VND)</Label>
+                    <Label>Min Withdrawal (USD)</Label>
                     <Input
                       type="number"
                       value={settings.minWithdrawal}
@@ -444,7 +444,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Withdrawal (VND)</Label>
+                    <Label>Max Withdrawal (USD)</Label>
                     <Input
                       type="number"
                       value={settings.maxWithdrawal}
@@ -470,7 +470,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Fixed Fee (VND)</Label>
+                    <Label>Fixed Fee (USD)</Label>
                     <Input
                       type="number"
                       value={settings.withdrawalFeeFixed}
@@ -478,7 +478,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Min Bet (VND)</Label>
+                    <Label>Min Bet (USD)</Label>
                     <Input
                       type="number"
                       value={settings.minBet}
@@ -486,7 +486,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Bet (VND)</Label>
+                    <Label>Max Bet (USD)</Label>
                     <Input
                       type="number"
                       value={settings.maxBet}
@@ -566,7 +566,7 @@ export default function AdminSettingsPage() {
                   
                   {settings.largeTransactionAlert && (
                     <div className="space-y-2 pt-4 border-t">
-                      <Label>Threshold Amount (VND)</Label>
+                      <Label>Threshold Amount (USD)</Label>
                       <Input
                         type="number"
                         value={settings.largeTransactionThreshold}

@@ -9,6 +9,7 @@ import {
   Save, 
   History, 
   Calendar, 
+  CalendarRange,
   Clock, 
   Activity, 
   Zap,
@@ -31,7 +32,7 @@ export default function SyncSettingsPage() {
   const [config, setConfig] = useState<ApiFootballSyncConfig | null>(null);
   const [originalConfig, setOriginalConfig] = useState<ApiFootballSyncConfig | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState<'fixtures' | 'live' | 'upcoming' | 'standings' | 'general'>('fixtures');
+  const [activeTab, setActiveTab] = useState<'fixtures' | 'live' | 'upcoming' | 'far' | 'standings' | 'general'>('fixtures');
 
   useEffect(() => {
     loadConfig();
@@ -123,6 +124,11 @@ export default function SyncSettingsPage() {
 
     if (config.upcomingOdds.enabled) {
       const dailyRuns = (24 * 60) / config.upcomingOdds.intervalMinutes;
+      total += dailyRuns;
+    }
+
+    if (config.farOdds?.enabled) {
+      const dailyRuns = (24 * 60) / config.farOdds.intervalMinutes;
       total += dailyRuns;
     }
 
@@ -256,6 +262,7 @@ export default function SyncSettingsPage() {
           { id: 'fixtures', label: 'Fixtures', icon: Calendar },
           { id: 'live', label: 'Live Odds', icon: Activity },
           { id: 'upcoming', label: 'Upcoming Odds', icon: Clock },
+          { id: 'far', label: 'Far Odds', icon: CalendarRange },
           { id: 'standings', label: 'Standings', icon: Trophy },
           { id: 'general', label: 'General & Limits', icon: Globe },
         ].map((tab) => (
@@ -432,7 +439,7 @@ export default function SyncSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Upcoming Odds Synchronization</h3>
-                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pre-match odds updates</p>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pre-match odds updates for near matches (within hours)</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input 
@@ -482,7 +489,7 @@ export default function SyncSettingsPage() {
                         : 'bg-white border-slate-200 text-slate-900 focus:border-emerald-500'
                     } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Sync odds for matches starting within this timeframe</p>
+                  <p className="text-xs text-slate-500 mt-1">Sync odds for matches starting within this timeframe (near boundary)</p>
                 </div>
               </div>
 
@@ -504,6 +511,99 @@ export default function SyncSettingsPage() {
                     } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
                   />
                   <p className="text-xs text-slate-500 mt-1">Maximum upcoming matches to process per sync</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'far' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Far Odds Synchronization</h3>
+                <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pre-match odds for distant matches (beyond hours ahead, up to days)</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={config.farOdds?.enabled ?? true}
+                  onChange={(e) => updateConfig('farOdds', 'enabled', e.target.checked)}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Sync Interval (Minutes)
+                  </label>
+                  <input 
+                    type="number" 
+                    min="60" 
+                    max="1440"
+                    value={config.farOdds?.intervalMinutes ?? 270}
+                    onChange={(e) => updateConfig('farOdds', 'intervalMinutes', parseInt(e.target.value))}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      isDark 
+                        ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' 
+                        : 'bg-white border-slate-200 text-slate-900 focus:border-emerald-500'
+                    } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">How often to sync far odds (60-1440 minutes, default: 270 = 4.5 hours)</p>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Max Days Ahead
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="30"
+                    value={config.farOdds?.maxDaysAhead ?? 14}
+                    onChange={(e) => updateConfig('farOdds', 'maxDaysAhead', parseInt(e.target.value))}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      isDark 
+                        ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' 
+                        : 'bg-white border-slate-200 text-slate-900 focus:border-emerald-500'
+                    } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Sync odds for matches up to this many days ahead (1-30)</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    Max Matches Per Sync
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="200"
+                    value={config.farOdds?.maxMatchesPerSync ?? 30}
+                    onChange={(e) => updateConfig('farOdds', 'maxMatchesPerSync', parseInt(e.target.value))}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      isDark 
+                        ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' 
+                        : 'bg-white border-slate-200 text-slate-900 focus:border-emerald-500'
+                    } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Maximum far matches to process per sync</p>
+                </div>
+
+                <div className={`p-4 rounded-xl border ${isDark ? 'border-slate-800 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
+                  <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>About Far Odds Sync</h4>
+                  <ul className={`text-xs space-y-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <li>• Covers matches beyond the "Upcoming" window</li>
+                    <li>• Syncs less frequently to conserve API quota</li>
+                    <li>• Range: from Upcoming hours-ahead boundary to max days ahead</li>
+                    <li>• Default: every 4.5 hours, up to 14 days ahead</li>
+                  </ul>
                 </div>
               </div>
             </div>
