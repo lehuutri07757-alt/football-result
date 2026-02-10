@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BettingLimitsService } from '../betting-limits/betting-limits.service';
-import { PlaceBetDto, QueryMyBetsDto } from './dto';
+import { PlaceBetDto, QueryMyBetsDto, QueryAdminBetsDto } from './dto';
 
 @Injectable()
 export class BetsService {
@@ -22,7 +22,13 @@ export class BetsService {
           equals: dto.idempotencyKey,
         },
       },
-      include: { selections: true },
+      include: {
+        selections: {
+          include: {
+            match: { include: { homeTeam: true, awayTeam: true, league: true } },
+          },
+        },
+      },
     });
     if (existingBet) {
       return { duplicate: true, bet: existingBet, balance: null };
@@ -144,10 +150,16 @@ export class BetsService {
         },
       });
 
-      // Fetch bet with selections for response
+      // Fetch bet with selections and match relations for response
       const betWithSelections = await tx.bet.findUnique({
         where: { id: bet.id },
-        include: { selections: true },
+        include: {
+          selections: {
+            include: {
+              match: { include: { homeTeam: true, awayTeam: true, league: true } },
+            },
+          },
+        },
       });
 
       return { bet: betWithSelections, wallet: updatedWallet };
@@ -479,5 +491,165 @@ export class BetsService {
     }
 
     return bet;
+  }
+
+  // ─── Admin Methods ────────────────────────────────────────────────
+
+  async getAdminBets(query: QueryAdminBetsDto) {
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = {};
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.search) {
+      where.user = {
+        OR: [
+          { username: { contains: query.search, mode: 'insensitive' } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    if (query.fromDate || query.toDate) {
+      const placedAt: Record<string, Date> = {};
+      if (query.fromDate) placedAt.gte = new Date(query.fromDate);
+      if (query.toDate) placedAt.lte = new Date(query.toDate);
+      where.placedAt = placedAt;
+    }
+
+    const [bets, total] = await Promise.all([
+      this.prisma.bet.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { placedAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          selections: {
+            include: {
+              odds: { include: { betType: true } },
+              match: { include: { homeTeam: true, awayTeam: true, league: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.bet.count({ where }),
+    ]);
+
+    return {
+      data: bets,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getAdminBetById(betId: string) {
+    const bet = await this.prisma.bet.findUnique({
+      where: { id: betId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+        selections: {
+          include: {
+            odds: { include: { betType: true } },
+            match: { include: { homeTeam: true, awayTeam: true, league: true } },
+          },
+        },
+      },
+    });
+
+    if (!bet) {
+      throw new NotFoundException('Bet not found');
+    }
+
+    return bet;
+  }
+
+  async voidBet(betId: string): Promise<{ message: string }> {
+    const bet = await this.prisma.bet.findUnique({
+      where: { id: betId },
+      include: { selections: true },
+    });
+
+    if (!bet) {
+      throw new NotFoundException('Bet not found');
+    }
+
+    if (bet.status !== 'pending') {
+      throw new BadRequestException('Only pending bets can be voided');
+    }
+
+    const metadata = bet.metadata as Record<string, unknown>;
+    const realStake = Number(metadata?.realStake ?? bet.stake);
+    const bonusStake = Number(metadata?.bonusStake ?? 0);
+
+    await this.prisma.$transaction(async (tx) => {
+      // Void all selections
+      await tx.betSelection.updateMany({
+        where: { betId },
+        data: { result: 'void' },
+      });
+
+      // Update bet status
+      await tx.bet.update({
+        where: { id: betId },
+        data: {
+          status: 'void',
+          settledAt: new Date(),
+        },
+      });
+
+      // Refund wallet
+      const wallet = await tx.wallet.findUnique({ where: { userId: bet.userId } });
+      if (!wallet) return;
+
+      const balanceBefore = Number(wallet.realBalance) + Number(wallet.bonusBalance);
+
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          realBalance: { increment: realStake },
+          bonusBalance: { increment: bonusStake },
+        },
+      });
+
+      const refundAmount = Number(bet.stake);
+      await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'bet_refund',
+          amount: refundAmount,
+          balanceBefore,
+          balanceAfter: balanceBefore + refundAmount,
+          balanceType: 'real',
+          referenceType: 'bet',
+          referenceId: betId,
+          description: 'Bet voided by admin',
+          status: 'completed',
+        },
+      });
+    });
+
+    return { message: 'Bet voided and refunded successfully' };
   }
 }
