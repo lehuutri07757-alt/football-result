@@ -5,9 +5,10 @@ import { AdminService } from './admin.service';
 import { UsersModule } from '../users/users.module';
 import { WithdrawalsModule } from '../withdrawals/withdrawals.module';
 import { DepositsModule } from '../deposits/deposits.module';
+import { BetsModule } from '../bets/bets.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, WithdrawalsModule, DepositsModule],
+  imports: [PrismaModule, UsersModule, WithdrawalsModule, DepositsModule, BetsModule],
   controllers: [AdminController],
   providers: [AdminService],
 })

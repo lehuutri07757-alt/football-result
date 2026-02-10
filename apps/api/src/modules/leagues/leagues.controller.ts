@@ -16,6 +16,13 @@ export class LeaguesController {
     return this.leaguesService.findAll(query);
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Get leagues statistics by filters' })
+  @ApiResponse({ status: 200, description: 'Statistics' })
+  async getStats(@Query() query: QueryLeagueDto) {
+    return this.leaguesService.getStats(query);
+  }
+
   @Get('featured')
   @ApiOperation({ summary: 'Get featured leagues' })
   @ApiResponse({ status: 200, description: 'List of featured leagues' })

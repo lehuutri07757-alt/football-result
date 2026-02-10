@@ -8,6 +8,36 @@ import { buildLeagueSearchKey, normalizeForSearch } from '../../common/utils/sea
 export class LeaguesService {
   constructor(private prisma: PrismaService) {}
 
+  async getStats(query: QueryLeagueDto) {
+    const { search, sportId, country, isActive, isFeatured } = query;
+
+    const normalizedSearchKey = search ? normalizeForSearch(search) : undefined;
+
+    const where: Prisma.LeagueWhereInput = {
+      ...(sportId && { sportId }),
+      ...(country && { country: { contains: country, mode: 'insensitive' } }),
+      ...(isActive !== undefined && { isActive }),
+      ...(isFeatured !== undefined && { isFeatured }),
+      ...(normalizedSearchKey && {
+        searchKey: { contains: normalizedSearchKey },
+      }),
+    };
+
+    const [total, active, featured, matches] = await Promise.all([
+      this.prisma.league.count({ where }),
+      this.prisma.league.count({ where: { AND: [where, { isActive: true }] } }),
+      this.prisma.league.count({ where: { AND: [where, { isFeatured: true }] } }),
+      this.prisma.match.count({ where: { league: { is: where } } }),
+    ]);
+
+    return {
+      total,
+      active,
+      featured,
+      matches,
+    };
+  }
+
   async create(createLeagueDto: CreateLeagueDto) {
     const sport = await this.prisma.sport.findUnique({
       where: { id: createLeagueDto.sportId },

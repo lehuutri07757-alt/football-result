@@ -5,9 +5,11 @@ import { AdminService } from './admin.service';
 import { UsersService } from '../users/users.service';
 import { WithdrawalsService } from '../withdrawals/withdrawals.service';
 import { DepositsService } from '../deposits/deposits.service';
+import { BetsService } from '../bets/bets.service';
 import { QueryUserDto, UpdateUserDto } from '../users/dto';
 import { QueryWithdrawalDto, WithdrawalAction } from '../withdrawals/dto';
 import { QueryDepositDto, DepositAction } from '../deposits/dto';
+import { QueryAdminBetsDto } from '../bets/dto';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators';
 import { PERMISSIONS } from '../roles/constants/permissions';
@@ -22,6 +24,7 @@ export class AdminController {
     private usersService: UsersService,
     private withdrawalsService: WithdrawalsService,
     private depositsService: DepositsService,
+    private betsService: BetsService,
   ) {}
 
   @Get('stats')
@@ -187,5 +190,29 @@ export class AdminController {
       action: DepositAction.REJECT,
       rejectReason: body.reason,
     }, req.user.sub);
+  }
+
+  @Get('bets')
+  @ApiOperation({ summary: 'Get all bets with pagination and filters (Admin)' })
+  @ApiResponse({ status: 200, description: 'List of bets with pagination' })
+  @RequirePermissions(PERMISSIONS.BETS.READ)
+  async getBets(@Query() query: QueryAdminBetsDto) {
+    return this.betsService.getAdminBets(query);
+  }
+
+  @Get('bets/:id')
+  @ApiOperation({ summary: 'Get bet details by ID (Admin)' })
+  @ApiResponse({ status: 200, description: 'Bet details' })
+  @RequirePermissions(PERMISSIONS.BETS.READ)
+  async getBet(@Param('id') id: string) {
+    return this.betsService.getAdminBetById(id);
+  }
+
+  @Post('bets/:id/void')
+  @ApiOperation({ summary: 'Void a pending bet and refund user (Admin)' })
+  @ApiResponse({ status: 200, description: 'Bet voided and refunded' })
+  @RequirePermissions(PERMISSIONS.BETS.VOID)
+  async voidBet(@Param('id') id: string) {
+    return this.betsService.voidBet(id);
   }
 }
