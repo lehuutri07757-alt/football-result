@@ -3,6 +3,7 @@ export enum SyncJobType {
   team = 'team',
   fixture = 'fixture',
   odds_upcoming = 'odds_upcoming',
+  odds_far = 'odds_far',
   odds_live = 'odds_live',
   standings = 'standings',
   full_sync = 'full_sync',
@@ -45,6 +46,10 @@ export interface OddsSyncParams {
   matchIds?: string[];
 }
 
+export interface FarOddsSyncParams {
+  maxDaysAhead?: number;
+}
+
 export interface LiveOddsSyncParams {}
 
 export interface StandingsSyncParams {
@@ -66,6 +71,7 @@ export type SyncJobParams =
   | TeamSyncParams
   | FixtureSyncParams
   | OddsSyncParams
+  | FarOddsSyncParams
   | LiveOddsSyncParams
   | StandingsSyncParams
   | FullSyncParams;
@@ -201,6 +207,12 @@ export const SYNC_JOB_OPTIONS: Record<SyncJobType, {
     removeOnFail: 50,
   },
   [SyncJobType.odds_upcoming]: {
+    attempts: 2,
+    backoff: { type: 'fixed', delay: 30000 },
+    removeOnComplete: 50,
+    removeOnFail: 30,
+  },
+  [SyncJobType.odds_far]: {
     attempts: 2,
     backoff: { type: 'fixed', delay: 30000 },
     removeOnComplete: 50,

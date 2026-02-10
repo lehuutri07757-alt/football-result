@@ -68,65 +68,148 @@ export class OddsSyncService {
         where: {
           startTime: { gte: now, lte: futureDate },
           status: 'scheduled',
-          bettingEnabled: true,
           externalId: { not: null },
         },
+        orderBy: { startTime: 'asc' },
         take: config.maxMatchesPerSync,
       });
 
+      const totalEligible = await this.prisma.match.count({
+        where: {
+          startTime: { gte: now, lte: futureDate },
+          status: 'scheduled',
+          externalId: { not: null },
+        },
+      });
+
       result.totalMatches = matches.length;
-      this.logger.log(`Syncing odds for ${matches.length} upcoming matches...`);
+      this.logger.log(
+        `Upcoming odds sync: ${matches.length}/${totalEligible} matches selected (within ${effectiveHoursAhead}h, limit ${config.maxMatchesPerSync})`,
+      );
 
       if (matches.length === 0) {
         return result;
       }
 
-      this.betTypeMapCache = await this.getBetTypeMap();
-
-      let processedMatches = 0;
-
-      for (let i = 0; i < matches.length; i += PARALLEL_BATCH_SIZE) {
-        const batch = matches.slice(i, i + PARALLEL_BATCH_SIZE);
-        
-        const batchResults = await Promise.allSettled(
-          batch.map(match => this.syncOddsForMatch(match.id, match.externalId!))
-        );
-
-        for (let j = 0; j < batchResults.length; j++) {
-          const batchResult = batchResults[j];
-          if (batchResult.status === 'fulfilled') {
-            result.totalOdds += batchResult.value.totalOdds;
-            result.created += batchResult.value.created;
-            result.updated += batchResult.value.updated;
-            result.errors.push(...batchResult.value.errors);
-          } else {
-            const msg = `Failed to sync odds for match ${batch[j].externalId}: ${batchResult.reason}`;
-            this.logger.warn(msg);
-            result.errors.push(msg);
-          }
-        }
-
-        processedMatches += batch.length;
-        const progress = Math.round((processedMatches / matches.length) * 100);
-        
-        if (onProgress) {
-          await onProgress(progress, processedMatches, matches.length);
-        }
-      }
-
-      this.betTypeMapCache = null;
-
-      this.logger.log(
-        `Odds sync complete: ${result.created} created, ${result.updated} updated for ${result.totalMatches} matches`,
-      );
+      await this.processMatchBatch(matches, result, onProgress);
     } catch (error) {
-      const msg = `Odds sync failed: ${error}`;
+      const msg = `Upcoming odds sync failed: ${error}`;
       this.logger.error(msg);
       result.errors.push(msg);
       this.betTypeMapCache = null;
     }
 
     return result;
+  }
+
+  async syncOddsForFarMatches(
+    maxDaysAhead?: number,
+    onProgress?: (progress: number, processedItems: number, totalItems: number) => Promise<void>,
+  ): Promise<OddsSyncResult> {
+    const farConfig = this.syncConfig.farOddsConfig;
+    const nearConfig = this.syncConfig.upcomingOddsConfig;
+
+    const result: OddsSyncResult = {
+      totalMatches: 0,
+      totalOdds: 0,
+      created: 0,
+      updated: 0,
+      errors: [],
+      syncedAt: new Date().toISOString(),
+    };
+
+    if (!farConfig.enabled) {
+      this.logger.log('Far odds sync is disabled');
+      return result;
+    }
+
+    try {
+      const effectiveMaxDays = maxDaysAhead ?? farConfig.maxDaysAhead;
+      const now = new Date();
+      const nearBoundary = new Date(now.getTime() + nearConfig.hoursAhead * 60 * 60 * 1000);
+      const farBoundary = new Date(now.getTime() + effectiveMaxDays * 24 * 60 * 60 * 1000);
+
+      const matches = await this.prisma.match.findMany({
+        where: {
+          startTime: { gt: nearBoundary, lte: farBoundary },
+          status: 'scheduled',
+          externalId: { not: null },
+        },
+        orderBy: { startTime: 'asc' },
+        take: farConfig.maxMatchesPerSync,
+      });
+
+      const totalEligible = await this.prisma.match.count({
+        where: {
+          startTime: { gt: nearBoundary, lte: farBoundary },
+          status: 'scheduled',
+          externalId: { not: null },
+        },
+      });
+
+      result.totalMatches = matches.length;
+      this.logger.log(
+        `Far odds sync: ${matches.length}/${totalEligible} matches selected (${nearConfig.hoursAhead}h - ${effectiveMaxDays}d, limit ${farConfig.maxMatchesPerSync})`,
+      );
+
+      if (matches.length === 0) {
+        return result;
+      }
+
+      await this.processMatchBatch(matches, result, onProgress);
+    } catch (error) {
+      const msg = `Far odds sync failed: ${error}`;
+      this.logger.error(msg);
+      result.errors.push(msg);
+      this.betTypeMapCache = null;
+    }
+
+    return result;
+  }
+
+  private async processMatchBatch(
+    matches: Array<{ id: string; externalId: string | null }>,
+    result: OddsSyncResult,
+    onProgress?: (progress: number, processedItems: number, totalItems: number) => Promise<void>,
+  ): Promise<void> {
+    this.betTypeMapCache = await this.getBetTypeMap();
+
+    let processedMatches = 0;
+
+    for (let i = 0; i < matches.length; i += PARALLEL_BATCH_SIZE) {
+      const batch = matches.slice(i, i + PARALLEL_BATCH_SIZE);
+      
+      const batchResults = await Promise.allSettled(
+        batch.map(match => this.syncOddsForMatch(match.id, match.externalId!))
+      );
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const batchResult = batchResults[j];
+        if (batchResult.status === 'fulfilled') {
+          result.totalOdds += batchResult.value.totalOdds;
+          result.created += batchResult.value.created;
+          result.updated += batchResult.value.updated;
+          result.errors.push(...batchResult.value.errors);
+        } else {
+          const msg = `Failed to sync odds for match ${batch[j].externalId}: ${batchResult.reason}`;
+          this.logger.warn(msg);
+          result.errors.push(msg);
+        }
+      }
+
+      processedMatches += batch.length;
+      const progress = Math.round((processedMatches / matches.length) * 100);
+      
+      if (onProgress) {
+        await onProgress(progress, processedMatches, matches.length);
+      }
+    }
+
+    this.betTypeMapCache = null;
+
+    this.logger.log(
+      `Odds sync complete: ${result.created} created, ${result.updated} updated for ${result.totalMatches} matches`,
+    );
   }
 
   async syncOddsForLiveMatches(
@@ -153,14 +236,24 @@ export class OddsSyncService {
         where: {
           isLive: true,
           status: 'live',
-          bettingEnabled: true,
           externalId: { not: null },
         },
+        orderBy: { startTime: 'asc' },
         take: config.maxMatchesPerSync,
       });
 
+      const totalEligible = await this.prisma.match.count({
+        where: {
+          isLive: true,
+          status: 'live',
+          externalId: { not: null },
+        },
+      });
+
       result.totalMatches = liveMatches.length;
-      this.logger.log(`Syncing live odds for ${liveMatches.length} matches...`);
+      this.logger.log(
+        `Live odds sync: ${liveMatches.length}/${totalEligible} matches selected (limit ${config.maxMatchesPerSync})`,
+      );
 
       if (liveMatches.length === 0) {
         return result;
@@ -224,7 +317,7 @@ export class OddsSyncService {
 
     try {
       const fixtureId = parseInt(fixtureExternalId, 10);
-      const oddsResponse = await this.apiFootballService['makeApiRequest']<any>('/odds', {
+      const oddsResponse = await this.apiFootballService.request<any>('/odds', {
         fixture: fixtureId.toString(),
         bookmaker: DEFAULT_BOOKMAKER_ID.toString(),
       });
@@ -287,7 +380,7 @@ export class OddsSyncService {
 
     try {
       const fixtureId = parseInt(fixtureExternalId, 10);
-      const liveOddsResponse = await this.apiFootballService['makeApiRequest']<any>('/odds/live', {
+      const liveOddsResponse = await this.apiFootballService.request<any>('/odds/live', {
         fixture: fixtureId.toString(),
       });
 

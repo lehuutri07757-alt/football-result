@@ -102,6 +102,20 @@ export class SyncJobController {
     return { jobId };
   }
 
+  @Post('odds/far')
+  @ApiOperation({ summary: 'Trigger far odds sync' })
+  @ApiQuery({ name: 'maxDaysAhead', required: false, type: Number })
+  async triggerFarOddsSync(
+    @Query('maxDaysAhead') maxDaysAhead?: string,
+  ): Promise<{ jobId: string }> {
+    const jobId = await this.syncJobService.createJob({
+      type: SyncJobType.odds_far,
+      params: { maxDaysAhead: maxDaysAhead ? parseInt(maxDaysAhead, 10) : undefined },
+      triggeredBy: 'api',
+    });
+    return { jobId };
+  }
+
   @Post('odds/live')
   @ApiOperation({ summary: 'Trigger live odds sync' })
   async triggerLiveOddsSync(): Promise<{ jobId: string }> {
@@ -158,23 +172,39 @@ export class SyncJobController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all sync jobs' })
+  @ApiOperation({ summary: 'Get all sync jobs with filters and pagination' })
   @ApiQuery({ name: 'type', required: false, enum: SyncJobType })
   @ApiQuery({ name: 'status', required: false, enum: SyncJobStatus })
+  @ApiQuery({ name: 'priority', required: false, enum: SyncJobPriority })
+  @ApiQuery({ name: 'triggeredBy', required: false, type: String })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, description: 'ISO date string' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, description: 'ISO date string' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (1-based)' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'offset', required: false, type: Number })
   async getJobs(
     @Query('type') type?: SyncJobType,
     @Query('status') status?: SyncJobStatus,
+    @Query('priority') priority?: SyncJobPriority,
+    @Query('triggeredBy') triggeredBy?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
   ) {
-    return this.syncJobService.getJobs({
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? Math.min(parseInt(limit, 10), 100) : 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    return this.syncJobService.getJobsPaginated({
       type,
       status,
-      limit: limit ? parseInt(limit, 10) : 50,
-      offset: offset ? parseInt(offset, 10) : 0,
-    });
+      priority,
+      triggeredBy: triggeredBy || undefined,
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+      limit: limitNum,
+      offset,
+    }, pageNum, limitNum);
   }
 
   @Get('stats')

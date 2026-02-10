@@ -13,6 +13,7 @@ import {
   TeamSyncParams,
   FixtureSyncParams,
   OddsSyncParams,
+  FarOddsSyncParams,
   StandingsSyncParams,
   FullSyncParams,
   SyncJobResult,
@@ -166,7 +167,43 @@ export class SyncJobProcessor {
     };
 
     const result = await this.oddsSyncService.syncOddsForUpcomingMatches(
-      oddsParams.hoursAhead || 48,
+      oddsParams.hoursAhead,
+      updateProgress,
+    );
+
+    return {
+      success: result.errors.length === 0,
+      syncedAt: result.syncedAt,
+      durationMs: Date.now() - startTime,
+      errors: result.errors,
+      totalMatches: result.totalMatches,
+      totalOdds: result.totalOdds,
+      created: result.created,
+      updated: result.updated,
+    };
+  }
+
+  @Process(SyncJobType.odds_far)
+  async processFarOddsSync(job: Job<SyncJobData>): Promise<SyncJobResult> {
+    const { syncJobId, params } = job.data;
+    const startTime = Date.now();
+
+    this.logger.log(`Processing far odds sync job: ${syncJobId}`);
+    await this.syncJobService.markAsProcessing(syncJobId);
+
+    const farParams = params as FarOddsSyncParams;
+
+    const updateProgress = async (progress: number, processedItems: number, totalItems: number) => {
+      await this.syncJobService.updateJob(syncJobId, {
+        progress,
+        totalItems,
+        processedItems,
+      });
+      await job.progress(progress);
+    };
+
+    const result = await this.oddsSyncService.syncOddsForFarMatches(
+      farParams.maxDaysAhead,
       updateProgress,
     );
 
@@ -287,7 +324,7 @@ export class SyncJobProcessor {
     }
 
     if (fullParams.syncOdds !== false) {
-      const oddsResult = await this.oddsSyncService.syncOddsForUpcomingMatches(48);
+      const oddsResult = await this.oddsSyncService.syncOddsForUpcomingMatches();
       result.odds = oddsResult;
       result.errors.push(...oddsResult.errors);
     }

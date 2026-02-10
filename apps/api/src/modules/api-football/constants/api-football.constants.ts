@@ -115,11 +115,19 @@ export interface ApiFootballSyncConfig {
     enabled: boolean;
   };
 
-  // Upcoming/pre-match odds sync settings
+  // Upcoming/pre-match odds sync settings (near: within threshold)
   upcomingOdds: {
-    intervalMinutes: number;      // How often to sync upcoming odds (default: 120)
-    hoursAhead: number;           // Hours ahead to look for matches (default: 48)
+    intervalMinutes: number;      // How often to sync near upcoming odds (default: 120)
+    hoursAhead: number;           // Near threshold in hours (default: 24)
     maxMatchesPerSync: number;    // Max matches to sync at once (default: 20)
+    enabled: boolean;
+  };
+
+  // Far upcoming odds sync settings (beyond near threshold, up to maxDaysAhead)
+  farOdds: {
+    intervalMinutes: number;      // How often to sync far odds (default: 270 = 4.5 hours)
+    maxDaysAhead: number;         // Max days ahead to look for matches (default: 14)
+    maxMatchesPerSync: number;    // Max matches to sync at once (default: 30)
     enabled: boolean;
   };
 
@@ -162,13 +170,19 @@ export const DEFAULT_SYNC_CONFIG: ApiFootballSyncConfig = {
   },
   liveOdds: {
     intervalMinutes: 15,          // Every 15 minutes (was 5)
-    maxMatchesPerSync: 15,        // Max 15 matches (was 30)
+    maxMatchesPerSync: 30,        // Max 30 matches (was 15)
     enabled: true,
   },
   upcomingOdds: {
     intervalMinutes: 120,         // Every 2 hours (was 30 min)
-    hoursAhead: 48,
-    maxMatchesPerSync: 20,        // Max 20 matches (was 50)
+    hoursAhead: 24,               // Near matches: within 24 hours
+    maxMatchesPerSync: 150,       // Max 150 matches (was 20) — covers all upcoming
+    enabled: true,
+  },
+  farOdds: {
+    intervalMinutes: 270,         // Every 4.5 hours
+    maxDaysAhead: 14,
+    maxMatchesPerSync: 100,       // Max 100 matches (was 30)
     enabled: true,
   },
   league: {

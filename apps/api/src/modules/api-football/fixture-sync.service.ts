@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RedisService } from '@/redis/redis.service';
 import { ApiFootballService } from './api-football.service';
+import { OddsSyncService } from './odds-sync.service';
 import { ApiFixture, LIVE_STATUSES, FINISHED_STATUSES, SCHEDULED_STATUSES, FixtureSyncResult } from './interfaces';
 import { MatchStatus } from '@prisma/client';
 import { CACHE_TTL_SECONDS } from './constants/api-football.constants';
@@ -22,6 +23,7 @@ export class FixtureSyncService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly apiFootballService: ApiFootballService,
+    private readonly oddsSyncService: OddsSyncService,
   ) {}
 
   private async getOrCreateFootballSport(): Promise<{ id: string }> {
@@ -409,6 +411,8 @@ export class FixtureSyncService {
         skipDuplicates: true,
       });
       result.created = toCreate.length;
+
+      await this.syncOddsForNewMatches(toCreate.map((m) => m.externalId));
     }
 
     if (toUpdate.length > 0) {
@@ -482,10 +486,39 @@ export class FixtureSyncService {
       });
       return { updated: true };
     } else {
-      await this.prisma.match.create({
+      const created = await this.prisma.match.create({
         data: matchData,
       });
+      await this.oddsSyncService.syncOddsForMatch(created.id, fixtureExternalId);
       return { created: true };
+    }
+  }
+
+  private async syncOddsForNewMatches(externalIds: string[]): Promise<void> {
+    if (externalIds.length === 0) return;
+
+    const newMatches = await this.prisma.match.findMany({
+      where: { externalId: { in: externalIds } },
+      select: { id: true, externalId: true },
+    });
+
+    if (newMatches.length === 0) return;
+
+    this.logger.log(`Syncing odds for ${newMatches.length} newly created matches...`);
+
+    const results = await Promise.allSettled(
+      newMatches.map((match) =>
+        this.oddsSyncService.syncOddsForMatch(match.id, match.externalId!),
+      ),
+    );
+
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+
+    if (failed > 0) {
+      this.logger.warn(`Odds sync for new matches: ${succeeded} succeeded, ${failed} failed`);
+    } else {
+      this.logger.log(`Odds synced for ${succeeded} new matches`);
     }
   }
 
@@ -503,7 +536,7 @@ export class FixtureSyncService {
       date,
     };
 
-    const response = await this.apiFootballService['makeApiRequest']<ApiFixture>('/fixtures', params);
+    const response = await this.apiFootballService.request<ApiFixture>('/fixtures', params);
     const fixtures = response.response;
 
     await this.redis.setJson(cacheKey, fixtures, CACHE_TTL_SECONDS.FIXTURES);
@@ -520,7 +553,7 @@ export class FixtureSyncService {
       return cached;
     }
 
-    const response = await this.apiFootballService['makeApiRequest']<ApiFixture>('/fixtures', { date });
+    const response = await this.apiFootballService.request<ApiFixture>('/fixtures', { date });
     const fixtures = response.response;
 
     await this.redis.setJson(cacheKey, fixtures, CACHE_TTL_SECONDS.FIXTURES);

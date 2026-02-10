@@ -41,6 +41,7 @@ export class SyncConfigService implements OnModuleInit {
       fixture: { ...DEFAULT_SYNC_CONFIG.fixture, ...partial.fixture },
       liveOdds: { ...DEFAULT_SYNC_CONFIG.liveOdds, ...partial.liveOdds },
       upcomingOdds: { ...DEFAULT_SYNC_CONFIG.upcomingOdds, ...partial.upcomingOdds },
+      farOdds: { ...DEFAULT_SYNC_CONFIG.farOdds, ...partial.farOdds },
       league: { ...DEFAULT_SYNC_CONFIG.league, ...partial.league },
       team: { ...DEFAULT_SYNC_CONFIG.team, ...partial.team },
       standings: { ...DEFAULT_SYNC_CONFIG.standings, ...partial.standings },
@@ -52,6 +53,7 @@ export class SyncConfigService implements OnModuleInit {
     this.logger.log(`Fixture: every ${this.config.fixture.intervalMinutes}min, enabled=${this.config.fixture.enabled}`);
     this.logger.log(`Live Odds: every ${this.config.liveOdds.intervalMinutes}min, max=${this.config.liveOdds.maxMatchesPerSync}, enabled=${this.config.liveOdds.enabled}`);
     this.logger.log(`Upcoming Odds: every ${this.config.upcomingOdds.intervalMinutes}min, max=${this.config.upcomingOdds.maxMatchesPerSync}, enabled=${this.config.upcomingOdds.enabled}`);
+    this.logger.log(`Far Odds: every ${this.config.farOdds.intervalMinutes}min, maxDays=${this.config.farOdds.maxDaysAhead}, max=${this.config.farOdds.maxMatchesPerSync}, enabled=${this.config.farOdds.enabled}`);
   }
 
   getConfig(): ApiFootballSyncConfig {
@@ -85,6 +87,7 @@ export class SyncConfigService implements OnModuleInit {
   get fixtureConfig() { return this.config.fixture; }
   get liveOddsConfig() { return this.config.liveOdds; }
   get upcomingOddsConfig() { return this.config.upcomingOdds; }
+  get farOddsConfig() { return this.config.farOdds; }
   get leagueConfig() { return this.config.league; }
   get teamConfig() { return this.config.team; }
   get standingsConfig() { return this.config.standings; }

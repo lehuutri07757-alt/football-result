@@ -10,6 +10,7 @@ export class ApiFootballScheduler implements OnModuleInit, OnModuleDestroy {
   private fixtureInterval: NodeJS.Timeout | null = null;
   private liveOddsInterval: NodeJS.Timeout | null = null;
   private upcomingOddsInterval: NodeJS.Timeout | null = null;
+  private farOddsInterval: NodeJS.Timeout | null = null;
   private leagueInterval: NodeJS.Timeout | null = null;
   private teamInterval: NodeJS.Timeout | null = null;
   private standingsInterval: NodeJS.Timeout | null = null;
@@ -50,6 +51,12 @@ export class ApiFootballScheduler implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Upcoming odds sync scheduled every ${config.upcomingOdds.intervalMinutes} minutes`);
     }
 
+    if (config.farOdds.enabled) {
+      const ms = config.farOdds.intervalMinutes * 60 * 1000;
+      this.farOddsInterval = setInterval(() => this.handleFarOddsSync(), ms);
+      this.logger.log(`Far odds sync scheduled every ${config.farOdds.intervalMinutes} minutes`);
+    }
+
     if (config.league.enabled) {
       const ms = config.league.intervalMinutes * 60 * 1000;
       this.leagueInterval = setInterval(() => this.handleLeagueSync(), ms);
@@ -78,6 +85,7 @@ export class ApiFootballScheduler implements OnModuleInit, OnModuleDestroy {
       this.fixtureInterval,
       this.liveOddsInterval,
       this.upcomingOddsInterval,
+      this.farOddsInterval,
       this.leagueInterval,
       this.teamInterval,
       this.standingsInterval,
@@ -91,6 +99,7 @@ export class ApiFootballScheduler implements OnModuleInit, OnModuleDestroy {
     this.fixtureInterval = null;
     this.liveOddsInterval = null;
     this.upcomingOddsInterval = null;
+    this.farOddsInterval = null;
     this.leagueInterval = null;
     this.teamInterval = null;
     this.standingsInterval = null;
@@ -166,6 +175,21 @@ export class ApiFootballScheduler implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Upcoming odds sync job scheduled: ${jobId}`);
     } catch (error) {
       this.logger.error(`Failed to schedule upcoming odds sync: ${error}`);
+    }
+  }
+
+  async handleFarOddsSync(): Promise<void> {
+    this.logger.log('Scheduling far odds sync job...');
+    try {
+      const config = this.syncConfig.farOddsConfig;
+      const jobId = await this.syncJobService.createJob({
+        type: SyncJobType.odds_far,
+        params: { maxDaysAhead: config.maxDaysAhead },
+        triggeredBy: 'scheduler',
+      });
+      this.logger.log(`Far odds sync job scheduled: ${jobId}`);
+    } catch (error) {
+      this.logger.error(`Failed to schedule far odds sync: ${error}`);
     }
   }
 

@@ -232,12 +232,11 @@ export class ApiFootballController {
     return this.apiFootballService.getOddsTableFromDb({ live: true });
   }
 
-  @Get('odds/today')
-  @ApiOperation({ summary: 'Get today odds table (from database)' })
-  @ApiResponse({ status: 200, description: 'Today odds table data' })
-  async getTodayOddsTable() {
-    const today = new Date().toISOString().split('T')[0];
-    return this.apiFootballService.getOddsTableFromDb({ date: today });
+  @Get('odds/all')
+  @ApiOperation({ summary: 'Get all odds with pagination (from database)' })
+  @ApiResponse({ status: 200, description: 'All odds table data with pagination' })
+  async getAllOddsTable(@Query() query: QueryOddsDto) {
+    return this.apiFootballService.getOddsTableFromDb(query);
   }
 
   @Get('fixtures/:id/odds')

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
+import { MatchStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RedisService } from '@/redis/redis.service';
 import {
@@ -30,6 +31,7 @@ import {
 } from './interfaces/odds-table.interface';
 import { QueryOddsDto, QueryApiLogsDto, ApiRequestStatusFilter } from './dto';
 import { API_FOOTBALL_BET_IDS, CACHE_TTL_SECONDS, DEFAULT_BOOKMAKER_ID } from './constants/api-football.constants';
+import { SyncConfigService } from './sync-config.service';
 
 const PROVIDER_CODE = 'api_football';
 const PROVIDER_STATUS_ACTIVE = 'active';
@@ -39,6 +41,17 @@ interface ProviderConfig {
   baseUrl: string;
   apiKey: string;
   headers: Record<string, string>;
+}
+
+interface RateLimitConfig {
+  /** Maximum requests per minute allowed (provider subscription) */
+  requestsPerMinute: number;
+  /** Additional delay between requests in ms */
+  delayBetweenRequestsMs: number;
+  /** Max retries when hitting provider rate limit or transient errors */
+  maxRetries: number;
+  /** Base backoff for rate limit retries */
+  baseBackoffMs: number;
 }
 
 interface ApiLogData {
@@ -64,10 +77,19 @@ export class ApiFootballService implements OnModuleInit {
   private readonly apiCachePrefix = 'api_football:api_cache';
   private readonly inFlightRequests = new Map<string, Promise<ApiFootballResponse<unknown>>>();
 
+  /**
+   * Global rate limiter for outbound API-Football calls.
+   * API-Football can return HTTP 200 with errors in body (incl. rate limit).
+   */
+  private rateLimitChain: Promise<void> = Promise.resolve();
+  private lastRequestAtMs = 0;
+  private cooldownUntilMs = 0;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly redis: RedisService,
+    private readonly syncConfig: SyncConfigService,
   ) {}
 
   async onModuleInit() {
@@ -109,6 +131,14 @@ export class ApiFootballService implements OnModuleInit {
     await this.loadProviderConfig();
   }
 
+  /**
+   * Public wrapper for raw API-Football requests.
+   * Prefer using this instead of accessing private methods.
+   */
+  async request<T>(endpoint: string, params: Record<string, string>): Promise<ApiFootballResponse<T>> {
+    return this.makeApiRequest<T>(endpoint, params);
+  }
+
   isConfigured(): boolean {
     return this.providerConfig !== null && !!this.providerConfig.apiKey;
   }
@@ -118,7 +148,7 @@ export class ApiFootballService implements OnModuleInit {
     const fixtureIds = fixtures.map((f) => f.fixture.id);
 
     if (fixtureIds.length === 0) {
-      return { leagues: [], totalMatches: 0, lastUpdate: new Date().toISOString() };
+      return { leagues: [], totalMatches: 0, page: 1, limit: 20, hasMore: false, lastUpdate: new Date().toISOString() };
     }
 
     const oddsMap = await this.fetchOddsForFixtures(fixtureIds, query.live);
@@ -128,6 +158,9 @@ export class ApiFootballService implements OnModuleInit {
     return {
       leagues,
       totalMatches: rows.length,
+      page: 1,
+      limit: rows.length,
+      hasMore: false,
       lastUpdate: new Date().toISOString(),
     };
   }
@@ -137,14 +170,18 @@ export class ApiFootballService implements OnModuleInit {
    * This is more efficient and doesn't consume API quota
    */
   async getOddsTableFromDb(query: QueryOddsDto): Promise<OddsTableResponse> {
-    const { live, date, leagueIds } = query;
+    const { live, date, leagueIds, page = 1, limit = 20 } = query;
 
-    // Build date range for query
-    let dateStart: Date;
-    let dateEnd: Date;
+    // Default behavior (no date, not live): return upcoming matches only.
+    // Upcoming here means: live matches + matches that haven't started yet,
+    // excluding finished/cancelled.
+    const shouldDefaultToUpcoming = !live && !date;
+    const now = new Date();
+
+    let dateStart: Date | undefined;
+    let dateEnd: Date | undefined;
 
     if (live) {
-      // For live matches, get all currently live
       dateStart = new Date();
       dateStart.setHours(0, 0, 0, 0);
       dateEnd = new Date();
@@ -154,110 +191,65 @@ export class ApiFootballService implements OnModuleInit {
       dateStart.setHours(0, 0, 0, 0);
       dateEnd = new Date(date);
       dateEnd.setHours(23, 59, 59, 999);
-    } else {
-      // Default to today
-      dateStart = new Date();
-      dateStart.setHours(0, 0, 0, 0);
-      dateEnd = new Date();
-      dateEnd.setHours(23, 59, 59, 999);
     }
 
-    // Query matches with odds from database
-    const matches = await this.prisma.match.findMany({
-      where: {
-        startTime: {
-          gte: dateStart,
-          lte: dateEnd,
-        },
-        ...(live && { isLive: true }),
-        ...(leagueIds?.length && {
-          league: {
-            externalId: { in: leagueIds.map(String) },
+    const leagueFilter: Prisma.LeagueWhereInput = {
+      isActive: true,
+      ...(leagueIds?.length && { externalId: { in: leagueIds.map(String) } }),
+    };
+
+    const whereClause: Prisma.MatchWhereInput = {
+      league: leagueFilter,
+      ...(dateStart && dateEnd && {
+        startTime: { gte: dateStart, lte: dateEnd },
+      }),
+      ...(live && { isLive: true }),
+      ...(shouldDefaultToUpcoming && {
+        AND: [
+          {
+            status: {
+              notIn: [MatchStatus.finished, MatchStatus.cancelled],
+            },
           },
-        }),
-      },
-      include: {
-        league: true,
-        homeTeam: true,
-        awayTeam: true,
-        odds: {
-          where: {
-            status: 'active',
+          {
+            OR: [{ isLive: true }, { startTime: { gte: now } }],
           },
-          include: {
-            betType: true,
+        ],
+      }),
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [matches, totalMatches] = await Promise.all([
+      this.prisma.match.findMany({
+        where: whereClause,
+        include: {
+          league: true,
+          homeTeam: true,
+          awayTeam: true,
+          odds: {
+            where: { status: 'active' },
+            include: { betType: true },
           },
         },
-      },
-      orderBy: [
-        { startTime: 'asc' },
-      ],
-    });
+        orderBy: [{ startTime: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.match.count({ where: whereClause }),
+    ]);
 
-    // Transform to OddsTableRow format
-    const rows: OddsTableRow[] = matches.map((match) => {
-      const isLive = match.isLive;
-      const matchTime = isLive
-        ? `${match.liveMinute || 0}'`
-        : new Date(match.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-
-      // Group odds by bet type code
-      const oddsByType = new Map<string, typeof match.odds>();
-      for (const odd of match.odds) {
-        const code = odd.betType.code;
-        if (!oddsByType.has(code)) {
-          oddsByType.set(code, []);
-        }
-        oddsByType.get(code)!.push(odd);
-      }
-
-      return {
-        fixtureId: match.externalId ? parseInt(match.externalId, 10) : 0,
-        externalId: match.externalId ? parseInt(match.externalId, 10) : 0,
-        leagueId: match.league.externalId ? parseInt(match.league.externalId, 10) : 0,
-        leagueName: match.league.name,
-        country: match.league.country || '',
-        matchTime,
-        startTime: match.startTime.toISOString(),
-        isLive,
-        status: match.status,
-        period: match.period || undefined,
-
-        homeTeam: {
-          id: match.homeTeam.id,
-          name: match.homeTeam.name,
-          shortName: match.homeTeam.shortName || undefined,
-          logo: match.homeTeam.logoUrl || undefined,
-          score: match.homeScore,
-        },
-        awayTeam: {
-          id: match.awayTeam.id,
-          name: match.awayTeam.name,
-          shortName: match.awayTeam.shortName || undefined,
-          logo: match.awayTeam.logoUrl || undefined,
-          score: match.awayScore,
-        },
-
-        hdp: this.extractOddsFromDb(oddsByType.get('asian_handicap'), 'hdp'),
-        overUnder: this.extractOddsFromDb(oddsByType.get('over_under'), 'ou'),
-        oneXTwo: this.extractOddsFromDb(oddsByType.get('match_winner'), '1x2'),
-        homeGoalOU: this.extractOddsFromDb(oddsByType.get('home_total'), 'ou'),
-        awayGoalOU: this.extractOddsFromDb(oddsByType.get('away_total'), 'ou'),
-        btts: this.extractOddsFromDb(oddsByType.get('btts'), 'btts'),
-
-        htHdp: isLive ? this.extractOddsFromDb(oddsByType.get('ht_asian_handicap'), 'hdp') : undefined,
-        htOverUnder: isLive ? this.extractOddsFromDb(oddsByType.get('ht_over_under'), 'ou') : undefined,
-        htOneXTwo: isLive ? this.extractOddsFromDb(oddsByType.get('ht_match_winner'), '1x2') : undefined,
-
-        totalMarkets: match.odds.length,
-      };
-    });
+    const rows: OddsTableRow[] = matches.map((match) => this.transformDbMatchToOddsTableRow(match));
 
     const leagues = this.groupByLeagueFromDb(rows, matches);
+    const hasMore = skip + matches.length < totalMatches;
 
     return {
       leagues,
-      totalMatches: rows.length,
+      totalMatches,
+      page,
+      limit,
+      hasMore,
       lastUpdate: new Date().toISOString(),
     };
   }
@@ -362,6 +354,11 @@ export class ApiFootballService implements OnModuleInit {
   }
 
   async getFixtureOdds(fixtureId: number): Promise<OddsTableRow | null> {
+    const dbResult = await this.getFixtureOddsFromDb(fixtureId);
+    if (dbResult) {
+      return dbResult;
+    }
+
     const fixturesResponse = await this.makeApiRequest<ApiFixture>('/fixtures', { id: fixtureId.toString() });
 
     if (fixturesResponse.response.length === 0) {
@@ -381,6 +378,122 @@ export class ApiFootballService implements OnModuleInit {
     }
 
     return this.transformFixtureToRow(fixture, odds);
+  }
+
+  private async getFixtureOddsFromDb(fixtureId: number): Promise<OddsTableRow | null> {
+    const match = await this.prisma.match.findFirst({
+      where: { externalId: fixtureId.toString() },
+      include: {
+        league: true,
+        homeTeam: true,
+        awayTeam: true,
+        odds: {
+          where: { status: 'active' },
+          include: { betType: true },
+        },
+      },
+    });
+
+    if (!match || match.odds.length === 0) {
+      return null;
+    }
+
+    return this.transformDbMatchToOddsTableRow(match);
+  }
+
+  private transformDbMatchToOddsTableRow(match: {
+    id: string;
+    externalId: string | null;
+    isLive: boolean;
+    liveMinute: number | null;
+    startTime: Date;
+    status: string;
+    period: string | null;
+    homeScore: number | null;
+    awayScore: number | null;
+    league: {
+      externalId: string | null;
+      name: string;
+      country: string | null;
+      logoUrl: string | null;
+    };
+    homeTeam: {
+      id: string;
+      name: string;
+      shortName: string | null;
+      logoUrl: string | null;
+    };
+    awayTeam: {
+      id: string;
+      name: string;
+      shortName: string | null;
+      logoUrl: string | null;
+    };
+    odds: Array<{
+      id: string;
+      selection: string;
+      selectionName: string | null;
+      oddsValue: { toNumber(): number };
+      handicap: { toNumber(): number } | null;
+      status: string;
+      betType: { code: string };
+    }>;
+  }): OddsTableRow {
+    const isLive = match.isLive;
+    const matchTime = isLive
+      ? `${match.liveMinute || 0}'`
+      : new Date(match.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    const oddsByType = new Map<string, typeof match.odds>();
+    for (const odd of match.odds) {
+      const code = odd.betType.code;
+      if (!oddsByType.has(code)) {
+        oddsByType.set(code, []);
+      }
+      oddsByType.get(code)!.push(odd);
+    }
+
+    return {
+      matchId: match.id,
+      fixtureId: match.externalId ? parseInt(match.externalId, 10) : 0,
+      externalId: match.externalId ? parseInt(match.externalId, 10) : 0,
+      leagueId: match.league.externalId ? parseInt(match.league.externalId, 10) : 0,
+      leagueName: match.league.name,
+      country: match.league.country || '',
+      matchTime,
+      startTime: match.startTime.toISOString(),
+      isLive,
+      status: match.status,
+      period: match.period || undefined,
+
+      homeTeam: {
+        id: match.homeTeam.id,
+        name: match.homeTeam.name,
+        shortName: match.homeTeam.shortName || undefined,
+        logo: match.homeTeam.logoUrl || undefined,
+        score: match.homeScore,
+      },
+      awayTeam: {
+        id: match.awayTeam.id,
+        name: match.awayTeam.name,
+        shortName: match.awayTeam.shortName || undefined,
+        logo: match.awayTeam.logoUrl || undefined,
+        score: match.awayScore,
+      },
+
+      hdp: this.extractOddsFromDb(oddsByType.get('asian_handicap'), 'hdp'),
+      overUnder: this.extractOddsFromDb(oddsByType.get('over_under'), 'ou'),
+      oneXTwo: this.extractOddsFromDb(oddsByType.get('match_winner'), '1x2'),
+      homeGoalOU: this.extractOddsFromDb(oddsByType.get('home_total'), 'ou'),
+      awayGoalOU: this.extractOddsFromDb(oddsByType.get('away_total'), 'ou'),
+      btts: this.extractOddsFromDb(oddsByType.get('btts'), 'btts'),
+
+      htHdp: isLive ? this.extractOddsFromDb(oddsByType.get('ht_asian_handicap'), 'hdp') : undefined,
+      htOverUnder: isLive ? this.extractOddsFromDb(oddsByType.get('ht_over_under'), 'ou') : undefined,
+      htOneXTwo: isLive ? this.extractOddsFromDb(oddsByType.get('ht_match_winner'), '1x2') : undefined,
+
+      totalMarkets: match.odds.length,
+    };
   }
 
   async getLiveOdds(fixtureIds: number[]): Promise<Map<number, OddsMarket[]>> {
@@ -730,32 +843,84 @@ export class ApiFootballService implements OnModuleInit {
         headers['x-apisports-key'] = providerConfig.apiKey;
       }
 
+      const rateLimitConfig = this.getEffectiveRateLimitConfig();
+
       try {
-        const response = await fetch(url.toString(), { headers });
-        const responseTime = Date.now() - startTime;
+        for (let attempt = 0; attempt <= rateLimitConfig.maxRetries; attempt++) {
+          await this.waitForRateLimitSlot(rateLimitConfig);
 
-        if (!response.ok) {
-          const errorMessage = `API request failed: ${response.status}`;
-          await this.logApiRequest({
-            endpoint,
-            method: 'GET',
-            params,
-            statusCode: response.status,
-            responseTime,
-            errorMessage,
-            errorCode: response.status.toString(),
-            fixtureIds: this.extractFixtureIds(params),
-            leagueIds: this.extractLeagueIds(params),
-          });
-          throw new Error(errorMessage);
-        }
+          const response = await fetch(url.toString(), { headers });
+          const responseTime = Date.now() - startTime;
 
-        const responseText = await response.text();
-        const responseData = JSON.parse(responseText) as ApiFootballResponse<T>;
+          if (!response.ok) {
+            if (response.status === 429 && attempt < rateLimitConfig.maxRetries) {
+              const backoffMs = this.getBackoffMs(rateLimitConfig, attempt);
+              await this.logApiRequest({
+                endpoint,
+                method: 'GET',
+                params,
+                statusCode: response.status,
+                responseTime,
+                errorMessage: `API request rate-limited: ${response.status}`,
+                errorCode: 'HTTP_429',
+                fixtureIds: this.extractFixtureIds(params),
+                leagueIds: this.extractLeagueIds(params),
+              });
+              this.applyCooldown(backoffMs);
+              this.logger.warn(`API rate limited (HTTP 429): ${endpoint} - retrying in ${backoffMs}ms`);
+              continue;
+            }
 
-        const apiErrors = parseApiFootballErrors(responseData);
-        
-        if (apiErrors.hasError) {
+            const errorMessage = `API request failed: ${response.status}`;
+            await this.logApiRequest({
+              endpoint,
+              method: 'GET',
+              params,
+              statusCode: response.status,
+              responseTime,
+              errorMessage,
+              errorCode: response.status.toString(),
+              fixtureIds: this.extractFixtureIds(params),
+              leagueIds: this.extractLeagueIds(params),
+            });
+            throw new Error(errorMessage);
+          }
+
+          const responseText = await response.text();
+          const responseData = JSON.parse(responseText) as ApiFootballResponse<T>;
+
+          const apiErrors = parseApiFootballErrors(responseData);
+
+          if (apiErrors.hasError) {
+            await this.logApiRequest({
+              endpoint,
+              method: 'GET',
+              params,
+              responseBody: responseData,
+              statusCode: response.status,
+              responseTime,
+              responseSize: responseText.length,
+              resultCount: responseData.results,
+              errorMessage: apiErrors.errorMessage || 'API returned error in response body',
+              errorCode: apiErrors.errorCode || 'API_BODY_ERROR',
+              fixtureIds: this.extractFixtureIds(params),
+              leagueIds: this.extractLeagueIds(params),
+              apiErrors: apiErrors.errors as Record<string, string>,
+            });
+
+            await this.recordError(apiErrors.errorMessage || 'API error');
+            this.logger.warn(`API returned error: ${endpoint} - ${apiErrors.errorMessage}`);
+
+            if (apiErrors.errorType === 'rate_limit' && attempt < rateLimitConfig.maxRetries) {
+              const backoffMs = this.getBackoffMs(rateLimitConfig, attempt);
+              this.applyCooldown(backoffMs);
+              this.logger.warn(`API body rate-limit: ${endpoint} - retrying in ${backoffMs}ms`);
+              continue;
+            }
+
+            return responseData;
+          }
+
           await this.logApiRequest({
             endpoint,
             method: 'GET',
@@ -765,35 +930,15 @@ export class ApiFootballService implements OnModuleInit {
             responseTime,
             responseSize: responseText.length,
             resultCount: responseData.results,
-            errorMessage: apiErrors.errorMessage || 'API returned error in response body',
-            errorCode: apiErrors.errorCode || 'API_BODY_ERROR',
             fixtureIds: this.extractFixtureIds(params),
             leagueIds: this.extractLeagueIds(params),
-            apiErrors: apiErrors.errors as Record<string, string>,
           });
 
-          await this.recordError(apiErrors.errorMessage || 'API error');
-          this.logger.warn(`API returned error: ${endpoint} - ${apiErrors.errorMessage}`);
-          
+          await this.incrementUsage();
           return responseData;
         }
 
-        await this.logApiRequest({
-          endpoint,
-          method: 'GET',
-          params,
-          responseBody: responseData,
-          statusCode: response.status,
-          responseTime,
-          responseSize: responseText.length,
-          resultCount: responseData.results,
-          fixtureIds: this.extractFixtureIds(params),
-          leagueIds: this.extractLeagueIds(params),
-        });
-
-        await this.incrementUsage();
-
-        return responseData;
+        throw new Error('API request failed after retries');
       } catch (error) {
         const responseTime = Date.now() - startTime;
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -825,7 +970,11 @@ export class ApiFootballService implements OnModuleInit {
     try {
       const responseData = await requestPromise;
       if (cacheKey) {
-        await this.redis.setJson(cacheKey, responseData, cacheTtlSeconds);
+        const parsedErrors = parseApiFootballErrors(responseData);
+        // Avoid caching error responses (esp. rate limits), otherwise we can serve errors for TTL seconds.
+        if (!parsedErrors.hasError) {
+          await this.redis.setJson(cacheKey, responseData, cacheTtlSeconds);
+        }
       }
       return responseData;
     } finally {
@@ -857,6 +1006,69 @@ export class ApiFootballService implements OnModuleInit {
     if (endpoint === '/odds/live') return CACHE_TTL_SECONDS.LIVE_ODDS;
 
     return 0;
+  }
+
+  private getEffectiveRateLimitConfig(): RateLimitConfig {
+    const syncRateLimit = this.syncConfig?.rateLimitConfig;
+
+    // Env overrides (useful for local dev without DB changes)
+    const envRpm = this.parsePositiveInt(this.configService.get<string>('API_FOOTBALL_RPM'));
+    const envDelayMs = this.parsePositiveInt(this.configService.get<string>('API_FOOTBALL_DELAY_MS'));
+    const envMaxRetries = this.parsePositiveInt(this.configService.get<string>('API_FOOTBALL_MAX_RETRIES'));
+    const envBaseBackoffMs = this.parsePositiveInt(this.configService.get<string>('API_FOOTBALL_BASE_BACKOFF_MS'));
+
+    const requestsPerMinute = envRpm ?? syncRateLimit?.requestsPerMinute ?? 300;
+    const delayBetweenRequestsMs =
+      envDelayMs ??
+      syncRateLimit?.delayBetweenRequests ??
+      Math.ceil(60_000 / Math.max(1, requestsPerMinute));
+
+    return {
+      requestsPerMinute,
+      delayBetweenRequestsMs,
+      maxRetries: envMaxRetries ?? 2,
+      baseBackoffMs: envBaseBackoffMs ?? 2_000,
+    };
+  }
+
+  private async waitForRateLimitSlot(config: RateLimitConfig): Promise<void> {
+    const rpmIntervalMs = Math.ceil(60_000 / Math.max(1, config.requestsPerMinute));
+    const minIntervalMs = Math.max(config.delayBetweenRequestsMs, rpmIntervalMs);
+
+    const task = async () => {
+      const now = Date.now();
+      const earliest = Math.max(this.cooldownUntilMs, this.lastRequestAtMs + minIntervalMs);
+      const waitMs = earliest - now;
+      if (waitMs > 0) {
+        await this.sleep(waitMs);
+      }
+      this.lastRequestAtMs = Date.now();
+    };
+
+    this.rateLimitChain = this.rateLimitChain.then(task, task);
+    await this.rateLimitChain;
+  }
+
+  private applyCooldown(ms: number): void {
+    const until = Date.now() + Math.max(0, ms);
+    this.cooldownUntilMs = Math.max(this.cooldownUntilMs, until);
+  }
+
+  private getBackoffMs(config: RateLimitConfig, attempt: number): number {
+    const base = config.baseBackoffMs * Math.pow(2, attempt);
+    const jitter = Math.floor(Math.random() * 250);
+    return base + jitter;
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private parsePositiveInt(value: string | undefined): number | null {
+    if (!value) return null;
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    return parsed;
   }
 
   private extractFixtureIds(params: Record<string, string>): string[] {

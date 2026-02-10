@@ -21,6 +21,7 @@ export interface TeamInfo {
 }
 
 export interface OddsTableRow {
+  matchId?: string;
   fixtureId: number;
   externalId: number;
   leagueId: number;
@@ -61,5 +62,8 @@ export interface LeagueOddsGroup {
 export interface OddsTableResponse {
   leagues: LeagueOddsGroup[];
   totalMatches: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
   lastUpdate: string;
 }

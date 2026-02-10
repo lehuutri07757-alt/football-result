@@ -153,7 +153,11 @@ export class LeagueSyncService implements OnModuleInit, OnModuleDestroy {
       for (const apiLeague of apiLeagues) {
         try {
           const existing = await this.prisma.league.findFirst({
-            where: { externalId: apiLeague.league.id.toString() },
+            where: {
+              externalId: apiLeague.league.id.toString(),
+              sportId: footballSport.id,
+            },
+            select: { id: true },
           });
 
           const currentSeason = apiLeague.seasons.find(s => s.current);
@@ -166,7 +170,6 @@ export class LeagueSyncService implements OnModuleInit, OnModuleDestroy {
             season: currentSeason?.year?.toString(),
             sportId: footballSport.id,
             externalId: apiLeague.league.id.toString(),
-            isActive: true,
             searchKey: buildLeagueSearchKey({
               name: apiLeague.league.name,
               slug: this.generateSlug(apiLeague.league.name, apiLeague.country.name),
@@ -182,7 +185,7 @@ export class LeagueSyncService implements OnModuleInit, OnModuleDestroy {
             result.updated++;
           } else {
             await this.prisma.league.create({
-              data: leagueData,
+              data: { ...leagueData, isActive: true },
             });
             result.created++;
           }

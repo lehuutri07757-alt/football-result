@@ -123,21 +123,7 @@ export class SyncJobService {
   }
 
   async getJobs(filter: SyncJobFilter = {}) {
-    const where: any = {};
-
-    if (filter.type) where.type = filter.type;
-    if (filter.status) {
-      where.status = Array.isArray(filter.status) 
-        ? { in: filter.status } 
-        : filter.status;
-    }
-    if (filter.priority) where.priority = filter.priority;
-    if (filter.triggeredBy) where.triggeredBy = filter.triggeredBy;
-    if (filter.dateFrom || filter.dateTo) {
-      where.createdAt = {};
-      if (filter.dateFrom) where.createdAt.gte = filter.dateFrom;
-      if (filter.dateTo) where.createdAt.lte = filter.dateTo;
-    }
+    const where = this.buildJobsWhere(filter);
 
     return this.prisma.syncJob.findMany({
       where,
@@ -145,6 +131,51 @@ export class SyncJobService {
       take: filter.limit || 50,
       skip: filter.offset || 0,
     });
+  }
+
+  async getJobsPaginated(filter: SyncJobFilter, page: number, limit: number) {
+    const where = this.buildJobsWhere(filter);
+
+    const [data, total] = await Promise.all([
+      this.prisma.syncJob.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: filter.offset || 0,
+      }),
+      this.prisma.syncJob.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  private buildJobsWhere(filter: SyncJobFilter) {
+    const where: Record<string, unknown> = {};
+
+    if (filter.type) where.type = filter.type;
+    if (filter.status) {
+      where.status = Array.isArray(filter.status)
+        ? { in: filter.status }
+        : filter.status;
+    }
+    if (filter.priority) where.priority = filter.priority;
+    if (filter.triggeredBy) where.triggeredBy = filter.triggeredBy;
+    if (filter.dateFrom || filter.dateTo) {
+      const createdAt: Record<string, Date> = {};
+      if (filter.dateFrom) createdAt.gte = filter.dateFrom;
+      if (filter.dateTo) createdAt.lte = filter.dateTo;
+      where.createdAt = createdAt;
+    }
+
+    return where;
   }
 
   async getStats(): Promise<SyncJobStats> {
