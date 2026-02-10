@@ -122,6 +122,7 @@ export class FeaturedMatchesService {
 
     let matches = await this.prisma.match.findMany({
       where: {
+        league: { isActive: true },
         AND: [
           { OR: conditions.length > 0 ? conditions : [{}] },
           { OR: statusFilters.length > 0 ? statusFilters : [{}] },
@@ -144,6 +145,7 @@ export class FeaturedMatchesService {
       matches = await this.prisma.match.findMany({
         where: {
           status: MatchStatus.live,
+          league: { isActive: true },
         },
         take: settings.maxFeaturedMatches,
         orderBy: [
@@ -163,6 +165,7 @@ export class FeaturedMatchesService {
         where: {
           status: MatchStatus.scheduled,
           startTime: { gte: now },
+          league: { isActive: true },
         },
         take: settings.maxFeaturedMatches,
         orderBy: [

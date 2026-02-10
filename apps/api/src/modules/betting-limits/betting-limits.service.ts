@@ -11,11 +11,11 @@ export interface BettingLimits {
 }
 
 const DEFAULT_BETTING_LIMITS: BettingLimits = {
-  minBet: 10000,
-  maxBet: 10000000,
-  dailyLimit: 100000000,
-  weeklyLimit: 500000000,
-  monthlyLimit: 2000000000,
+  minBet: 1,
+  maxBet: 10000,
+  dailyLimit: 50000,
+  weeklyLimit: 200000,
+  monthlyLimit: 500000,
 };
 
 @Injectable()
