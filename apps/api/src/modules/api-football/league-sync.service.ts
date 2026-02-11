@@ -12,7 +12,7 @@ const SETTING_KEY_SYNC_CONFIG = 'league_sync_config';
 const DEFAULT_CONFIG: LeagueSyncConfig = {
   cacheTtlSeconds: 3600,
   syncIntervalMinutes: 60,
-  enableAutoSync: true,
+  enableAutoSync: false, // Disabled: scheduler handles league sync via Bull queue. This avoids duplicate syncs.
   onlyCurrentSeason: true,
 };
 
@@ -136,6 +136,11 @@ export class LeagueSyncService implements OnModuleInit, OnModuleDestroy {
 
       const apiLeagues = await this.fetchLeaguesFromApi();
       result.totalFetched = apiLeagues.length;
+
+      if (apiLeagues.length === 0) {
+        this.logger.warn('API returned 0 leagues — skipping deactivation to avoid wiping all leagues');
+        return result;
+      }
 
       // Deactivate leagues not in the current API result set.
       // This prevents stale/old seasons (e.g. 2016) staying active forever.

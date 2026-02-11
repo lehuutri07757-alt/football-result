@@ -97,12 +97,14 @@ export default function MatchDetailPage() {
     };
   }, [match?.isLive, isLoading]);
   
+  const isMatchBettable = match ? !['finished', 'cancelled', 'postponed'].includes(match.status) : false;
+
   const addToBetSlip = (
     marketName: string, 
     selectionName: string, 
     oddsCell: OddsCell
   ) => {
-    if (oddsCell.suspended) return;
+    if (oddsCell.suspended || !isMatchBettable) return;
     
     toggleSelection({
       fixtureId: match?.externalId ? parseInt(match.externalId) : 0,
@@ -188,6 +190,7 @@ export default function MatchDetailPage() {
               tabs={tabs}
               addToBetSlip={addToBetSlip}
               language={language}
+              isMatchBettable={isMatchBettable}
             />
           )}
         </main>
@@ -212,7 +215,8 @@ function MatchContent({
   setActiveTab,
   tabs,
   addToBetSlip,
-  language
+  language,
+  isMatchBettable
 }: {
   match: Match;
   odds: OddsTableRow | null;
@@ -222,6 +226,7 @@ function MatchContent({
   tabs: { id: TabType; label: string }[];
   addToBetSlip: (market: string, selection: string, odds: OddsCell) => void;
   language: 'en' | 'vi';
+  isMatchBettable: boolean;
 }) {
   const isLive = match.status === 'live';
   const homeTeamName = match.homeTeam?.name || 'HOME';
@@ -386,6 +391,7 @@ function MatchContent({
               odds={odds}
               onSelect={addToBetSlip}
               language={language}
+              isMatchBettable={isMatchBettable}
             />
           ) : (
             <Card className="border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
@@ -418,13 +424,15 @@ function MainMarketSection({
   awayTeamName, 
   odds,
   onSelect,
-  language
+  language,
+  isMatchBettable
 }: { 
   homeTeamName: string; 
   awayTeamName: string;
   odds: OddsTableRow | null;
   onSelect: (market: string, selection: string, odds: OddsCell) => void;
   language: 'en' | 'vi';
+  isMatchBettable: boolean;
 }) {
   const hasOdds = odds !== null;
   const hdp = odds?.hdp;
@@ -468,6 +476,7 @@ function MainMarketSection({
                         handicap={hdp.home.handicap || ''}
                         odds={hdp.home.odds}
                         onClick={() => onSelect('Handicap', homeTeamName, hdp.home)}
+                        disabled={!isMatchBettable}
                       />
                     ) : <SuspendedCell />}
                   </td>
@@ -477,6 +486,7 @@ function MainMarketSection({
                         handicap={hdp.away.handicap || ''}
                         odds={hdp.away.odds}
                         onClick={() => onSelect('Handicap', awayTeamName, hdp.away)}
+                        disabled={!isMatchBettable}
                       />
                     ) : <SuspendedCell />}
                   </td>
@@ -488,6 +498,7 @@ function MainMarketSection({
                         isOverUnder
                         label="O"
                         onClick={() => onSelect('Over/Under', ou.home.label, ou.home)}
+                        disabled={!isMatchBettable}
                       />
                     ) : <SuspendedCell />}
                   </td>
@@ -499,6 +510,7 @@ function MainMarketSection({
                         isOverUnder
                         label="U"
                         onClick={() => onSelect('Over/Under', ou.away.label, ou.away)}
+                        disabled={!isMatchBettable}
                       />
                     ) : <SuspendedCell />}
                   </td>
@@ -517,16 +529,19 @@ function MainMarketSection({
                 label="1"
                 value={oneXTwo.home.odds}
                 onClick={() => onSelect('1x2', homeTeamName, oneXTwo.home)}
+                disabled={!isMatchBettable}
               />
               <SelectionButton
                 label="X"
                 value={oneXTwo.draw?.odds ?? 0}
                 onClick={() => oneXTwo.draw && onSelect('1x2', 'Draw', oneXTwo.draw)}
+                disabled={!isMatchBettable}
               />
               <SelectionButton
                 label="2"
                 value={oneXTwo.away.odds}
                 onClick={() => onSelect('1x2', awayTeamName, oneXTwo.away)}
+                disabled={!isMatchBettable}
               />
             </div>
           </MarketCard>
@@ -539,11 +554,13 @@ function MainMarketSection({
                 label={`${language === 'vi' ? 'Tài' : 'O'} ${homeGoalOU.home.handicap?.replace('O ', '') ?? '0.5'}`}
                 value={homeGoalOU.home.odds}
                 onClick={() => onSelect('Home Total', homeGoalOU.home.label, homeGoalOU.home)}
+                disabled={!isMatchBettable}
               />
               <SelectionButton
                 label={`${language === 'vi' ? 'Xỉu' : 'U'} ${homeGoalOU.away.handicap?.replace('U ', '') ?? '0.5'}`}
                 value={homeGoalOU.away.odds}
                 onClick={() => onSelect('Home Total', homeGoalOU.away.label, homeGoalOU.away)}
+                disabled={!isMatchBettable}
               />
             </div>
           </MarketCard>
@@ -556,11 +573,13 @@ function MainMarketSection({
                 label={`${language === 'vi' ? 'Tài' : 'O'} ${awayGoalOU.home.handicap?.replace('O ', '') ?? '0.5'}`}
                 value={awayGoalOU.home.odds}
                 onClick={() => onSelect('Away Total', awayGoalOU.home.label, awayGoalOU.home)}
+                disabled={!isMatchBettable}
               />
               <SelectionButton
                 label={`${language === 'vi' ? 'Xỉu' : 'U'} ${awayGoalOU.away.handicap?.replace('U ', '') ?? '0.5'}`}
                 value={awayGoalOU.away.odds}
                 onClick={() => onSelect('Away Total', awayGoalOU.away.label, awayGoalOU.away)}
+                disabled={!isMatchBettable}
               />
             </div>
           </MarketCard>
@@ -573,11 +592,13 @@ function MainMarketSection({
                 label={t(language, 'market.yes')}
                 value={btts.home.odds}
                 onClick={() => onSelect('Both Teams Score', 'Yes', btts.home)}
+                disabled={!isMatchBettable}
               />
               <SelectionButton
                 label={t(language, 'market.no')}
                 value={btts.away.odds}
                 onClick={() => onSelect('Both Teams Score', 'No', btts.away)}
+                disabled={!isMatchBettable}
               />
             </div>
           </MarketCard>
@@ -614,14 +635,20 @@ function MarketCard({ title, children }: { title: string, children: React.ReactN
   );
 }
 
-function SelectionButton({ label, value, onClick }: { label: string, value: number, onClick: () => void }) {
+function SelectionButton({ label, value, onClick, disabled }: { label: string, value: number, onClick: () => void, disabled?: boolean }) {
   return (
     <button 
       onClick={onClick}
-      className="flex flex-col items-center justify-center py-2 px-1 rounded-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 transition-all group"
+      disabled={disabled}
+      className={cn(
+        "flex flex-col items-center justify-center py-2 px-1 rounded-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 transition-all group",
+        disabled 
+          ? "opacity-50 cursor-not-allowed" 
+          : "hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20"
+      )}
     >
-      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-0.5 group-hover:text-emerald-700 dark:group-hover:text-emerald-400">{label}</span>
-      <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{value}</span>
+      <span className={cn("text-xs font-medium mb-0.5", disabled ? "text-slate-400 dark:text-slate-500" : "text-slate-500 dark:text-slate-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-400")}>{label}</span>
+      <span className={cn("text-sm font-bold", disabled ? "text-slate-400 dark:text-slate-500" : "text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400")}>{value}</span>
     </button>
   );
 }
@@ -631,18 +658,26 @@ function OddsButtonCell({
   odds, 
   isOverUnder, 
   label,
-  onClick 
+  onClick,
+  disabled
 }: { 
   handicap: string; 
   odds: number; 
   isOverUnder?: boolean;
   label?: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button 
       onClick={onClick}
-      className="flex items-center justify-between w-full px-3 py-2 rounded-md bg-slate-50 dark:bg-slate-800 border border-transparent hover:border-emerald-500 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition-all group"
+      disabled={disabled}
+      className={cn(
+        "flex items-center justify-between w-full px-3 py-2 rounded-md bg-slate-50 dark:bg-slate-800 border border-transparent transition-all group",
+        disabled
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:border-emerald-500 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm"
+      )}
     >
       <div className="flex items-center gap-2">
         {isOverUnder && label && (

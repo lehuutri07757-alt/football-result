@@ -13,6 +13,7 @@ export interface BetSlipItem {
   handicap?: string;
   addedAt: number;
   oddsId?: string;
+  error?: string;
 }
 
 interface BetSlipState {
@@ -24,10 +25,12 @@ interface BetSlipState {
   lastPlacedBet: Bet | null;
   showConfirmation: boolean;
   
-  addSelection: (item: Omit<BetSlipItem, 'id' | 'addedAt'>) => void;
+  addSelection: (item: Omit<BetSlipItem, 'id' | 'addedAt' | 'error'>) => void;
   removeSelection: (id: string) => void;
-  toggleSelection: (item: Omit<BetSlipItem, 'id' | 'addedAt'>) => void;
+  toggleSelection: (item: Omit<BetSlipItem, 'id' | 'addedAt' | 'error'>) => void;
   clearAll: () => void;
+  clearItemError: (id: string) => void;
+  clearAllItemErrors: () => void;
   
   isSelected: (fixtureId: number, market: string, selection: string) => boolean;
   getSelectionKey: (fixtureId: number, market: string, selection: string) => string;
@@ -98,6 +101,20 @@ export const useBetSlipStore = create<BetSlipState>()(
         set({ items: [], stake: 0, error: null });
       },
 
+      clearItemError: (id) => {
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.id === id ? { ...item, error: undefined } : item
+          ),
+        }));
+      },
+
+      clearAllItemErrors: () => {
+        set((state) => ({
+          items: state.items.map((item) => ({ ...item, error: undefined })),
+        }));
+      },
+
       isSelected: (fixtureId, market, selection) => {
         const id = createSelectionKey(fixtureId, market, selection);
         return get().items.some((item) => item.id === id);
@@ -125,19 +142,25 @@ export const useBetSlipStore = create<BetSlipState>()(
         const { items, stake } = get();
         if (items.length === 0 || stake <= 0) return;
 
+        const targetItem = items[0];
+        if (!targetItem.oddsId) {
+          set((state) => ({
+            error: null,
+            items: state.items.map((i) =>
+              i.id === targetItem.id
+                ? { ...i, error: 'Odds information not found. Please select again.' }
+                : i
+            ),
+          }));
+          return;
+        }
+
         set({ isPlacing: true, error: null });
 
         try {
-          // For single bet, place bet for the first item
-          const item = items[0];
-          if (!item.oddsId) {
-            set({ isPlacing: false, error: 'Odds information not found. Please select again.' });
-            return;
-          }
-
           const idempotencyKey = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
           const response = await betService.placeBet({
-            oddsId: item.oddsId,
+            oddsId: targetItem.oddsId,
             stake,
             idempotencyKey,
           });
@@ -154,7 +177,7 @@ export const useBetSlipStore = create<BetSlipState>()(
            const error = err as { response?: { data?: { message?: string; code?: string } } };
            const code = error?.response?.data?.message || '';
            const errorMessages: Record<string, string> = {
-             'ODDS_SUSPENDED': 'Odds have been suspended. Please select different odds.',
+             'ODDS_SUSPENDED': 'Odds have been suspended.',
              'MATCH_NOT_BETTABLE': 'This match is not available for betting.',
              'INSUFFICIENT_FUNDS': 'Insufficient balance. Please deposit more funds.',
              'LIMIT_EXCEEDED': 'Bet limit exceeded. Please check your limits.',
@@ -162,7 +185,19 @@ export const useBetSlipStore = create<BetSlipState>()(
            };
            const message = Object.entries(errorMessages).find(([key]) => code.includes(key))?.[1]
              || 'Failed to place bet. Please try again.';
-           set({ isPlacing: false, error: message });
+
+           const isItemError = ['ODDS_SUSPENDED', 'MATCH_NOT_BETTABLE'].some((key) => code.includes(key));
+           if (isItemError) {
+             set((state) => ({
+               isPlacing: false,
+               error: null,
+               items: state.items.map((i) =>
+                 i.id === targetItem.id ? { ...i, error: message } : i
+               ),
+             }));
+           } else {
+             set({ isPlacing: false, error: message });
+           }
          }
       },
 

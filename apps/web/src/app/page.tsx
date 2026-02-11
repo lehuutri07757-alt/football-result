@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -147,15 +146,7 @@ export default function LoginPage() {
               )}
             </Button>
             
-            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-              Don&apos;t have an account?{' '}
-              <Link
-                href="/register"
-                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400 font-bold transition-colors"
-              >
-                Create account
-              </Link>
-            </p>
+
           </CardFooter>
         </form>
       </Card>

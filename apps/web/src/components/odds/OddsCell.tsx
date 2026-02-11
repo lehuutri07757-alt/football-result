@@ -7,10 +7,11 @@ interface OddsCellProps {
   cell?: OddsCellType;
   showLabel?: boolean;
   className?: string;
+  disabled?: boolean;
   onClick?: () => void;
 }
 
-export function OddsCell({ cell, showLabel = true, className, onClick }: OddsCellProps) {
+export function OddsCell({ cell, showLabel = true, className, disabled = false, onClick }: OddsCellProps) {
   if (!cell) {
     return (
       <div className={cn('flex flex-col items-center justify-center p-2 min-w-[60px]', className)}>
@@ -19,14 +20,16 @@ export function OddsCell({ cell, showLabel = true, className, onClick }: OddsCel
     );
   }
 
+  const isDisabled = cell.suspended || disabled;
+
   return (
     <button
       onClick={onClick}
-      disabled={cell.suspended}
+      disabled={isDisabled}
       className={cn(
         'flex flex-col items-center justify-center p-2 min-w-[60px] rounded transition-colors',
         'hover:bg-primary/10 active:bg-primary/20',
-        cell.suspended && 'opacity-50 cursor-not-allowed',
+        isDisabled && 'opacity-50 cursor-not-allowed',
         className,
       )}
     >
@@ -43,15 +46,16 @@ interface OddsColumnProps {
   away?: OddsCellType;
   draw?: OddsCellType;
   showDraw?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
-export function OddsColumn({ home, away, draw, showDraw = false, className }: OddsColumnProps) {
+export function OddsColumn({ home, away, draw, showDraw = false, disabled = false, className }: OddsColumnProps) {
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      <OddsCell cell={home} />
-      <OddsCell cell={away} />
-      {showDraw && <OddsCell cell={draw} />}
+      <OddsCell cell={home} disabled={disabled} />
+      <OddsCell cell={away} disabled={disabled} />
+      {showDraw && <OddsCell cell={draw} disabled={disabled} />}
     </div>
   );
 }

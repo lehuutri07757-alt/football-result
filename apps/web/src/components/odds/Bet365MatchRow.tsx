@@ -30,6 +30,7 @@ export function Bet365MatchRow({
   showLeague = false,
 }: Bet365MatchRowProps) {
   const isLive = match.isLive;
+  const isMatchBettable = !['finished', 'cancelled', 'postponed'].includes(match.status);
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -163,6 +164,7 @@ export function Bet365MatchRow({
               size="md"
               fullWidth
               hideLabel
+              disabled={!isMatchBettable}
             />
           ) : (
             <div className="grid grid-cols-3 gap-1 w-full">

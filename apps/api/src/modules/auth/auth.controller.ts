@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request, Ip, Headers } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, Ip, Headers, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -16,9 +16,9 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  @ApiOperation({ summary: 'Register new user' })
+  @ApiOperation({ summary: 'Register new user (disabled - admin only)' })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    throw new ForbiddenException('Public registration is disabled. Please contact an administrator.');
   }
 
   @UseGuards(LocalAuthGuard)

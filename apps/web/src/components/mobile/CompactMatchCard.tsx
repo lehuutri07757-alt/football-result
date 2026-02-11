@@ -103,7 +103,7 @@ export function CompactMatchCard({ match, className }: CompactMatchCardProps) {
           </button>
         </div>
 
-        {match.bettingEnabled && (
+        {match.bettingEnabled && !['finished', 'cancelled', 'postponed'].includes(match.status) && (
           <div className="flex items-center flex-shrink-0">
             <button className="flex flex-col items-center justify-center px-3 py-2 min-w-[52px] bg-card hover:bg-emerald-50 dark:hover:bg-emerald-950/30 active:bg-emerald-100 dark:active:bg-emerald-950/50 transition-colors border-l border-border">
               <span className="text-[10px] text-muted-foreground font-medium">1</span>

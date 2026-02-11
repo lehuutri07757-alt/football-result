@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Trash2, Loader2, CheckCircle, Receipt } from 'lucide-react';
+import { X, Trash2, Loader2, CheckCircle, Receipt, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBetSlipStore } from '@/stores/betslip.store';
 
@@ -145,26 +145,39 @@ export function DesktopBetSlip() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800 group"
+                className={cn(
+                  'flex flex-col p-3 rounded-lg group',
+                  item.error
+                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                    : 'bg-slate-50 dark:bg-slate-800'
+                )}
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-900 dark:text-white truncate">
-                    {item.matchName}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {item.market.toUpperCase()}: {item.selection}
-                    {item.handicap && ` (${item.handicap})`}
-                  </p>
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-slate-900 dark:text-white truncate">
+                      {item.matchName}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      {item.market.toUpperCase()}: {item.selection}
+                      {item.handicap && ` (${item.handicap})`}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                    {item.odds.toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => removeSelection(item.id)}
+                    className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5 text-slate-400" />
+                  </button>
                 </div>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                  {item.odds.toFixed(2)}
-                </span>
-                <button
-                  onClick={() => removeSelection(item.id)}
-                  className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5 text-slate-400" />
-                </button>
+                {item.error && (
+                  <div className="flex items-center gap-1 mt-1.5 text-[10px] text-red-600 dark:text-red-400">
+                    <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                    <span>{item.error}</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -514,6 +514,12 @@ export default function AdminBetsPage() {
                                 <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                   {bet.selections[0]?.selectionName || bet.selections[0]?.selection}
                                 </p>
+                                {bet.selections[0]?.match?.startTime && (
+                                  <p className={`text-[11px] mt-0.5 flex items-center gap-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    <Clock size={10} />
+                                    {formatDate(bet.selections[0].match.startTime)}
+                                  </p>
+                                )}
                               </div>
                             )}
                           </div>

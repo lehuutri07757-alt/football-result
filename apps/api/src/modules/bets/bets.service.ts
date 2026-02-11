@@ -506,6 +506,10 @@ export class BetsService {
       where.status = query.status;
     }
 
+    if (query.userId) {
+      where.userId = query.userId;
+    }
+
     if (query.search) {
       where.user = {
         OR: [

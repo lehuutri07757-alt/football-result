@@ -20,6 +20,8 @@ export function Bet365MatchRow({
   onMarketsClick,
   className,
 }: Bet365MatchRowProps) {
+  const isMatchBettable = match.status !== 'finished';
+
   const formatTime = () => {
     const date = new Date(match.startTime);
     return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -95,16 +97,19 @@ export function Bet365MatchRow({
         <OddsButton
           value={match.odds?.home.value}
           suspended={match.odds?.home.suspended}
+          disabled={!isMatchBettable}
           onClick={() => onOddsClick?.(match.id, 'home')}
         />
         <OddsButton
           value={match.odds?.draw.value}
           suspended={match.odds?.draw.suspended}
+          disabled={!isMatchBettable}
           onClick={() => onOddsClick?.(match.id, 'draw')}
         />
         <OddsButton
           value={match.odds?.away.value}
           suspended={match.odds?.away.suspended}
+          disabled={!isMatchBettable}
           onClick={() => onOddsClick?.(match.id, 'away')}
         />
       </div>
@@ -115,10 +120,11 @@ export function Bet365MatchRow({
 interface OddsButtonProps {
   value?: number;
   suspended?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }
 
-function OddsButton({ value, suspended, onClick }: OddsButtonProps) {
+function OddsButton({ value, suspended, disabled = false, onClick }: OddsButtonProps) {
   if (!value) {
     return (
       <div className="w-[100px] h-full flex items-center justify-center text-slate-500">
@@ -127,15 +133,17 @@ function OddsButton({ value, suspended, onClick }: OddsButtonProps) {
     );
   }
 
+  const isDisabled = suspended || disabled;
+
   return (
     <button
       onClick={onClick}
-      disabled={suspended}
+      disabled={isDisabled}
       className={cn(
         'w-[100px] py-4 text-center',
         'text-[#ffdf1b] font-medium hover:bg-[#3d3d3d]',
         'transition-colors',
-        suspended && 'opacity-40 cursor-not-allowed'
+        isDisabled && 'opacity-40 cursor-not-allowed'
       )}
     >
       {value.toFixed(2)}

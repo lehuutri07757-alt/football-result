@@ -12,6 +12,9 @@ import {
   ChevronRight,
   RefreshCw,
   Edit,
+  UserPlus,
+  Loader2,
+  EyeOff,
 } from 'lucide-react';
 import { adminService, AdminUser } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
@@ -33,7 +36,18 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    username: '',
+    password: '',
+    email: '',
+    phone: '',
+    firstName: '',
+    lastName: '',
+  });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -80,6 +94,41 @@ export default function AdminUsersPage() {
       toast.error('Failed to update status');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!createForm.username || !createForm.password) {
+      toast.error('Username and password are required');
+      return;
+    }
+    if (createForm.username.length < 3) {
+      toast.error('Username must be at least 3 characters');
+      return;
+    }
+    if (createForm.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      await adminService.createUser({
+        username: createForm.username,
+        password: createForm.password,
+        email: createForm.email || undefined,
+        phone: createForm.phone || undefined,
+        firstName: createForm.firstName || undefined,
+        lastName: createForm.lastName || undefined,
+      });
+      toast.success(`User "${createForm.username}" created successfully`);
+      setShowCreateModal(false);
+      setCreateForm({ username: '', password: '', email: '', phone: '', firstName: '', lastName: '' });
+      fetchUsers();
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to create user';
+      toast.error(message);
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -166,6 +215,13 @@ export default function AdminUsersPage() {
           >
             <RefreshCw size={18} />
           </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <UserPlus size={16} />
+            <span className="hidden sm:inline">Create User</span>
+          </button>
         </div>
       </div>
 
@@ -201,7 +257,12 @@ export default function AdminUsersPage() {
                             {user.username.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.username}</p>
+                            <button
+                              onClick={() => router.push(`/admin/users/${user.id}`)}
+                              className={`text-sm font-medium hover:underline text-left ${isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'}`}
+                            >
+                              {user.username}
+                            </button>
                             <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                               {user.firstName} {user.lastName}
                             </p>
@@ -373,6 +434,130 @@ export default function AdminUsersPage() {
                 className="flex-1 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors"
               >
                 Change Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className={`rounded-xl p-5 w-full max-w-md mx-4 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Create New User</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Username *</label>
+                <input
+                  type="text"
+                  value={createForm.username}
+                  onChange={(e) => setCreateForm(f => ({ ...f, username: e.target.value }))}
+                  placeholder="username"
+                  className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                  } border`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Password *</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm(f => ({ ...f, password: e.target.value }))}
+                    placeholder="min 6 characters"
+                    className={`w-full px-3 py-2 pr-10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                    } border`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded ${isDark ? 'text-slate-400 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>First Name</label>
+                  <input
+                    type="text"
+                    value={createForm.firstName}
+                    onChange={(e) => setCreateForm(f => ({ ...f, firstName: e.target.value }))}
+                    placeholder="John"
+                    className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                    } border`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Last Name</label>
+                  <input
+                    type="text"
+                    value={createForm.lastName}
+                    onChange={(e) => setCreateForm(f => ({ ...f, lastName: e.target.value }))}
+                    placeholder="Doe"
+                    className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                    } border`}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Email</label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="user@example.com"
+                  className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                  } border`}
+                />
+              </div>
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Phone</label>
+                <input
+                  type="text"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="0901234567"
+                  className={`w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400'
+                  } border`}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateUser}
+                disabled={createLoading}
+                className="flex-1 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {createLoading ? (
+                  <><Loader2 size={16} className="animate-spin" /> Creating...</>
+                ) : (
+                  <><UserPlus size={16} /> Create User</>
+                )}
               </button>
             </div>
           </div>

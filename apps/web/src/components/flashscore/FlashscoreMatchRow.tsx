@@ -26,6 +26,7 @@ export function FlashscoreMatchRow({
 }: FlashscoreMatchRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isLive = match.status === 'live' || match.status === 'half_time';
+  const isMatchBettable = !['finished', 'cancelled', 'postponed'].includes(match.status);
 
   const formatMatchTime = () => {
     if (isLive && match.matchMinute !== undefined) {
@@ -168,14 +169,17 @@ export function FlashscoreMatchRow({
           <FlashscoreOddsCell
             odds={match.oneXTwo?.home}
             onClick={() => onOddsClick?.(match.id, '1x2', 'home')}
+            disabled={!isMatchBettable}
           />
           <FlashscoreOddsCell
             odds={match.oneXTwo?.draw}
             onClick={() => onOddsClick?.(match.id, '1x2', 'draw')}
+            disabled={!isMatchBettable}
           />
           <FlashscoreOddsCell
             odds={match.oneXTwo?.away}
             onClick={() => onOddsClick?.(match.id, '1x2', 'away')}
+            disabled={!isMatchBettable}
           />
         </div>
 
@@ -183,14 +187,17 @@ export function FlashscoreMatchRow({
           <FlashscoreOddsCell
             odds={match.doubleChance?.homeOrDraw}
             onClick={() => onOddsClick?.(match.id, 'dc', 'homeOrDraw')}
+            disabled={!isMatchBettable}
           />
           <FlashscoreOddsCell
             odds={match.doubleChance?.homeOrAway}
             onClick={() => onOddsClick?.(match.id, 'dc', 'homeOrAway')}
+            disabled={!isMatchBettable}
           />
           <FlashscoreOddsCell
             odds={match.doubleChance?.awayOrDraw}
             onClick={() => onOddsClick?.(match.id, 'dc', 'awayOrDraw')}
+            disabled={!isMatchBettable}
           />
         </div>
 

@@ -9,6 +9,8 @@ interface OddsRowProps {
 }
 
 export function OddsRow({ match, showHalfTime = false }: OddsRowProps) {
+  const isMatchBettable = !['finished', 'cancelled', 'postponed'].includes(match.status);
+
   return (
     <div className="border-b border-border last:border-b-0">
       <div className="flex items-center gap-2 px-4 py-2 bg-muted/30">
@@ -47,12 +49,12 @@ export function OddsRow({ match, showHalfTime = false }: OddsRowProps) {
         <div className="flex gap-4">
           <div className="text-center">
             <div className="text-xs text-muted-foreground mb-1">HDP</div>
-            <OddsColumn home={match.hdp?.home} away={match.hdp?.away} />
+            <OddsColumn home={match.hdp?.home} away={match.hdp?.away} disabled={!isMatchBettable} />
           </div>
 
           <div className="text-center">
             <div className="text-xs text-muted-foreground mb-1">O/U</div>
-            <OddsColumn home={match.overUnder?.home} away={match.overUnder?.away} />
+            <OddsColumn home={match.overUnder?.home} away={match.overUnder?.away} disabled={!isMatchBettable} />
           </div>
 
           <div className="text-center">
@@ -62,34 +64,35 @@ export function OddsRow({ match, showHalfTime = false }: OddsRowProps) {
               away={match.oneXTwo?.away}
               draw={match.oneXTwo?.draw}
               showDraw
+              disabled={!isMatchBettable}
             />
           </div>
 
           <div className="text-center">
             <div className="text-xs text-muted-foreground mb-1">Home O/U</div>
-            <OddsColumn home={match.homeGoalOU?.home} away={match.homeGoalOU?.away} />
+            <OddsColumn home={match.homeGoalOU?.home} away={match.homeGoalOU?.away} disabled={!isMatchBettable} />
           </div>
 
           <div className="text-center">
             <div className="text-xs text-muted-foreground mb-1">Away O/U</div>
-            <OddsColumn home={match.awayGoalOU?.home} away={match.awayGoalOU?.away} />
+            <OddsColumn home={match.awayGoalOU?.home} away={match.awayGoalOU?.away} disabled={!isMatchBettable} />
           </div>
 
           <div className="text-center">
             <div className="text-xs text-muted-foreground mb-1">BTTS</div>
-            <OddsColumn home={match.btts?.home} away={match.btts?.away} />
+            <OddsColumn home={match.btts?.home} away={match.btts?.away} disabled={!isMatchBettable} />
           </div>
 
           {showHalfTime && match.isLive && (
             <>
               <div className="border-l border-border pl-4 text-center">
                 <div className="text-xs text-muted-foreground mb-1">HT HDP</div>
-                <OddsColumn home={match.htHdp?.home} away={match.htHdp?.away} />
+                <OddsColumn home={match.htHdp?.home} away={match.htHdp?.away} disabled={!isMatchBettable} />
               </div>
 
               <div className="text-center">
                 <div className="text-xs text-muted-foreground mb-1">HT O/U</div>
-                <OddsColumn home={match.htOverUnder?.home} away={match.htOverUnder?.away} />
+                <OddsColumn home={match.htOverUnder?.home} away={match.htOverUnder?.away} disabled={!isMatchBettable} />
               </div>
 
               <div className="text-center">
@@ -99,6 +102,7 @@ export function OddsRow({ match, showHalfTime = false }: OddsRowProps) {
                   away={match.htOneXTwo?.away}
                   draw={match.htOneXTwo?.draw}
                   showDraw
+                  disabled={!isMatchBettable}
                 />
               </div>
             </>

@@ -272,4 +272,20 @@ export class UsersService {
       totalWins: totalWins._sum.actualWin || 0,
     };
   }
+
+  async adminResetPassword(id: string, newPassword: string) {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash: hashedPassword },
+    });
+
+    return { message: 'Password reset successfully' };
+  }
 }

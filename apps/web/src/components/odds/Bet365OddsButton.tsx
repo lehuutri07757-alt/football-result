@@ -9,6 +9,7 @@ export interface Bet365OddsButtonProps {
   handicap?: string;
   suspended?: boolean;
   selected?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
   size?: 'sm' | 'md';
   fullWidth?: boolean;
@@ -21,12 +22,13 @@ export function Bet365OddsButton({
   handicap,
   suspended = false,
   selected = false,
+  disabled = false,
   onClick,
   size = 'md',
   fullWidth = false,
   hideLabel = false,
 }: Bet365OddsButtonProps) {
-  const isDisabled = suspended || odds === null;
+  const isDisabled = suspended || disabled || odds === null;
 
   return (
     <button
@@ -85,6 +87,7 @@ export interface Bet365OddsPairProps {
   selectedKey?: string | null;
   onSelect?: (key: 'home' | 'away', cell: OddsCell) => void;
   size?: 'sm' | 'md';
+  disabled?: boolean;
 }
 
 export function Bet365OddsPair({
@@ -95,6 +98,7 @@ export function Bet365OddsPair({
   selectedKey,
   onSelect,
   size = 'md',
+  disabled = false,
 }: Bet365OddsPairProps) {
   return (
     <div className="flex gap-1">
@@ -104,6 +108,7 @@ export function Bet365OddsPair({
         handicap={homeOdds?.handicap}
         suspended={homeOdds?.suspended}
         selected={selectedKey === 'home'}
+        disabled={disabled}
         onClick={() => homeOdds && onSelect?.('home', homeOdds)}
         size={size}
       />
@@ -113,6 +118,7 @@ export function Bet365OddsPair({
         handicap={awayOdds?.handicap}
         suspended={awayOdds?.suspended}
         selected={selectedKey === 'away'}
+        disabled={disabled}
         onClick={() => awayOdds && onSelect?.('away', awayOdds)}
         size={size}
       />
@@ -129,6 +135,7 @@ export interface Bet365ThreeWayOddsProps {
   size?: 'sm' | 'md';
   fullWidth?: boolean;
   hideLabel?: boolean;
+  disabled?: boolean;
 }
 
 export function Bet365ThreeWayOdds({
@@ -140,6 +147,7 @@ export function Bet365ThreeWayOdds({
   size = 'md',
   fullWidth = false,
   hideLabel = false,
+  disabled = false,
 }: Bet365ThreeWayOddsProps) {
   return (
     <div className={cn('grid grid-cols-3 gap-1', fullWidth && 'w-full')}>
@@ -148,6 +156,7 @@ export function Bet365ThreeWayOdds({
         odds={homeOdds?.odds ?? null}
         suspended={homeOdds?.suspended}
         selected={selectedKey === '1'}
+        disabled={disabled}
         onClick={() => homeOdds && onSelect?.('1', homeOdds)}
         size={size}
         fullWidth={fullWidth}
@@ -158,6 +167,7 @@ export function Bet365ThreeWayOdds({
         odds={drawOdds?.odds ?? null}
         suspended={drawOdds?.suspended}
         selected={selectedKey === 'X'}
+        disabled={disabled}
         onClick={() => drawOdds && onSelect?.('X', drawOdds)}
         size={size}
         fullWidth={fullWidth}
@@ -168,6 +178,7 @@ export function Bet365ThreeWayOdds({
         odds={awayOdds?.odds ?? null}
         suspended={awayOdds?.suspended}
         selected={selectedKey === '2'}
+        disabled={disabled}
         onClick={() => awayOdds && onSelect?.('2', awayOdds)}
         size={size}
         fullWidth={fullWidth}

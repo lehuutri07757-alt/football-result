@@ -290,15 +290,9 @@ export default function MatchesPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => router.push('/')}
-                    className="px-5 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors dark:text-white dark:hover:bg-white/10"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => router.push('/register')}
                     className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white dark:text-slate-950 dark:hover:bg-emerald-400 text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
                   >
-                    Register
+                    Login
                   </button>
                 </div>
               )}

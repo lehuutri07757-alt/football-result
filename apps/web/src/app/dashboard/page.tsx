@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   ChevronLeft,
   ChevronRight,
@@ -26,8 +27,11 @@ export default function DashboardPage() {
   const [featuredMatches, setFeaturedMatches] = useState<Match[]>([]);
   const [isLoadingFeatured, setIsLoadingFeatured] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState<{ countryCode: string; countryName: string } | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const featuredScrollRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   
   const { data: statistics } = useMatchStatistics();
   const footballCount = statistics?.total ?? 0;
@@ -133,12 +137,26 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    void checkAuth();
+    checkAuth().finally(() => setAuthChecked(true));
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (authChecked && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [authChecked, isAuthenticated, router]);
 
   useEffect(() => {
     fetchFeaturedMatches();
   }, [fetchFeaturedMatches]);
+
+  if (!authChecked || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-200 transition-colors duration-300">

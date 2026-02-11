@@ -20,6 +20,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Receipt,
+  CreditCard,
   Sun,
   Moon,
   LayoutDashboard,
@@ -77,6 +78,7 @@ const navItems: NavEntry[] = [
       { id: 'deposits', name: 'Deposits', icon: ArrowDownToLine, href: '/admin/deposits' },
       { id: 'withdrawals', name: 'Withdrawals', icon: ArrowUpFromLine, href: '/admin/withdrawals' },
       { id: 'bets', name: 'Bets', icon: Receipt, href: '/admin/bets' },
+      { id: 'transactions', name: 'Transactions', icon: CreditCard, href: '/admin/transactions' },
     ],
   },
   {

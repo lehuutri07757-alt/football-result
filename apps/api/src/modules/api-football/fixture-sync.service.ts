@@ -412,7 +412,9 @@ export class FixtureSyncService {
       });
       result.created = toCreate.length;
 
-      await this.syncOddsForNewMatches(toCreate.map((m) => m.externalId));
+      // Odds sync for new matches is handled by scheduled odds sync jobs
+      // (upcomingOdds, farOdds). Removed immediate syncOddsForNewMatches
+      // to avoid N extra API calls per fixture sync run.
     }
 
     if (toUpdate.length > 0) {

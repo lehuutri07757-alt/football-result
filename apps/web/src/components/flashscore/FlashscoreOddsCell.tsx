@@ -6,10 +6,11 @@ import { FlashscoreOddsValue } from '@/types/flashscore';
 interface FlashscoreOddsCellProps {
   odds?: FlashscoreOddsValue;
   onClick?: () => void;
+  disabled?: boolean;
   className?: string;
 }
 
-export function FlashscoreOddsCell({ odds, onClick, className }: FlashscoreOddsCellProps) {
+export function FlashscoreOddsCell({ odds, onClick, disabled = false, className }: FlashscoreOddsCellProps) {
   if (!odds) {
     return (
       <div className={cn(
@@ -21,10 +22,12 @@ export function FlashscoreOddsCell({ odds, onClick, className }: FlashscoreOddsC
     );
   }
 
+  const isDisabled = odds.suspended || disabled;
+
   return (
     <button
       onClick={onClick}
-      disabled={odds.suspended}
+      disabled={isDisabled}
       className={cn(
         'flex items-center justify-center w-[60px] h-[44px]',
         'text-sm font-medium tabular-nums',
@@ -32,7 +35,7 @@ export function FlashscoreOddsCell({ odds, onClick, className }: FlashscoreOddsC
         'bg-slate-100 dark:bg-slate-700/50',
         'hover:bg-blue-100 hover:border-blue-400 dark:hover:bg-blue-900/40 dark:hover:border-blue-600',
         'transition-colors cursor-pointer',
-        odds.suspended && 'opacity-40 cursor-not-allowed',
+        isDisabled && 'opacity-40 cursor-not-allowed',
         className
       )}
     >

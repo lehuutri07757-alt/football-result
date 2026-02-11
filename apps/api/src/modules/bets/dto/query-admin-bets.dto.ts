@@ -29,6 +29,11 @@ export class QueryAdminBetsDto {
   @IsOptional()
   search?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by user ID' })
+  @IsString()
+  @IsOptional()
+  userId?: string;
+
   @ApiPropertyOptional({ description: 'ISO date string (YYYY-MM-DD or full ISO)' })
   @IsString()
   @IsOptional()

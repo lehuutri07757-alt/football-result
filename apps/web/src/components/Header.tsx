@@ -7,17 +7,18 @@ import {
   Trophy, 
   MonitorPlay, 
   Medal, 
-  Bell, 
   User, 
   Wallet, 
   LogOut, 
-  Shield 
+  Shield,
+  Receipt,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useLanguageStore } from '@/stores/language.store';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
+import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { t } from '@/lib/i18n';
 
 interface HeaderProps {
@@ -127,11 +128,7 @@ export function Header(_: HeaderProps) {
                <LanguageSwitch className="h-9" />
             </div>
 
-            <button type="button" className="relative rounded-full p-2 sm:p-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white transition-colors">
-              <Bell size={18} className="sm:hidden" />
-              <Bell size={20} className="hidden sm:block" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950" />
-            </button>
+            <NotificationDropdown />
 
             {isAuthenticated ? (
               <>
@@ -163,6 +160,14 @@ export function Header(_: HeaderProps) {
                         >
                           <User size={16} />
                           <span>Profile</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => router.push('/bets')}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800"
+                        >
+                          <Receipt size={16} />
+                          <span>Bet History</span>
                         </button>
                         <button
                           type="button"
@@ -205,16 +210,9 @@ export function Header(_: HeaderProps) {
                 <button
                   type="button"
                   onClick={() => router.push('/')}
-                  className="px-3 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors dark:text-white dark:hover:bg-white/10"
-                >
-                  Login
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push('/register')}
                   className="px-3 sm:px-5 py-1.5 sm:py-2 bg-emerald-500 hover:bg-emerald-600 text-white dark:text-slate-950 dark:hover:bg-emerald-400 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
                 >
-                  Register
+                  Login
                 </button>
               </div>
             )}

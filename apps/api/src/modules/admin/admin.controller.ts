@@ -215,4 +215,23 @@ export class AdminController {
   async voidBet(@Param('id') id: string) {
     return this.betsService.voidBet(id);
   }
+
+  @Get('users/:id/stats')
+  @ApiOperation({ summary: 'Get user betting statistics (Admin)' })
+  @ApiResponse({ status: 200, description: 'User betting stats' })
+  @RequirePermissions(PERMISSIONS.USERS.READ)
+  async getUserStats(@Param('id') id: string) {
+    return this.usersService.getUserStats(id);
+  }
+
+  @Post('users/:id/reset-password')
+  @ApiOperation({ summary: 'Admin reset user password' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @RequirePermissions(PERMISSIONS.USERS.UPDATE)
+  async adminResetPassword(
+    @Param('id') id: string,
+    @Body() body: { newPassword: string },
+  ) {
+    return this.usersService.adminResetPassword(id, body.newPassword);
+  }
 }

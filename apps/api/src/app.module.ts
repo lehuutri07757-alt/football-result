@@ -25,6 +25,8 @@ import { HomeModule } from "./modules/home/home.module";
 import { FeaturedMatchesModule } from "./modules/featured-matches/featured-matches.module";
 import { SearchModule } from "./modules/search/search.module";
 import { BetsModule } from "./modules/bets/bets.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
+import { SupportTicketsModule } from "./modules/support-tickets/support-tickets.module";
 
 @Module({
   imports: [
@@ -73,6 +75,8 @@ import { BetsModule } from "./modules/bets/bets.module";
     FeaturedMatchesModule,
     SearchModule,
     BetsModule,
+    NotificationsModule,
+    SupportTicketsModule,
   ],
 })
 export class AppModule {}

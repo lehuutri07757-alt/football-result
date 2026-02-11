@@ -2,28 +2,23 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Zap, Star, User } from 'lucide-react';
+import { Home, Receipt, Star, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: number;
-}
-
-interface MobileBottomNavProps {
-  liveCount?: number;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/live', label: 'Live', icon: Zap },
+  { href: '/bets', label: 'History', icon: Receipt },
   { href: '/favorites', label: 'Favorites', icon: Star },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 
-export function MobileBottomNav({ liveCount = 0 }: MobileBottomNavProps) {
+export function MobileBottomNav() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
@@ -39,7 +34,6 @@ export function MobileBottomNav({ liveCount = 0 }: MobileBottomNavProps) {
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-          const showBadge = item.href === '/live' && liveCount > 0;
 
           return (
             <Link
@@ -59,11 +53,6 @@ export function MobileBottomNav({ liveCount = 0 }: MobileBottomNavProps) {
                     active && 'scale-110'
                   )}
                 />
-                {showBadge && (
-                  <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full animate-pulse">
-                    {liveCount > 99 ? '99+' : liveCount}
-                  </span>
-                )}
               </div>
               <span
                 className={cn(

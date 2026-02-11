@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Users,
   Trophy,
@@ -14,55 +14,32 @@ import {
   RefreshCw,
   MoreHorizontal,
   CreditCard,
+  TrendingUp,
+  Wallet,
+  BarChart3,
+  CheckCircle2,
+  XCircle,
+  Minus,
 } from 'lucide-react';
 import { adminService, AdminStats } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import Link from 'next/link';
 
-interface RecentActivity {
-  id: string;
-  type: 'deposit' | 'withdrawal' | 'bet';
-  user: string;
-  amount: number;
-  status: string;
-  time: string;
-}
-
 export default function AdminPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      setTimeout(() => {
-        setStats({
-          totalUsers: 12458,
-          totalRevenue: 2500000000,
-          totalBets: 45678,
-          pendingDeposits: 23,
-          pendingWithdrawals: 15,
-          activeMatches: 48,
-          todayBets: 1247,
-          todayRevenue: 125000000,
-        });
-
-        setRecentActivities([
-          { id: '1', type: 'deposit', user: 'nguyenvana', amount: 5000000, status: 'pending', time: '5 minutes ago' },
-          { id: '2', type: 'bet', user: 'tranthib', amount: 1000000, status: 'won', time: '10 minutes ago' },
-          { id: '3', type: 'withdrawal', user: 'levancuong', amount: 2000000, status: 'pending', time: '15 minutes ago' },
-          { id: '4', type: 'bet', user: 'phamthid', amount: 500000, status: 'lost', time: '20 minutes ago' },
-          { id: '5', type: 'deposit', user: 'hoangmine', amount: 10000000, status: 'approved', time: '30 minutes ago' },
-        ]);
-        setLoading(false);
-      }, 800);
-      
+      const data = await adminService.getStats();
+      setStats(data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -120,36 +97,45 @@ export default function AdminPage() {
     }
   };
 
+  const formatTrend = (value: number, isAbsolute = false): string => {
+    if (isAbsolute) return value >= 0 ? `+${value}` : `${value}`;
+    return value >= 0 ? `+${value}%` : `${value}%`;
+  };
+
   const statsData = [
     { 
       label: 'Total Revenue', 
       value: formatCurrency(stats?.totalRevenue || 0), 
-      change: '+23%', 
-      trend: 'up',
+      change: formatTrend(stats?.revenueChange || 0), 
+      trend: (stats?.revenueChange || 0) >= 0 ? 'up' : 'down',
+      subLabel: `Today: ${formatCurrency(stats?.todayRevenue || 0)}`,
       icon: DollarSign, 
       color: 'emerald' 
     },
     { 
       label: 'Total Users', 
       value: stats?.totalUsers?.toLocaleString() || '0', 
-      change: '+12%', 
-      trend: 'up',
+      change: formatTrend(stats?.usersChange || 0), 
+      trend: (stats?.usersChange || 0) >= 0 ? 'up' : 'down',
+      subLabel: `New today: ${stats?.newUsersToday || 0}`,
       icon: Users, 
       color: 'blue' 
     },
     { 
       label: 'Active Matches', 
       value: stats?.activeMatches?.toString() || '0', 
-      change: '+5', 
-      trend: 'up',
+      change: formatTrend(stats?.matchesDiff || 0, true), 
+      trend: (stats?.matchesDiff || 0) >= 0 ? 'up' : 'down',
+      subLabel: 'Live now',
       icon: Trophy, 
       color: 'orange' 
     },
     { 
       label: "Today's Bets", 
       value: stats?.todayBets?.toLocaleString() || '0', 
-      change: '-8%', 
-      trend: 'down',
+      change: formatTrend(stats?.betsChange || 0), 
+      trend: (stats?.betsChange || 0) >= 0 ? 'up' : 'down',
+      subLabel: `Total: ${stats?.totalBets?.toLocaleString() || '0'}`,
       icon: Clock, 
       color: 'purple' 
     },
@@ -221,12 +207,95 @@ export default function AdminPage() {
               <p className={`text-sm font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 {stat.label}
               </p>
+              <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                {stat.subLabel}
+              </p>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Extra Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: 'Platform Balance', value: formatCurrency(stats?.totalPlatformBalance || 0), icon: Wallet, iconColor: 'text-cyan-500', bgColor: isDark ? 'bg-cyan-500/10' : 'bg-cyan-50' },
+          { label: 'Total Deposits', value: formatCurrency(stats?.totalDeposits || 0), icon: ArrowDownToLine, iconColor: 'text-emerald-500', bgColor: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
+          { label: 'Total Withdrawals', value: formatCurrency(stats?.totalWithdrawals || 0), icon: ArrowUpFromLine, iconColor: 'text-orange-500', bgColor: isDark ? 'bg-orange-500/10' : 'bg-orange-50' },
+          { label: 'Bets Won / Lost', value: `${stats?.betsWon || 0} / ${stats?.betsLost || 0}`, icon: BarChart3, iconColor: 'text-indigo-500', bgColor: isDark ? 'bg-indigo-500/10' : 'bg-indigo-50' },
+        ].map((item, i) => (
+          <div key={i} className={`p-4 rounded-2xl flex items-center gap-3 ${
+            isDark
+              ? 'bg-slate-900 border border-slate-800'
+              : 'bg-white border border-slate-100 shadow-sm'
+          }`}>
+            <div className={`p-2.5 rounded-xl ${item.bgColor}`}>
+              <item.icon size={18} className={item.iconColor} />
+            </div>
+            <div>
+              <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Revenue Chart (Last 7 Days) */}
+      {stats?.last7DaysRevenue && stats.last7DaysRevenue.length > 0 && (() => {
+        const maxRevenue = Math.max(...stats.last7DaysRevenue.map(d => Math.abs(d.revenue)), 1);
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        return (
+          <div className={`rounded-2xl p-6 ${
+            isDark
+              ? 'bg-slate-900 border border-slate-800 shadow-lg shadow-black/20'
+              : 'bg-white border border-slate-100 shadow-sm'
+          }`}>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <TrendingUp size={20} className="text-emerald-500" />
+                Revenue (Last 7 Days)
+              </h3>
+              <span className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Total: {formatCurrency(stats.last7DaysRevenue.reduce((s, d) => s + d.revenue, 0))}
+              </span>
+            </div>
+            <div className="flex items-end gap-2 h-40">
+              {stats.last7DaysRevenue.map((day, i) => {
+                const height = Math.max((Math.abs(day.revenue) / maxRevenue) * 100, 4);
+                const isPositive = day.revenue >= 0;
+                const dateObj = new Date(day.date + 'T00:00:00');
+                const dayName = dayNames[dateObj.getDay()];
+                const dateLabel = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className={`text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}>
+                      {formatCurrency(day.revenue)}
+                    </div>
+                    <div className="w-full flex items-end justify-center" style={{ height: '120px' }}>
+                      <div
+                        className={`w-full max-w-[40px] rounded-t-lg transition-all duration-300 group-hover:opacity-80 ${
+                          isPositive
+                            ? (isDark ? 'bg-emerald-500/60' : 'bg-emerald-400')
+                            : (isDark ? 'bg-red-500/60' : 'bg-red-400')
+                        }`}
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+                    <div className="text-center">
+                      <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{dayName}</p>
+                      <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{dateLabel}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Activity */}
         <div className={`lg:col-span-2 rounded-2xl p-6 ${
           isDark 
             ? 'bg-slate-900 border border-slate-800 shadow-lg shadow-black/20' 
@@ -247,60 +316,123 @@ export default function AdminPage() {
             </Link>
           </div>
           
-          <div className="space-y-4">
-            {recentActivities.map((activity) => (
-              <div 
-                key={activity.id} 
-                className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 ${
-                  isDark 
-                    ? 'bg-slate-800/50 hover:bg-slate-800 border border-slate-800/50' 
-                    : 'bg-slate-50 hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-sm'
-                }`}
-              >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  isDark ? 'bg-slate-800' : 'bg-white shadow-sm border border-slate-100'
-                }`}>
-                  {getActivityIcon(activity.type)}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className={`font-semibold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {activity.user}
-                    </p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                      isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      {activity.type}
-                    </span>
-                  </div>
-                  <p className={`text-xs flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    <Clock size={12} />
-                    {activity.time}
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className={`text-sm font-bold mb-1 ${
-                    activity.type === 'deposit' || activity.status === 'won' 
-                      ? 'text-emerald-500' 
-                      : activity.status === 'lost' 
-                        ? 'text-red-500' 
-                        : isDark ? 'text-white' : 'text-slate-900'
-                  }`}>
-                    {activity.type === 'deposit' ? '+' : activity.type === 'withdrawal' ? '-' : ''}
-                    {formatFullCurrency(activity.amount)}
-                  </p>
-                  <div className="flex justify-end">
-                    {getStatusBadge(activity.status)}
-                  </div>
-                </div>
+          <div className="space-y-3">
+            {(!stats?.recentActivities || stats.recentActivities.length === 0) ? (
+              <div className={`text-center py-10 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <Activity size={32} className="mx-auto mb-3 opacity-50" />
+                <p className="text-sm font-medium">No recent activity</p>
+                <p className="text-xs mt-1">Transactions will appear here</p>
               </div>
-            ))}
+            ) : (
+              stats.recentActivities.map((activity) => {
+                const timeAgo = (() => {
+                  const diff = Date.now() - new Date(activity.time).getTime();
+                  const mins = Math.floor(diff / 60000);
+                  if (mins < 1) return 'Just now';
+                  if (mins < 60) return `${mins}m ago`;
+                  const hours = Math.floor(mins / 60);
+                  if (hours < 24) return `${hours}h ago`;
+                  const days = Math.floor(hours / 24);
+                  return `${days}d ago`;
+                })();
+
+                return (
+                  <div 
+                    key={activity.id} 
+                    className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-200 ${
+                      isDark 
+                        ? 'bg-slate-800/50 hover:bg-slate-800 border border-slate-800/50' 
+                        : 'bg-slate-50 hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      isDark ? 'bg-slate-800' : 'bg-white shadow-sm border border-slate-100'
+                    }`}>
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className={`font-semibold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {activity.user}
+                        </p>
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                          isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {activity.type}
+                        </span>
+                      </div>
+                      <p className={`text-xs flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <Clock size={12} />
+                        {timeAgo}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className={`text-sm font-bold mb-0.5 ${
+                        activity.type === 'deposit'
+                          ? 'text-emerald-500' 
+                          : activity.type === 'withdrawal'
+                            ? 'text-red-500' 
+                            : isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        {activity.type === 'deposit' ? '+' : activity.type === 'withdrawal' ? '-' : ''}
+                        {formatFullCurrency(activity.amount)}
+                      </p>
+                      <div className="flex justify-end">
+                        {getStatusBadge(activity.status)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
         <div className="space-y-6">
+          {/* Bet Status Breakdown */}
+          <div className={`rounded-2xl p-6 ${
+            isDark 
+              ? 'bg-slate-900 border border-slate-800 shadow-lg shadow-black/20' 
+              : 'bg-white border border-slate-100 shadow-sm'
+          }`}>
+            <h3 className={`font-bold text-lg mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              <BarChart3 size={20} className="text-indigo-500" />
+              Bet Breakdown
+            </h3>
+            <div className="space-y-3">
+              {[
+                { label: 'Won', count: stats?.betsWon || 0, icon: CheckCircle2, color: 'emerald' },
+                { label: 'Lost', count: stats?.betsLost || 0, icon: XCircle, color: 'red' },
+                { label: 'Pending', count: stats?.betsPending || 0, icon: Clock, color: 'amber' },
+              ].map((item, i) => {
+                const total = (stats?.totalBets || 1);
+                const pct = Math.round((item.count / total) * 100);
+                return (
+                  <div key={i}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <item.icon size={14} className={`text-${item.color}-500`} />
+                        <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{item.label}</span>
+                      </div>
+                      <span className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {item.count.toLocaleString()} <span className={`text-xs font-normal ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>({pct}%)</span>
+                      </span>
+                    </div>
+                    <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 bg-${item.color}-500`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Pending Actions */}
           <div className={`rounded-2xl p-6 ${
             isDark 
               ? 'bg-slate-900 border border-slate-800 shadow-lg shadow-black/20' 
@@ -361,6 +493,7 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Quick Access */}
           <div className={`rounded-2xl p-6 ${
             isDark 
               ? 'bg-slate-900 border border-slate-800 shadow-lg shadow-black/20' 
@@ -394,14 +527,14 @@ export default function AdminPage() {
                 <CreditCard size={24} className="text-purple-500" />
                 <span className="text-xs font-medium">Bets</span>
               </Link>
-              <button className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all ${
+              <Link href="/admin/settings" className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all ${
                 isDark 
                   ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white' 
                   : 'bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100'
               }`}>
                 <MoreHorizontal size={24} className="text-slate-400" />
-                <span className="text-xs font-medium">More</span>
-              </button>
+                <span className="text-xs font-medium">Settings</span>
+              </Link>
             </div>
           </div>
         </div>

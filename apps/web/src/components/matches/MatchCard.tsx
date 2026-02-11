@@ -166,7 +166,7 @@ export function MatchCard({ match, className }: MatchCardProps) {
         </div>
       </Link>
 
-      {match.bettingEnabled && (
+      {match.bettingEnabled && !['finished', 'cancelled', 'postponed'].includes(match.status) && (
         <div className="grid grid-cols-3 gap-px border-t bg-border/50">
           <button className="flex flex-col items-center justify-center bg-card py-2.5 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 transition-colors">
             <span className="text-[10px] text-muted-foreground font-medium mb-0.5">1</span>
@@ -183,7 +183,7 @@ export function MatchCard({ match, className }: MatchCardProps) {
         </div>
       )}
       
-      {!match.bettingEnabled && (
+      {(!match.bettingEnabled || ['finished', 'cancelled', 'postponed'].includes(match.status)) && (
         <div className="flex items-center justify-center gap-2 border-t py-2.5 text-xs text-muted-foreground bg-muted/20">
           <CircleDot className="h-3 w-3" />
           <span>Betting unavailable</span>

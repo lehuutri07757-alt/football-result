@@ -49,6 +49,33 @@ export interface AdminStats {
   activeMatches: number;
   todayBets: number;
   todayRevenue: number;
+  // Trend data (today vs yesterday)
+  revenueChange: number;
+  usersChange: number;
+  betsChange: number;
+  matchesDiff: number;
+  // Extra stats
+  newUsersToday: number;
+  betsWon: number;
+  betsLost: number;
+  betsPending: number;
+  totalPlatformBalance: number;
+  totalDeposits: number;
+  totalWithdrawals: number;
+  // Recent activities
+  recentActivities: {
+    id: string;
+    type: 'deposit' | 'withdrawal' | 'bet';
+    user: string;
+    amount: number;
+    status: string;
+    time: string;
+  }[];
+  // Chart data
+  last7DaysRevenue: {
+    date: string;
+    revenue: number;
+  }[];
 }
 
 export interface DepositRequest {
@@ -115,8 +142,43 @@ export interface Transaction {
   referenceType?: string;
   referenceId?: string;
   description?: string;
+  metadata?: Record<string, unknown>;
   status: string;
   createdAt: string;
+  updatedAt: string;
+  wallet?: {
+    id: string;
+    user?: {
+      id: string;
+      username: string;
+      email: string;
+    };
+  };
+}
+
+export interface TransactionQueryParams extends PaginationParams {
+  type?: string;
+  userId?: string;
+  balanceType?: 'real' | 'bonus';
+  startDate?: string;
+  endDate?: string;
+  sortBy?: 'createdAt' | 'amount';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface TransactionStats {
+  counts: {
+    deposits: number;
+    withdrawals: number;
+    betsPlaced: number;
+    betsWon: number;
+  };
+  amounts: {
+    deposits: number;
+    withdrawals: number;
+    betsPlaced: number;
+    betsWon: number;
+  };
 }
 
 export interface WalletDetails {
@@ -338,6 +400,18 @@ export const adminService = {
     return response.data;
   },
 
+  async createUser(data: {
+    username: string;
+    password: string;
+    email?: string;
+    phone?: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<AdminUser> {
+    const response = await api.post<AdminUser>('/users', data);
+    return response.data;
+  },
+
   async deleteUser(id: string): Promise<void> {
     await api.delete(`/admin/users/${id}`);
   },
@@ -392,8 +466,15 @@ export const adminService = {
     return response.data;
   },
 
-  async getTransactions(params?: PaginationParams & { userId?: string; type?: string }): Promise<PaginatedResponse<Transaction>> {
-    const response = await api.get<PaginatedResponse<Transaction>>('/admin/transactions', { params });
+  async getTransactions(params?: TransactionQueryParams): Promise<PaginatedResponse<Transaction>> {
+    const response = await api.get<PaginatedResponse<Transaction>>('/transactions', { params });
+    return response.data;
+  },
+
+  async getTransactionStats(userId?: string): Promise<TransactionStats> {
+    const response = await api.get<TransactionStats>('/transactions/stats', {
+      params: userId ? { userId } : undefined,
+    });
     return response.data;
   },
 
@@ -430,7 +511,7 @@ export const adminService = {
     return response.data;
   },
 
-  async getBets(params?: PaginationParams & { fromDate?: string; toDate?: string }): Promise<PaginatedResponse<AdminBet>> {
+  async getBets(params?: PaginationParams & { fromDate?: string; toDate?: string; userId?: string }): Promise<PaginatedResponse<AdminBet>> {
     const response = await api.get<PaginatedResponse<AdminBet>>('/admin/bets', { params });
     return response.data;
   },
@@ -442,6 +523,16 @@ export const adminService = {
 
   async voidBet(id: string): Promise<{ message: string }> {
     const response = await api.post<{ message: string }>(`/admin/bets/${id}/void`);
+    return response.data;
+  },
+
+  async getUserStats(userId: string): Promise<{ totalBets: number; totalStake: number; totalWins: number }> {
+    const response = await api.get<{ totalBets: number; totalStake: number; totalWins: number }>(`/admin/users/${userId}/stats`);
+    return response.data;
+  },
+
+  async adminResetPassword(userId: string, newPassword: string): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>(`/admin/users/${userId}/reset-password`, { newPassword });
     return response.data;
   },
 

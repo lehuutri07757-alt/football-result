@@ -170,19 +170,19 @@ export const DEFAULT_SYNC_CONFIG: ApiFootballSyncConfig = {
   },
   liveOdds: {
     intervalMinutes: 15,          // Every 15 minutes (was 5)
-    maxMatchesPerSync: 30,        // Max 30 matches (was 15)
+    maxMatchesPerSync: 15,        // Max 15 matches (reduced from 30 to conserve quota)
     enabled: true,
   },
   upcomingOdds: {
     intervalMinutes: 120,         // Every 2 hours (was 30 min)
     hoursAhead: 24,               // Near matches: within 24 hours
-    maxMatchesPerSync: 150,       // Max 150 matches (was 20) — covers all upcoming
+    maxMatchesPerSync: 50,        // Max 50 matches (reduced from 150 to conserve quota)
     enabled: true,
   },
   farOdds: {
     intervalMinutes: 270,         // Every 4.5 hours
     maxDaysAhead: 14,
-    maxMatchesPerSync: 100,       // Max 100 matches (was 30)
+    maxMatchesPerSync: 30,        // Max 30 matches (reduced from 100 to conserve quota)
     enabled: true,
   },
   league: {
