@@ -27,6 +27,8 @@ import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { adminService, ApiFootballAccountStatus } from '@/services/admin.service';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy' | 'checking';
@@ -46,6 +48,7 @@ interface EndpointHealth {
 export default function ApiHealthPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [accountStatus, setAccountStatus] = useState<ApiFootballAccountStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -162,7 +165,7 @@ export default function ApiHealthPage() {
     const percentage = (accountStatus.requests.current / accountStatus.requests.limit_day) * 100;
     if (percentage >= 90) return 'Critical - Near Limit';
     if (percentage >= 70) return 'Warning - High Usage';
-    return 'Normal';
+    return t(language, 'admin.apiHealth.normal');
   };
 
   const formatDate = (dateStr: string) => {
@@ -182,7 +185,7 @@ export default function ApiHealthPage() {
   };
 
   if (loading) {
-    return <AdminLoading text="Checking API health..." />;
+    return <AdminLoading text={t(language, 'admin.common.loading')} />;
   }
 
   return (
@@ -190,7 +193,7 @@ export default function ApiHealthPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={cn('text-2xl font-bold tracking-tight', isDark ? 'text-white' : 'text-slate-900')}>
-            API Health Check
+            {t(language, 'admin.apiHealth.title')}
           </h1>
           <p className={cn('mt-1 text-sm', isDark ? 'text-slate-400' : 'text-slate-500')}>
             Monitor API-Football connection status and quota usage
@@ -222,7 +225,7 @@ export default function ApiHealthPage() {
             )}
           >
             <RefreshCw size={18} className={checking ? 'animate-spin' : ''} />
-            {checking ? 'Checking...' : 'Check Now'}
+            {checking ? 'Checking...' : t(language, 'admin.apiHealth.checkNow')}
           </button>
         </div>
       </div>

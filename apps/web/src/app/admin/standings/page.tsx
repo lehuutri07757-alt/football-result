@@ -22,10 +22,13 @@ import {
 import { syncJobService } from '@/services/sync-job.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 export default function AdminStandingsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [leagues, setLeagues] = useState<League[]>([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('');
@@ -173,7 +176,7 @@ export default function AdminStandingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            Standings Management
+            {t(language, 'admin.standings.title')}
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
             View and sync league standings
@@ -275,9 +278,9 @@ export default function AdminStandingsPage() {
                 className={`text-lg font-bold truncate max-w-[180px] ${
                   isDark ? 'text-white' : 'text-slate-800'
                 }`}
-                title={selectedLeague?.name || 'None'}
+                title={selectedLeague?.name || t(language, 'admin.standings.noneSelected')}
               >
-                {selectedLeague?.name || 'None selected'}
+                {selectedLeague?.name || t(language, 'admin.standings.noneSelected')}
               </p>
             </div>
           </div>
@@ -339,7 +342,7 @@ export default function AdminStandingsPage() {
                   />
                   <input
                     type="text"
-                    placeholder="Search leagues..."
+                    placeholder={t(language, 'admin.standings.searchLeagues')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={`w-full pl-10 pr-4 py-2 rounded-lg border ${
@@ -456,7 +459,7 @@ export default function AdminStandingsPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr
                   className={`text-xs uppercase ${
@@ -466,16 +469,16 @@ export default function AdminStandingsPage() {
                   }`}
                 >
                   <th className="px-4 py-3 text-left font-semibold">#</th>
-                  <th className="px-4 py-3 text-left font-semibold">Team</th>
-                  <th className="px-4 py-3 text-center font-semibold">P</th>
-                  <th className="px-4 py-3 text-center font-semibold">W</th>
-                  <th className="px-4 py-3 text-center font-semibold">D</th>
-                  <th className="px-4 py-3 text-center font-semibold">L</th>
-                  <th className="px-4 py-3 text-center font-semibold">GF</th>
-                  <th className="px-4 py-3 text-center font-semibold">GA</th>
-                  <th className="px-4 py-3 text-center font-semibold">GD</th>
-                  <th className="px-4 py-3 text-center font-semibold">Pts</th>
-                  <th className="px-4 py-3 text-center font-semibold">Form</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t(language, 'results.team')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.played')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.won')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.drawn')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.lost')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.goalsFor')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.goalsAgainst')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.goalDiff')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.points')}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t(language, 'results.form')}</th>
                 </tr>
               </thead>
               <tbody>

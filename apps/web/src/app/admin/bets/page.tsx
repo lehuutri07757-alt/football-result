@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { adminService, AdminBet } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { TableSkeleton } from '@/components/admin/AdminLoading';
 import { toast } from 'sonner';
 
@@ -33,6 +35,7 @@ const slideUpAnimation = {
 export default function AdminBetsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
   const [bets, setBets] = useState<AdminBet[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,12 +186,12 @@ export default function AdminBetsPage() {
       cashout: 'bg-gradient-to-r from-purple-50 to-violet-50 text-purple-700 border border-purple-200',
     };
     const labels: Record<string, string> = {
-      pending: 'Pending',
-      won: 'Won',
-      lost: 'Lost',
-      void: 'Void',
-      partial_won: 'Partial Won',
-      cashout: 'Cashout',
+      pending: t(language, 'admin.common.pending'),
+      won: t(language, 'admin.bets.won'),
+      lost: t(language, 'admin.bets.lost'),
+      void: t(language, 'admin.bets.void'),
+      partial_won: t(language, 'admin.bets.partialWon'),
+      cashout: t(language, 'admin.bets.cashout'),
     };
     const styles = isDark ? darkStyles : lightStyles;
     return (
@@ -216,12 +219,12 @@ export default function AdminBetsPage() {
       half_lost: 'text-orange-700 bg-orange-50',
     };
     const labels: Record<string, string> = {
-      pending: 'Pending',
-      won: 'Won',
-      lost: 'Lost',
-      void: 'Void',
-      half_won: 'Half Won',
-      half_lost: 'Half Lost',
+      pending: t(language, 'admin.common.pending'),
+      won: t(language, 'admin.bets.won'),
+      lost: t(language, 'admin.bets.lost'),
+      void: t(language, 'admin.bets.void'),
+      half_won: t(language, 'admin.bets.halfWon'),
+      half_lost: t(language, 'admin.bets.halfLost'),
     };
     const styles = isDark ? darkStyles : lightStyles;
     return (
@@ -233,9 +236,9 @@ export default function AdminBetsPage() {
 
   const formatBetType = (type: string) => {
     const types: Record<string, string> = {
-      single: 'Single',
-      accumulator: 'Accumulator',
-      system: 'System',
+      single: t(language, 'admin.bets.single'),
+      accumulator: t(language, 'admin.bets.accumulator'),
+      system: t(language, 'admin.bets.system'),
     };
     return types[type] || type;
   };
@@ -305,7 +308,7 @@ export default function AdminBetsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div style={fadeInAnimation}>
             <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Bets Management
+              {t(language, 'admin.bets.title')}
             </h2>
             <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {total} total bets • Monitor and manage user bets
@@ -319,10 +322,10 @@ export default function AdminBetsPage() {
               }`} size={16} />
               <input
                 type="text"
-                placeholder="Search user or bet ID..."
+                placeholder={t(language, 'admin.bets.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-44 transition-all duration-200 ${
+                className={`pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-44 transition-all duration-200 ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:bg-slate-700' 
                     : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-slate-50'
@@ -330,14 +333,14 @@ export default function AdminBetsPage() {
               />
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <div className="relative">
                 <Calendar className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} size={14} />
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className={`pl-8 pr-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-36 transition-all duration-200 ${
+                  className={`pl-8 pr-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-36 transition-all duration-200 ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 text-white' 
                       : 'bg-white border-slate-200 text-slate-900'
@@ -349,7 +352,7 @@ export default function AdminBetsPage() {
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-36 transition-all duration-200 ${
+                className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-36 transition-all duration-200 ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-white' 
                     : 'bg-white border-slate-200 text-slate-900'
@@ -377,13 +380,13 @@ export default function AdminBetsPage() {
                   : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50'
               } border`}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="won">Won</option>
-              <option value="lost">Lost</option>
-              <option value="void">Void</option>
-              <option value="partial_won">Partial Won</option>
-              <option value="cashout">Cashout</option>
+              <option value="all">{t(language, 'admin.bets.allStatus')}</option>
+              <option value="pending">{t(language, 'admin.common.pending')}</option>
+              <option value="won">{t(language, 'admin.bets.won')}</option>
+              <option value="lost">{t(language, 'admin.bets.lost')}</option>
+              <option value="void">{t(language, 'admin.bets.void')}</option>
+              <option value="partial_won">{t(language, 'admin.bets.partialWon')}</option>
+              <option value="cashout">{t(language, 'admin.bets.cashout')}</option>
             </select>
 
             <button 
@@ -402,35 +405,35 @@ export default function AdminBetsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4" style={{ ...fadeInAnimation, animationDelay: '0.15s' }}>
           <StatCard
             icon={Clock}
-            label="Pending"
+            label={t(language, 'admin.common.pending')}
             value={stats.pending}
             color="text-amber-500"
             gradient="from-amber-500/10 to-orange-500/10"
           />
           <StatCard
             icon={Trophy}
-            label="Won"
+            label={t(language, 'admin.bets.won')}
             value={stats.won}
             color="text-emerald-500"
             gradient="from-emerald-500/10 to-green-500/10"
           />
           <StatCard
             icon={XCircle}
-            label="Lost"
+            label={t(language, 'admin.bets.lost')}
             value={stats.lost}
             color="text-red-500"
             gradient="from-red-500/10 to-rose-500/10"
           />
           <StatCard
             icon={Ban}
-            label="Voided"
+            label={t(language, 'admin.bets.void')}
             value={stats.voided}
             color="text-slate-500"
             gradient="from-slate-500/10 to-gray-500/10"
           />
           <StatCard
             icon={TrendingUp}
-            label="Total Stake"
+            label={t(language, 'admin.bets.totalStake')}
             value={formatCurrency(stats.totalStake)}
             color="text-blue-500"
             gradient="from-blue-500/10 to-indigo-500/10"
@@ -450,24 +453,24 @@ export default function AdminBetsPage() {
               <div className={`p-4 rounded-full mb-4 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'}`}>
                 <Receipt size={40} className="opacity-50" />
               </div>
-              <p className="font-medium">No bets found</p>
-              <p className="text-sm mt-1 opacity-70">Try adjusting your filters</p>
+              <p className="font-medium">{t(language, 'admin.bets.noBets')}</p>
+              <p className="text-sm mt-1 opacity-70">{t(language, 'admin.common.tryAdjustFilters')}</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[900px]">
                   <thead>
                     <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
                       <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>ID</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Match / Selection</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Type</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Odds</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Stake / Pot. Win</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Placed At</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Actions</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.user')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.matchSelection')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.type')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.odds')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.stakePotWin')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.placedAt')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${isDark ? 'divide-slate-700/50' : 'divide-slate-100'}`}>
@@ -628,7 +631,7 @@ export default function AdminBetsPage() {
               style={slideUpAnimation}
             >
               <div className={`sticky top-0 flex items-center justify-between p-5 border-b ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'} z-10`}>
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Bet Details</h3>
+                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.bets.betDetails')}</h3>
                 <button 
                   onClick={() => setShowDetailModal(false)}
                   className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -648,15 +651,15 @@ export default function AdminBetsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className={`p-5 rounded-xl text-center bg-gradient-to-br ${isDark ? 'from-blue-500/20 to-indigo-500/10' : 'from-blue-50 to-indigo-50'} border ${isDark ? 'border-blue-500/30' : 'border-blue-200'}`}>
-                    <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Total Stake</p>
+                    <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.totalStake')}</p>
                     <p className="text-blue-500 font-bold text-2xl">
                       {formatCurrency(selectedBet.stake)}
                     </p>
                   </div>
                   <div className={`p-5 rounded-xl text-center bg-gradient-to-br ${isDark ? 'from-emerald-500/20 to-green-500/10' : 'from-emerald-50 to-green-50'} border ${isDark ? 'border-emerald-500/30' : 'border-emerald-200'}`}>
-                    <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Potential Win</p>
+                    <p className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.potentialWin')}</p>
                     <p className="text-emerald-500 font-bold text-2xl">
                       {formatCurrency(selectedBet.potentialWin)}
                     </p>
@@ -664,36 +667,36 @@ export default function AdminBetsPage() {
                 </div>
 
                 <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                   <div className="grid grid-cols-2 gap-y-3 gap-x-8">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-8">
                      <div className="flex justify-between text-sm">
-                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bet Type</span>
+                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.betType')}</span>
                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                          {formatBetType(selectedBet.betType)}
                        </span>
                      </div>
                      <div className="flex justify-between text-sm">
-                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Total Odds</span>
+                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.totalOdds')}</span>
                        <span className={`font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                          {Number(selectedBet.totalOdds).toFixed(2)}
                        </span>
                      </div>
                      <div className="flex justify-between text-sm items-center">
-                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Status</span>
+                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.status')}</span>
                        {getStatusBadge(selectedBet.status)}
                      </div>
                      <div className="flex justify-between text-sm items-center">
-                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bet ID</span>
+                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.betId')}</span>
                         <span className={`font-mono text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{selectedBet.id.substring(0, 8)}</span>
                      </div>
                      <div className="flex justify-between text-sm">
-                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Placed At</span>
+                       <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.placedAt')}</span>
                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                          {formatDate(selectedBet.placedAt)}
                        </span>
                      </div>
                      {selectedBet.settledAt && (
                        <div className="flex justify-between text-sm">
-                         <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Settled At</span>
+                         <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.settledAt')}</span>
                          <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                            {formatDate(selectedBet.settledAt)}
                          </span>
@@ -715,7 +718,7 @@ export default function AdminBetsPage() {
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                              <span className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                               {selection.match.league?.name || 'League'}
+                               {selection.match.league?.name || t(language, 'admin.bets.league')}
                              </span>
                              {selection.match.status !== 'NS' && (
                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-bold animate-pulse">
@@ -767,7 +770,7 @@ export default function AdminBetsPage() {
                         isDark ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-red-50 text-red-500 hover:bg-red-100'
                       }`}
                     >
-                      Void Bet
+                      {t(language, 'admin.bets.voidBet')}
                     </button>
                     <button 
                       onClick={() => setShowDetailModal(false)}
@@ -775,7 +778,7 @@ export default function AdminBetsPage() {
                         isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      Close
+                      {t(language, 'admin.common.close')}
                     </button>
                   </div>
                 ) : (
@@ -785,7 +788,7 @@ export default function AdminBetsPage() {
                       isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
-                    Close
+                    {t(language, 'admin.common.close')}
                   </button>
                 )}
               </div>
@@ -808,7 +811,7 @@ export default function AdminBetsPage() {
                   <AlertTriangle className="text-red-500" size={24} />
                 </div>
                 <div>
-                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Void Bet?</h3>
+                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.bets.voidBet')}?</h3>
                   <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     This action cannot be undone.
                   </p>
@@ -817,15 +820,15 @@ export default function AdminBetsPage() {
               
               <div className={`mb-5 p-4 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>User</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.user')}</span>
                   <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedBet.user?.username}</span>
                 </div>
                 <div className="flex justify-between text-sm mb-2">
-                   <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bet ID</span>
+                   <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.betId')}</span>
                    <span className={`font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedBet.id.substring(0, 8)}...</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Stake Refund</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.bets.stakeRefund')}</span>
                   <span className="font-bold text-emerald-500">{formatCurrency(selectedBet.stake)}</span>
                 </div>
               </div>
@@ -837,14 +840,14 @@ export default function AdminBetsPage() {
                     isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  Cancel
+                  {t(language, 'admin.common.cancel')}
                 </button>
                 <button 
                   onClick={handleVoid}
                   disabled={actionLoading}
                   className="flex-1 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-red-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {actionLoading ? 'Processing...' : 'Void Bet'}
+                  {actionLoading ? 'Processing...' : t(language, 'admin.bets.voidBet')}
                 </button>
               </div>
             </div>

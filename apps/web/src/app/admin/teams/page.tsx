@@ -22,10 +22,13 @@ import { toast } from 'sonner';
 import { teamsService, sportsService, Team, Sport, apiFootballSyncService } from '@/services/match.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 export default function AdminTeamsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
@@ -276,10 +279,10 @@ export default function AdminTeamsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            Team Management
+            {t(language, 'admin.teams.title')}
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-            Total {total} teams
+            {t(language, 'admin.common.total')} {total} teams
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
@@ -327,7 +330,7 @@ export default function AdminTeamsPage() {
               />
               <input
                 type="text"
-                placeholder="Search teams..."
+                placeholder={t(language, 'admin.common.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -380,7 +383,7 @@ export default function AdminTeamsPage() {
             {/* Sport Filter */}
             <div>
               <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                Sport
+                {t(language, 'admin.common.sport')}
               </label>
               <select
                 value={sportFilter}
@@ -394,7 +397,7 @@ export default function AdminTeamsPage() {
                     : 'bg-white border-slate-200 text-slate-800'
                 }`}
               >
-                <option value="all">All Sports</option>
+                <option value="all">{t(language, 'admin.teams.allSports')}</option>
                 {sports.map((sport) => (
                   <option key={sport.id} value={sport.id}>
                     {sport.name}
@@ -406,7 +409,7 @@ export default function AdminTeamsPage() {
             {/* Country Filter */}
             <div>
               <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                Country
+                {t(language, 'admin.common.country')}
               </label>
               <select
                 value={countryFilter}
@@ -420,7 +423,7 @@ export default function AdminTeamsPage() {
                     : 'bg-white border-slate-200 text-slate-800'
                 }`}
               >
-                <option value="all">All Countries</option>
+                <option value="all">{t(language, 'admin.teams.allCountries')}</option>
                 {countries.map((country) => (
                   <option key={country.code} value={country.name}>
                     {country.name}
@@ -432,7 +435,7 @@ export default function AdminTeamsPage() {
             {/* Status Filter */}
             <div>
               <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                Status
+                {t(language, 'admin.common.status')}
               </label>
               <select
                 value={statusFilter}
@@ -446,9 +449,9 @@ export default function AdminTeamsPage() {
                     : 'bg-white border-slate-200 text-slate-800'
                 }`}
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">{t(language, 'admin.teams.allStatus')}</option>
+                <option value="active">{t(language, 'admin.common.active')}</option>
+                <option value="inactive">{t(language, 'admin.common.inactive')}</option>
               </select>
             </div>
 
@@ -482,7 +485,7 @@ export default function AdminTeamsPage() {
           <div className="flex items-center gap-3">
             <Users className="text-emerald-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Total</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.total')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {total}
               </p>
@@ -499,7 +502,7 @@ export default function AdminTeamsPage() {
           <div className="flex items-center gap-3">
             <CheckCircle className="text-blue-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Active</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.active')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {getActiveCount()}
               </p>
@@ -516,7 +519,7 @@ export default function AdminTeamsPage() {
           <div className="flex items-center gap-3">
             <Globe className="text-yellow-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Countries</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.country')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {countries.length}
               </p>
@@ -533,7 +536,7 @@ export default function AdminTeamsPage() {
           <div className="flex items-center gap-3">
             <Globe className="text-purple-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Matches</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.nav.matches')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {getTotalMatches()}
               </p>
@@ -548,7 +551,7 @@ export default function AdminTeamsPage() {
       ) : teams.length === 0 ? (
         <div className="text-center py-20">
           <Users className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-slate-300'}`} />
-          <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>No teams found</p>
+          <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.teams.noTeams')}</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium"
@@ -564,20 +567,20 @@ export default function AdminTeamsPage() {
             }`}
           >
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr
                     className={`text-left ${
                       isDark ? 'bg-slate-700/50 text-gray-400' : 'bg-slate-50 text-slate-500'
                     }`}
                   >
-                    <th className="px-4 py-3 font-medium">Team</th>
-                    <th className="px-4 py-3 font-medium">Short Name</th>
-                    <th className="px-4 py-3 font-medium">Sport</th>
-                    <th className="px-4 py-3 font-medium">Country</th>
-                    <th className="px-4 py-3 font-medium">Matches</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.teams.title')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.teams.shortName')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.sport')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.country')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.nav.matches')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.status')}</th>
+                    <th className="px-4 py-3 font-medium text-right">{t(language, 'admin.common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
@@ -679,7 +682,7 @@ export default function AdminTeamsPage() {
                           ) : (
                             <XCircle size={12} />
                           )}
-                          {team.isActive ? 'Active' : 'Inactive'}
+                          {team.isActive ? t(language, 'admin.common.active') : t(language, 'admin.common.inactive')}
                         </button>
                       </td>
                       <td className="px-4 py-3">
@@ -771,7 +774,7 @@ export default function AdminTeamsPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                Team Details
+                {t(language, 'admin.teams.teamDetails')}
               </h3>
               <button
                 onClick={() => setShowDetailModal(false)}
@@ -814,33 +817,33 @@ export default function AdminTeamsPage() {
                 }`}
               >
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Short Name</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.teams.shortName')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedTeam.shortName || '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Sport</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.sport')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedTeam.sport?.name || 'Unknown'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Country</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.country')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedTeam.country || '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Total Matches</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.teams.totalMatches')}</span>
                   <span className="text-emerald-500 font-bold">
                     {(selectedTeam._count?.homeMatches || 0) + (selectedTeam._count?.awayMatches || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Status</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.status')}</span>
                   <span className={selectedTeam.isActive ? 'text-emerald-500' : 'text-red-500'}>
-                    {selectedTeam.isActive ? 'Active' : 'Inactive'}
+                    {selectedTeam.isActive ? t(language, 'admin.common.active') : t(language, 'admin.common.inactive')}
                   </span>
                 </div>
               </div>
@@ -854,7 +857,7 @@ export default function AdminTeamsPage() {
                   : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
               }`}
             >
-              Close
+              {t(language, 'admin.common.close')}
             </button>
           </div>
         </div>
@@ -872,7 +875,7 @@ export default function AdminTeamsPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                Edit Team
+                {t(language, 'admin.teams.editTeam')}
               </h3>
               <button
                 onClick={() => setShowEditModal(false)}
@@ -889,7 +892,7 @@ export default function AdminTeamsPage() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Sport *
+                  {t(language, 'admin.common.sport')} *
                 </label>
                 <select
                   value={editForm.sportId}
@@ -911,7 +914,7 @@ export default function AdminTeamsPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Name *
+                  {t(language, 'admin.common.name')} *
                 </label>
                 <input
                   type="text"
@@ -934,7 +937,7 @@ export default function AdminTeamsPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Short Name
+                  {t(language, 'admin.teams.shortName')}
                 </label>
                 <input
                   type="text"
@@ -968,7 +971,7 @@ export default function AdminTeamsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                    Country
+                    {t(language, 'admin.common.country')}
                   </label>
                   <input
                     type="text"
@@ -1032,7 +1035,7 @@ export default function AdminTeamsPage() {
                   htmlFor="editIsActive"
                   className={`text-sm ${isDark ? 'text-gray-300' : 'text-slate-600'}`}
                 >
-                  Active
+                  {t(language, 'admin.common.active')}
                 </label>
               </div>
             </div>
@@ -1073,7 +1076,7 @@ export default function AdminTeamsPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                Create Team
+                {t(language, 'admin.teams.createTeam')}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -1090,7 +1093,7 @@ export default function AdminTeamsPage() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Sport *
+                  {t(language, 'admin.common.sport')} *
                 </label>
                 <select
                   value={createForm.sportId}
@@ -1112,7 +1115,7 @@ export default function AdminTeamsPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Name *
+                  {t(language, 'admin.common.name')} *
                 </label>
                 <input
                   type="text"
@@ -1136,7 +1139,7 @@ export default function AdminTeamsPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Short Name
+                  {t(language, 'admin.teams.shortName')}
                 </label>
                 <input
                   type="text"
@@ -1171,7 +1174,7 @@ export default function AdminTeamsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                    Country
+                    {t(language, 'admin.common.country')}
                   </label>
                   <input
                     type="text"
@@ -1235,7 +1238,7 @@ export default function AdminTeamsPage() {
                   htmlFor="createIsActive"
                   className={`text-sm ${isDark ? 'text-gray-300' : 'text-slate-600'}`}
                 >
-                  Active
+                  {t(language, 'admin.common.active')}
                 </label>
               </div>
             </div>
@@ -1249,7 +1252,7 @@ export default function AdminTeamsPage() {
                     : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                 }`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleCreate}
@@ -1257,7 +1260,7 @@ export default function AdminTeamsPage() {
                 className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {actionLoading && <Loader2 size={18} className="animate-spin" />}
-                Create Team
+                {t(language, 'admin.teams.createTeam')}
               </button>
             </div>
           </div>

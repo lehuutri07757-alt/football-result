@@ -1,5 +1,5 @@
-import api from './api';
-import { PaginatedResponse, PaginationParams } from './admin.service';
+import api from "./api";
+import { PaginatedResponse, PaginationParams } from "./admin.service";
 
 export interface Sport {
   id: string;
@@ -61,7 +61,28 @@ export interface Team {
   };
 }
 
-export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'cancelled' | 'postponed';
+export type MatchStatus =
+  | "scheduled"
+  | "live"
+  | "finished"
+  | "cancelled"
+  | "postponed";
+
+export interface MatchOddsItem {
+  id: string;
+  matchId: string;
+  betTypeId: string;
+  betType?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  selection: string;
+  selectionName?: string;
+  handicap?: string;
+  oddsValue: string | number;
+  status: string;
+}
 
 export interface Match {
   id: string;
@@ -83,6 +104,7 @@ export interface Match {
   externalId?: string;
   createdAt: string;
   updatedAt: string;
+  odds?: MatchOddsItem[];
   _count?: {
     odds: number;
     betSelections: number;
@@ -132,13 +154,17 @@ export interface MatchStats {
 }
 
 export const sportsService = {
-  async getAll(params?: PaginationParams & { isActive?: boolean }): Promise<PaginatedResponse<Sport>> {
-    const response = await api.get<PaginatedResponse<Sport>>('/sports', { params });
+  async getAll(
+    params?: PaginationParams & { isActive?: boolean },
+  ): Promise<PaginatedResponse<Sport>> {
+    const response = await api.get<PaginatedResponse<Sport>>("/sports", {
+      params,
+    });
     return response.data;
   },
 
   async getActive(): Promise<Sport[]> {
-    const response = await api.get<Sport[]>('/sports/active');
+    const response = await api.get<Sport[]>("/sports/active");
     return response.data;
   },
 
@@ -148,7 +174,7 @@ export const sportsService = {
   },
 
   async create(data: Partial<Sport>): Promise<Sport> {
-    const response = await api.post<Sport>('/sports', data);
+    const response = await api.post<Sport>("/sports", data);
     return response.data;
   },
 
@@ -168,18 +194,32 @@ export const sportsService = {
 };
 
 export const leaguesService = {
-  async getAll(params?: PaginationParams & { sportId?: string; isActive?: boolean; isFeatured?: boolean }): Promise<PaginatedResponse<League>> {
-    const response = await api.get<PaginatedResponse<League>>('/leagues', { params });
+  async getAll(
+    params?: PaginationParams & {
+      sportId?: string;
+      isActive?: boolean;
+      isFeatured?: boolean;
+    },
+  ): Promise<PaginatedResponse<League>> {
+    const response = await api.get<PaginatedResponse<League>>("/leagues", {
+      params,
+    });
     return response.data;
   },
 
-  async getStats(params?: { search?: string; sportId?: string; country?: string; isActive?: boolean; isFeatured?: boolean }): Promise<LeagueStats> {
-    const response = await api.get<LeagueStats>('/leagues/stats', { params });
+  async getStats(params?: {
+    search?: string;
+    sportId?: string;
+    country?: string;
+    isActive?: boolean;
+    isFeatured?: boolean;
+  }): Promise<LeagueStats> {
+    const response = await api.get<LeagueStats>("/leagues/stats", { params });
     return response.data;
   },
 
   async getFeatured(): Promise<League[]> {
-    const response = await api.get<League[]>('/leagues/featured');
+    const response = await api.get<League[]>("/leagues/featured");
     return response.data;
   },
 
@@ -199,7 +239,7 @@ export const leaguesService = {
   },
 
   async create(data: Partial<League>): Promise<League> {
-    const response = await api.post<League>('/leagues', data);
+    const response = await api.post<League>("/leagues", data);
     return response.data;
   },
 
@@ -223,18 +263,24 @@ export const leaguesService = {
   },
 
   async inactiveAll(): Promise<{ message: string; count: number }> {
-    const response = await api.post<{ message: string; count: number }>('/leagues/inactive-all');
+    const response = await api.post<{ message: string; count: number }>(
+      "/leagues/inactive-all",
+    );
     return response.data;
   },
 
   async reorder(items: { id: string; sortOrder: number }[]): Promise<void> {
-    await api.post('/leagues/reorder', { items });
+    await api.post("/leagues/reorder", { items });
   },
 };
 
 export const teamsService = {
-  async getAll(params?: PaginationParams & { sportId?: string; isActive?: boolean }): Promise<PaginatedResponse<Team>> {
-    const response = await api.get<PaginatedResponse<Team>>('/teams', { params });
+  async getAll(
+    params?: PaginationParams & { sportId?: string; isActive?: boolean },
+  ): Promise<PaginatedResponse<Team>> {
+    const response = await api.get<PaginatedResponse<Team>>("/teams", {
+      params,
+    });
     return response.data;
   },
 
@@ -249,7 +295,7 @@ export const teamsService = {
   },
 
   async create(data: Partial<Team>): Promise<Team> {
-    const response = await api.post<Team>('/teams', data);
+    const response = await api.post<Team>("/teams", data);
     return response.data;
   },
 
@@ -270,38 +316,55 @@ export const teamsService = {
 
 export const matchesService = {
   async getAll(params?: MatchQueryParams): Promise<PaginatedResponse<Match>> {
-    const response = await api.get<PaginatedResponse<Match>>('/matches', { params });
+    const response = await api.get<PaginatedResponse<Match>>("/matches", {
+      params,
+    });
     return response.data;
   },
 
-  async getStatistics(): Promise<{ total: number; live: number; upcoming: number; finished: number }> {
-    const response = await api.get<{ total: number; live: number; upcoming: number; finished: number }>('/matches/statistics');
+  async getStatistics(): Promise<{
+    total: number;
+    live: number;
+    upcoming: number;
+    finished: number;
+  }> {
+    const response = await api.get<{
+      total: number;
+      live: number;
+      upcoming: number;
+      finished: number;
+    }>("/matches/statistics");
     return response.data;
   },
 
   async getLive(): Promise<Match[]> {
-    const response = await api.get<Match[]>('/matches/live');
+    const response = await api.get<Match[]>("/matches/live");
     return response.data;
   },
 
   async getUpcoming(limit?: number): Promise<Match[]> {
     const params = limit !== undefined ? { limit } : undefined;
-    const response = await api.get<Match[]>('/matches/upcoming', { params });
+    const response = await api.get<Match[]>("/matches/upcoming", { params });
     return response.data;
   },
 
-  async getUpcomingPaginated(params?: PaginationParams): Promise<PaginatedResponse<Match>> {
-    const response = await api.get<PaginatedResponse<Match>>('/matches/upcoming', { params });
+  async getUpcomingPaginated(
+    params?: PaginationParams,
+  ): Promise<PaginatedResponse<Match>> {
+    const response = await api.get<PaginatedResponse<Match>>(
+      "/matches/upcoming",
+      { params },
+    );
     return response.data;
   },
 
   async getToday(): Promise<Match[]> {
-    const response = await api.get<Match[]>('/matches/today');
+    const response = await api.get<Match[]>("/matches/today");
     return response.data;
   },
 
   async getFeatured(): Promise<Match[]> {
-    const response = await api.get<Match[]>('/matches/featured');
+    const response = await api.get<Match[]>("/matches/featured");
     return response.data;
   },
 
@@ -316,7 +379,7 @@ export const matchesService = {
   },
 
   async create(data: CreateMatchDto): Promise<Match> {
-    const response = await api.post<Match>('/matches', data);
+    const response = await api.post<Match>("/matches", data);
     return response.data;
   },
 
@@ -420,18 +483,30 @@ export const apiFootballSyncService = {
     const params: Record<string, string> = {};
     if (from) params.from = from;
     if (to) params.to = to;
-    const response = await api.post<FixtureSyncResult>('/api-football/fixtures/sync', null, { params });
+    const response = await api.post<FixtureSyncResult>(
+      "/api-football/fixtures/sync",
+      null,
+      { params },
+    );
     return response.data;
   },
 
   /**
    * Sync fixtures for a specific league
    */
-  async syncFixturesByLeague(leagueExternalId: number, from?: string, to?: string): Promise<FixtureSyncResult> {
+  async syncFixturesByLeague(
+    leagueExternalId: number,
+    from?: string,
+    to?: string,
+  ): Promise<FixtureSyncResult> {
     const params: Record<string, string> = {};
     if (from) params.from = from;
     if (to) params.to = to;
-    const response = await api.post<FixtureSyncResult>(`/api-football/fixtures/sync/${leagueExternalId}`, null, { params });
+    const response = await api.post<FixtureSyncResult>(
+      `/api-football/fixtures/sync/${leagueExternalId}`,
+      null,
+      { params },
+    );
     return response.data;
   },
 
@@ -439,7 +514,9 @@ export const apiFootballSyncService = {
    * Sync leagues from API-Football
    */
   async syncLeagues(): Promise<LeagueSyncResult> {
-    const response = await api.post<LeagueSyncResult>('/api-football/leagues/sync');
+    const response = await api.post<LeagueSyncResult>(
+      "/api-football/leagues/sync",
+    );
     return response.data;
   },
 
@@ -447,17 +524,24 @@ export const apiFootballSyncService = {
    * Sync teams for all active leagues
    */
   async syncTeams(): Promise<TeamSyncResult> {
-    const response = await api.post<TeamSyncResult>('/api-football/teams/sync');
+    const response = await api.post<TeamSyncResult>("/api-football/teams/sync");
     return response.data;
   },
 
   /**
    * Sync teams for a specific league
    */
-  async syncTeamsByLeague(leagueExternalId: string, season?: string): Promise<TeamSyncResult> {
+  async syncTeamsByLeague(
+    leagueExternalId: string,
+    season?: string,
+  ): Promise<TeamSyncResult> {
     const params: Record<string, string> = {};
     if (season) params.season = season;
-    const response = await api.post<TeamSyncResult>(`/api-football/teams/sync/${leagueExternalId}`, null, { params });
+    const response = await api.post<TeamSyncResult>(
+      `/api-football/teams/sync/${leagueExternalId}`,
+      null,
+      { params },
+    );
     return response.data;
   },
 
@@ -467,7 +551,11 @@ export const apiFootballSyncService = {
   async syncUpcomingOdds(hours?: number): Promise<OddsSyncResult> {
     const params: Record<string, string> = {};
     if (hours) params.hours = hours.toString();
-    const response = await api.post<OddsSyncResult>('/api-football/odds/sync/upcoming', null, { params });
+    const response = await api.post<OddsSyncResult>(
+      "/api-football/odds/sync/upcoming",
+      null,
+      { params },
+    );
     return response.data;
   },
 
@@ -475,15 +563,23 @@ export const apiFootballSyncService = {
    * Sync live odds
    */
   async syncLiveOdds(): Promise<OddsSyncResult> {
-    const response = await api.post<OddsSyncResult>('/api-football/odds/sync/live');
+    const response = await api.post<OddsSyncResult>(
+      "/api-football/odds/sync/live",
+    );
     return response.data;
   },
 
   /**
    * Get fixtures stats (count by status)
    */
-  async getFixturesStats(): Promise<{ total: number; byStatus: Record<string, number> }> {
-    const response = await api.get<{ total: number; byStatus: Record<string, number> }>('/api-football/fixtures/stats');
+  async getFixturesStats(): Promise<{
+    total: number;
+    byStatus: Record<string, number>;
+  }> {
+    const response = await api.get<{
+      total: number;
+      byStatus: Record<string, number>;
+    }>("/api-football/fixtures/stats");
     return response.data;
   },
 
@@ -491,17 +587,26 @@ export const apiFootballSyncService = {
    * Sync team statistics (form) for all active leagues
    */
   async syncTeamStatistics(): Promise<TeamStatisticsSyncResult> {
-    const response = await api.post<TeamStatisticsSyncResult>('/api-football/teams/statistics/sync');
+    const response = await api.post<TeamStatisticsSyncResult>(
+      "/api-football/teams/statistics/sync",
+    );
     return response.data;
   },
 
   /**
    * Sync team statistics (form) for a specific league
    */
-  async syncTeamStatisticsByLeague(leagueExternalId: string, season?: string): Promise<TeamStatisticsSyncResult> {
+  async syncTeamStatisticsByLeague(
+    leagueExternalId: string,
+    season?: string,
+  ): Promise<TeamStatisticsSyncResult> {
     const params: Record<string, string> = {};
     if (season) params.season = season;
-    const response = await api.post<TeamStatisticsSyncResult>(`/api-football/teams/statistics/sync/${leagueExternalId}`, null, { params });
+    const response = await api.post<TeamStatisticsSyncResult>(
+      `/api-football/teams/statistics/sync/${leagueExternalId}`,
+      null,
+      { params },
+    );
     return response.data;
   },
 };
@@ -563,85 +668,130 @@ export interface StandingsSyncResult {
 }
 
 export const standingsService = {
-  async getByLeagueId(leagueId: string, season?: string): Promise<StandingsResponse> {
+  async getByLeagueId(
+    leagueId: string,
+    season?: string,
+  ): Promise<StandingsResponse> {
     const params: Record<string, string> = {};
     if (season) params.season = season;
-    const response = await api.get<StandingsResponse>(`/standings/league/${leagueId}`, { params });
+    const response = await api.get<StandingsResponse>(
+      `/standings/league/${leagueId}`,
+      { params },
+    );
     return response.data;
   },
 
-  async getByExternalLeagueId(externalLeagueId: string, season?: string): Promise<StandingsResponse> {
+  async getByExternalLeagueId(
+    externalLeagueId: string,
+    season?: string,
+  ): Promise<StandingsResponse> {
     const params: Record<string, string> = {};
     if (season) params.season = season;
-    const response = await api.get<StandingsResponse>(`/standings/external/${externalLeagueId}`, { params });
+    const response = await api.get<StandingsResponse>(
+      `/standings/external/${externalLeagueId}`,
+      { params },
+    );
     return response.data;
   },
 
   async syncAll(): Promise<StandingsSyncResult> {
-    const response = await api.post<StandingsSyncResult>('/standings/sync');
+    const response = await api.post<StandingsSyncResult>("/standings/sync");
     return response.data;
   },
 
-  async syncByLeague(externalLeagueId: string, season?: string): Promise<StandingsSyncResult> {
+  async syncByLeague(
+    externalLeagueId: string,
+    season?: string,
+  ): Promise<StandingsSyncResult> {
     const params: Record<string, string> = {};
     if (season) params.season = season;
-    const response = await api.post<StandingsSyncResult>(`/standings/sync/${externalLeagueId}`, null, { params });
+    const response = await api.post<StandingsSyncResult>(
+      `/standings/sync/${externalLeagueId}`,
+      null,
+      { params },
+    );
     return response.data;
   },
 
   async invalidateCache(): Promise<{ success: boolean; message: string }> {
-    const response = await api.post<{ success: boolean; message: string }>('/standings/cache/invalidate');
+    const response = await api.post<{ success: boolean; message: string }>(
+      "/standings/cache/invalidate",
+    );
     return response.data;
   },
 };
 
 export const featuredMatchesService = {
   async getFeaturedMatches(): Promise<Match[]> {
-    const response = await api.get<Match[]>('/featured-matches');
+    const response = await api.get<Match[]>("/featured-matches");
     return response.data;
   },
 
   async getSettings(): Promise<FeaturedMatchesSettings> {
-    const response = await api.get<FeaturedMatchesSettings>('/featured-matches/settings');
+    const response = await api.get<FeaturedMatchesSettings>(
+      "/featured-matches/settings",
+    );
     return response.data;
   },
 
-  async updateSettings(settings: Partial<FeaturedMatchesSettings>): Promise<FeaturedMatchesSettings> {
-    const response = await api.put<FeaturedMatchesSettings>('/featured-matches/settings', settings);
+  async updateSettings(
+    settings: Partial<FeaturedMatchesSettings>,
+  ): Promise<FeaturedMatchesSettings> {
+    const response = await api.put<FeaturedMatchesSettings>(
+      "/featured-matches/settings",
+      settings,
+    );
     return response.data;
   },
 
   async getStats(): Promise<FeaturedMatchesStats> {
-    const response = await api.get<FeaturedMatchesStats>('/featured-matches/stats');
+    const response = await api.get<FeaturedMatchesStats>(
+      "/featured-matches/stats",
+    );
     return response.data;
   },
 
   async autoSelect(): Promise<{ updated: number }> {
-    const response = await api.post<{ updated: number }>('/featured-matches/auto-select');
+    const response = await api.post<{ updated: number }>(
+      "/featured-matches/auto-select",
+    );
     return response.data;
   },
 
   async toggleFeatured(matchId: string): Promise<Match> {
-    const response = await api.post<Match>(`/featured-matches/toggle/${matchId}`);
+    const response = await api.post<Match>(
+      `/featured-matches/toggle/${matchId}`,
+    );
     return response.data;
   },
 
-  async batchUpdate(matchIds: string[], featured: boolean): Promise<{ updated: number }> {
-    const response = await api.post<{ updated: number }>('/featured-matches/batch-update', {
-      matchIds,
-      featured,
-    });
+  async batchUpdate(
+    matchIds: string[],
+    featured: boolean,
+  ): Promise<{ updated: number }> {
+    const response = await api.post<{ updated: number }>(
+      "/featured-matches/batch-update",
+      {
+        matchIds,
+        featured,
+      },
+    );
     return response.data;
   },
 
   async getAvailableLeagues(): Promise<League[]> {
-    const response = await api.get<League[]>('/featured-matches/available-leagues');
+    const response = await api.get<League[]>(
+      "/featured-matches/available-leagues",
+    );
     return response.data;
   },
 
   async getAvailableTeams(leagueId?: string): Promise<Team[]> {
     const params = leagueId ? { leagueId } : undefined;
-    const response = await api.get<Team[]>('/featured-matches/available-teams', { params });
+    const response = await api.get<Team[]>(
+      "/featured-matches/available-teams",
+      { params },
+    );
     return response.data;
   },
 };

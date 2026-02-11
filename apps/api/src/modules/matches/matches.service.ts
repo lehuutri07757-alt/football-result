@@ -1,8 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateMatchDto, UpdateMatchDto, QueryMatchDto, UpdateScoreDto } from './dto';
-import { OddsStatus, Prisma, MatchStatus } from '@prisma/client';
-import { RedisService } from '@/redis/redis.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import {
+  CreateMatchDto,
+  UpdateMatchDto,
+  QueryMatchDto,
+  UpdateScoreDto,
+} from "./dto";
+import { OddsStatus, Prisma, MatchStatus } from "@prisma/client";
+import { RedisService } from "@/redis/redis.service";
 
 @Injectable()
 export class MatchesService {
@@ -12,7 +21,7 @@ export class MatchesService {
   ) {}
 
   private async invalidateStatisticsCache() {
-    await this.redis.getClient().del('matches:statistics');
+    await this.redis.getClient().del("matches:statistics");
   }
 
   async create(createMatchDto: CreateMatchDto) {
@@ -22,12 +31,14 @@ export class MatchesService {
       this.prisma.team.findUnique({ where: { id: createMatchDto.awayTeamId } }),
     ]);
 
-    if (!league) throw new NotFoundException('League not found');
-    if (!homeTeam) throw new NotFoundException('Home team not found');
-    if (!awayTeam) throw new NotFoundException('Away team not found');
+    if (!league) throw new NotFoundException("League not found");
+    if (!homeTeam) throw new NotFoundException("Home team not found");
+    if (!awayTeam) throw new NotFoundException("Away team not found");
 
     if (createMatchDto.homeTeamId === createMatchDto.awayTeamId) {
-      throw new BadRequestException('Home team and away team cannot be the same');
+      throw new BadRequestException(
+        "Home team and away team cannot be the same",
+      );
     }
 
     const match = await this.prisma.match.create({
@@ -61,8 +72,8 @@ export class MatchesService {
       bettingEnabled,
       dateFrom,
       dateTo,
-      sortBy = 'startTime',
-      sortOrder = 'asc',
+      sortBy = "startTime",
+      sortOrder = "asc",
     } = query;
     const skip = (page - 1) * limit;
 
@@ -71,7 +82,11 @@ export class MatchesService {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const isFinishedQuery = status === MatchStatus.finished;
-    const effectiveDateFrom = dateFrom ? new Date(dateFrom) : (isFinishedQuery ? undefined : todayStart);
+    const effectiveDateFrom = dateFrom
+      ? new Date(dateFrom)
+      : isFinishedQuery
+        ? undefined
+        : todayStart;
     const effectiveDateTo = dateTo ? new Date(dateTo) : undefined;
 
     const where: Prisma.MatchWhereInput = {
@@ -89,9 +104,9 @@ export class MatchesService {
       ...(effectiveDateTo && { startTime: { lte: effectiveDateTo } }),
       ...(search && {
         OR: [
-          { homeTeam: { name: { contains: search, mode: 'insensitive' } } },
-          { awayTeam: { name: { contains: search, mode: 'insensitive' } } },
-          { league: { name: { contains: search, mode: 'insensitive' } } },
+          { homeTeam: { name: { contains: search, mode: "insensitive" } } },
+          { awayTeam: { name: { contains: search, mode: "insensitive" } } },
+          { league: { name: { contains: search, mode: "insensitive" } } },
         ],
       }),
     };
@@ -106,6 +121,11 @@ export class MatchesService {
           league: { include: { sport: true } },
           homeTeam: true,
           awayTeam: true,
+          odds: {
+            where: { status: OddsStatus.active },
+            include: { betType: true },
+            orderBy: { betType: { sortOrder: "asc" } },
+          },
           _count: {
             select: { odds: true, betSelections: true },
           },
@@ -128,7 +148,7 @@ export class MatchesService {
   async findLive() {
     return this.prisma.match.findMany({
       where: { status: MatchStatus.live, isLive: true },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: "asc" },
       include: {
         league: { include: { sport: true } },
         homeTeam: true,
@@ -145,7 +165,7 @@ export class MatchesService {
         startTime: { gte: new Date() },
       },
       take,
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: "asc" },
       include: {
         league: { include: { sport: true } },
         homeTeam: true,
@@ -167,7 +187,7 @@ export class MatchesService {
           lt: tomorrow,
         },
       },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: "asc" },
       include: {
         league: { include: { sport: true } },
         homeTeam: true,
@@ -192,7 +212,7 @@ export class MatchesService {
         ],
       },
       take: maxFeatured,
-      orderBy: [{ isLive: 'desc' }, { startTime: 'asc' }],
+      orderBy: [{ isLive: "desc" }, { startTime: "asc" }],
       include: {
         league: { include: { sport: true } },
         homeTeam: true,
@@ -204,7 +224,7 @@ export class MatchesService {
       matches = await this.prisma.match.findMany({
         where: { status: MatchStatus.live },
         take: maxFeatured,
-        orderBy: { startTime: 'asc' },
+        orderBy: { startTime: "asc" },
         include: {
           league: { include: { sport: true } },
           homeTeam: true,
@@ -220,7 +240,7 @@ export class MatchesService {
           startTime: { gte: now },
         },
         take: maxFeatured,
-        orderBy: { startTime: 'asc' },
+        orderBy: { startTime: "asc" },
         include: {
           league: { include: { sport: true } },
           homeTeam: true,
@@ -233,15 +253,15 @@ export class MatchesService {
   }
 
   async getStatistics() {
-    const cacheKey = 'matches:statistics';
-    
+    const cacheKey = "matches:statistics";
+
     const cached = await this.redis.getJson<{
       total: number;
       live: number;
       upcoming: number;
       finished: number;
     }>(cacheKey);
-    
+
     if (cached) {
       return cached;
     }
@@ -249,11 +269,11 @@ export class MatchesService {
     const [total, live, upcoming, finished] = await Promise.all([
       this.prisma.match.count(),
       this.prisma.match.count({ where: { status: MatchStatus.live } }),
-      this.prisma.match.count({ 
-        where: { 
+      this.prisma.match.count({
+        where: {
           status: MatchStatus.scheduled,
-          startTime: { gte: new Date() }
-        } 
+          startTime: { gte: new Date() },
+        },
       }),
       this.prisma.match.count({ where: { status: MatchStatus.finished } }),
     ]);
@@ -264,7 +284,7 @@ export class MatchesService {
       upcoming,
       finished,
     };
-    
+
     await this.redis.setJson(cacheKey, result, 300);
 
     return result;
@@ -288,7 +308,7 @@ export class MatchesService {
     });
 
     if (!match) {
-      throw new NotFoundException('Match not found');
+      throw new NotFoundException("Match not found");
     }
 
     return match;
@@ -301,28 +321,30 @@ export class MatchesService {
       const league = await this.prisma.league.findUnique({
         where: { id: updateMatchDto.leagueId },
       });
-      if (!league) throw new NotFoundException('League not found');
+      if (!league) throw new NotFoundException("League not found");
     }
 
     if (updateMatchDto.homeTeamId) {
       const homeTeam = await this.prisma.team.findUnique({
         where: { id: updateMatchDto.homeTeamId },
       });
-      if (!homeTeam) throw new NotFoundException('Home team not found');
+      if (!homeTeam) throw new NotFoundException("Home team not found");
     }
 
     if (updateMatchDto.awayTeamId) {
       const awayTeam = await this.prisma.team.findUnique({
         where: { id: updateMatchDto.awayTeamId },
       });
-      if (!awayTeam) throw new NotFoundException('Away team not found');
+      if (!awayTeam) throw new NotFoundException("Away team not found");
     }
 
     return this.prisma.match.update({
       where: { id },
       data: {
         ...updateMatchDto,
-        ...(updateMatchDto.startTime && { startTime: new Date(updateMatchDto.startTime) }),
+        ...(updateMatchDto.startTime && {
+          startTime: new Date(updateMatchDto.startTime),
+        }),
       },
       include: {
         league: { include: { sport: true } },
@@ -469,9 +491,11 @@ export class MatchesService {
   async remove(id: string) {
     await this.findOne(id);
 
-    const hasBets = await this.prisma.betSelection.count({ where: { matchId: id } });
+    const hasBets = await this.prisma.betSelection.count({
+      where: { matchId: id },
+    });
     if (hasBets > 0) {
-      throw new BadRequestException('Cannot delete match with existing bets');
+      throw new BadRequestException("Cannot delete match with existing bets");
     }
 
     await this.prisma.odds.deleteMany({ where: { matchId: id } });
@@ -479,7 +503,7 @@ export class MatchesService {
 
     await this.invalidateStatisticsCache();
 
-    return { message: 'Match deleted successfully' };
+    return { message: "Match deleted successfully" };
   }
 
   async getMatchStats(id: string) {
@@ -493,7 +517,10 @@ export class MatchesService {
       }),
     ]);
 
-    const stake = totalStake.reduce((sum, sel) => sum + Number(sel.bet.stake), 0);
+    const stake = totalStake.reduce(
+      (sum, sel) => sum + Number(sel.bet.stake),
+      0,
+    );
 
     return {
       matchId: id,

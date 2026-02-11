@@ -32,6 +32,8 @@ import {
 } from '@/services/match.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import {
   LeaguesFilters,
   type LeagueFeaturedFilter,
@@ -48,6 +50,7 @@ interface DragItem {
 export default function AdminLeaguesPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [leagues, setLeagues] = useState<League[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
@@ -582,10 +585,10 @@ export default function AdminLeaguesPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            League Management
+            {t(language, 'admin.leagues.title')}
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-            Total {total} leagues
+            {t(language, 'admin.common.total')} {total}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap justify-end">
@@ -653,7 +656,7 @@ export default function AdminLeaguesPage() {
                     : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'
                 }`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleSaveReorder}
@@ -661,7 +664,7 @@ export default function AdminLeaguesPage() {
                 className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 {actionLoading && <Loader2 size={18} className="animate-spin" />}
-                Save Order
+                {t(language, 'admin.common.save')}
               </button>
             </>
           )}
@@ -697,7 +700,7 @@ export default function AdminLeaguesPage() {
           <div className="flex items-center gap-3">
             <Trophy className="text-emerald-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Total</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.total')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {total}
               </p>
@@ -714,7 +717,7 @@ export default function AdminLeaguesPage() {
           <div className="flex items-center gap-3">
             <CheckCircle className="text-blue-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Active</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.active')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {activeCount}
               </p>
@@ -731,7 +734,7 @@ export default function AdminLeaguesPage() {
           <div className="flex items-center gap-3">
             <Star className="text-yellow-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Featured</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.featured')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {featuredCount}
               </p>
@@ -748,7 +751,7 @@ export default function AdminLeaguesPage() {
           <div className="flex items-center gap-3">
             <Globe className="text-purple-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Matches</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.nav.matches')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {matchesCount}
               </p>
@@ -781,7 +784,7 @@ export default function AdminLeaguesPage() {
       ) : displayLeagues.length === 0 ? (
         <div className="text-center py-20">
           <Trophy className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-slate-300'}`} />
-          <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>No leagues found</p>
+          <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.leagues.noLeagues')}</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium"
@@ -870,7 +873,7 @@ export default function AdminLeaguesPage() {
 	              </div>
 	            )}
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[900px]">
                 <thead>
                   <tr
                     className={`text-left ${
@@ -904,16 +907,16 @@ export default function AdminLeaguesPage() {
                         />
                       </th>
                     )}
-                    <th className="px-4 py-3 font-medium">Order</th>
-                    <th className="px-4 py-3 font-medium">League</th>
-                    <th className="px-4 py-3 font-medium">Sport</th>
-                    <th className="px-4 py-3 font-medium">Country</th>
-                    <th className="px-4 py-3 font-medium">Season</th>
-                    <th className="px-4 py-3 font-medium">Matches</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Featured</th>
-                    <th className="px-4 py-3 font-medium">Updated At</th>
-                    <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.order')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.name')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.sport')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.country')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.season')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.nav.matches')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.status')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.featured')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.updatedAt')}</th>
+                    <th className="px-4 py-3 font-medium text-right">{t(language, 'admin.common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
@@ -1115,7 +1118,7 @@ export default function AdminLeaguesPage() {
                           ) : (
                             <XCircle size={12} />
                           )}
-                          {league.isActive ? 'Active' : 'Inactive'}
+                          {league.isActive ? t(language, 'admin.common.active') : t(language, 'admin.common.inactive')}
                         </button>
                       </td>
                       <td className="px-4 py-3">
@@ -1247,7 +1250,7 @@ export default function AdminLeaguesPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                League Details
+                {t(language, 'admin.leagues.leagueDetails')}
               </h3>
               <button
                 onClick={() => setShowDetailModal(false)}
@@ -1290,53 +1293,53 @@ export default function AdminLeaguesPage() {
                 }`}
               >
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Sport</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.sport')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedLeague.sport?.name || 'Unknown'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Country</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.country')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedLeague.country || '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Season</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.season')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedLeague.season || '-'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Sort Order</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.leagues.sortOrder')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-800'}>
                     {selectedLeague.sortOrder}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Total Matches</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.leagues.totalMatches')}</span>
                   <span className="text-emerald-500 font-bold">
                     {selectedLeague._count?.matches || 0}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Status</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.status')}</span>
                   <span
                     className={
                       selectedLeague.isActive ? 'text-emerald-500' : 'text-red-500'
                     }
                   >
-                    {selectedLeague.isActive ? 'Active' : 'Inactive'}
+                    {selectedLeague.isActive ? t(language, 'admin.common.active') : t(language, 'admin.common.inactive')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Featured</span>
+                  <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.featured')}</span>
                   <span
                     className={
                       selectedLeague.isFeatured ? 'text-yellow-500' : isDark ? 'text-gray-400' : 'text-slate-400'
                     }
                   >
-                    {selectedLeague.isFeatured ? 'Yes' : 'No'}
+                    {selectedLeague.isFeatured ? t(language, 'admin.common.yes') : t(language, 'admin.common.no')}
                   </span>
                 </div>
               </div>
@@ -1350,7 +1353,7 @@ export default function AdminLeaguesPage() {
                   : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
               }`}
             >
-              Close
+              {t(language, 'admin.common.close')}
             </button>
           </div>
         </div>
@@ -1368,7 +1371,7 @@ export default function AdminLeaguesPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                Edit League
+                {t(language, 'admin.leagues.editLeague')}
               </h3>
               <button
                 onClick={() => setShowEditModal(false)}
@@ -1385,7 +1388,7 @@ export default function AdminLeaguesPage() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Sport *
+                  {t(language, 'admin.common.sport')} *
                 </label>
                 <select
                   value={editForm.sportId}
@@ -1396,7 +1399,7 @@ export default function AdminLeaguesPage() {
                       : 'bg-white border-slate-200 text-slate-800'
                   }`}
                 >
-                  <option value="">Select sport</option>
+                  <option value="">{t(language, 'admin.leagues.selectSport')}</option>
                   {sports.map((sport) => (
                     <option key={sport.id} value={sport.id}>
                       {sport.name}
@@ -1407,7 +1410,7 @@ export default function AdminLeaguesPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Name *
+                  {t(language, 'admin.common.name')} *
                 </label>
                 <input
                   type="text"
@@ -1502,7 +1505,7 @@ export default function AdminLeaguesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                    Season
+                    {t(language, 'admin.common.season')}
                   </label>
                   <input
                     type="text"
@@ -1518,7 +1521,7 @@ export default function AdminLeaguesPage() {
                 </div>
                 <div>
                   <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                    Sort Order
+                    {t(language, 'admin.leagues.sortOrder')}
                   </label>
                   <input
                     type="number"
@@ -1544,7 +1547,7 @@ export default function AdminLeaguesPage() {
                     onChange={(e) => setEditForm((prev) => ({ ...prev, isActive: e.target.checked }))}
                     className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
                   />
-                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>Active</span>
+                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>{t(language, 'admin.common.active')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1555,7 +1558,7 @@ export default function AdminLeaguesPage() {
                     }
                     className="w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500"
                   />
-                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>Featured</span>
+                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>{t(language, 'admin.common.featured')}</span>
                 </label>
               </div>
             </div>
@@ -1570,7 +1573,7 @@ export default function AdminLeaguesPage() {
                     : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                 }`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleUpdate}
@@ -1578,7 +1581,7 @@ export default function AdminLeaguesPage() {
                 className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading && <Loader2 size={18} className="animate-spin" />}
-                Save Changes
+                {t(language, 'admin.common.save')}
               </button>
             </div>
           </div>
@@ -1597,7 +1600,7 @@ export default function AdminLeaguesPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                Create New League
+                {t(language, 'admin.leagues.createLeague')}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -1614,7 +1617,7 @@ export default function AdminLeaguesPage() {
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Sport *
+                  {t(language, 'admin.common.sport')} *
                 </label>
                 <select
                   value={createForm.sportId}
@@ -1625,7 +1628,7 @@ export default function AdminLeaguesPage() {
                       : 'bg-white border-slate-200 text-slate-800'
                   }`}
                 >
-                  <option value="">Select sport</option>
+                  <option value="">{t(language, 'admin.leagues.selectSport')}</option>
                   {sports.map((sport) => (
                     <option key={sport.id} value={sport.id}>
                       {sport.name}
@@ -1636,7 +1639,7 @@ export default function AdminLeaguesPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Name *
+                  {t(language, 'admin.common.name')} *
                 </label>
                 <input
                   type="text"
@@ -1736,7 +1739,7 @@ export default function AdminLeaguesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                    Season
+                    {t(language, 'admin.common.season')}
                   </label>
                   <input
                     type="text"
@@ -1752,7 +1755,7 @@ export default function AdminLeaguesPage() {
                 </div>
                 <div>
                   <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                    Sort Order
+                    {t(language, 'admin.leagues.sortOrder')}
                   </label>
                   <input
                     type="number"
@@ -1780,7 +1783,7 @@ export default function AdminLeaguesPage() {
                     }
                     className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
                   />
-                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>Active</span>
+                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>{t(language, 'admin.common.active')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1791,7 +1794,7 @@ export default function AdminLeaguesPage() {
                     }
                     className="w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500"
                   />
-                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>Featured</span>
+                  <span className={isDark ? 'text-gray-300' : 'text-slate-600'}>{t(language, 'admin.common.featured')}</span>
                 </label>
               </div>
             </div>
@@ -1806,7 +1809,7 @@ export default function AdminLeaguesPage() {
                     : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                 }`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleCreate}
@@ -1814,7 +1817,7 @@ export default function AdminLeaguesPage() {
                 className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading && <Loader2 size={18} className="animate-spin" />}
-                Create League
+                {t(language, 'admin.leagues.createLeague')}
               </button>
             </div>
           </div>

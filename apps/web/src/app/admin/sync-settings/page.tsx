@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { adminService, ApiFootballSyncConfig } from '@/services/admin.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { 
   RotateCw, 
   Save, 
@@ -25,6 +27,7 @@ import { toast } from 'sonner';
 export default function SyncSettingsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -168,7 +171,7 @@ export default function SyncSettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            Sync Configuration
+            {t(language, 'admin.syncSettings.title')}
           </h1>
           <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             Configure API sync intervals, data fetching rules, and rate limits
@@ -217,7 +220,7 @@ export default function SyncSettingsPage() {
                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
             }`}>
-              {usagePercent > 80 ? 'Critical' : usagePercent > 50 ? 'Warning' : 'Optimized'}
+              {usagePercent > 80 ? t(language, 'admin.syncSettings.warning') : usagePercent > 50 ? t(language, 'admin.syncSettings.warning') : t(language, 'admin.syncSettings.optimized')}
             </span>
           </div>
           <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -259,12 +262,12 @@ export default function SyncSettingsPage() {
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {[
-          { id: 'fixtures', label: 'Fixtures', icon: Calendar },
-          { id: 'live', label: 'Live Odds', icon: Activity },
-          { id: 'upcoming', label: 'Upcoming Odds', icon: Clock },
-          { id: 'far', label: 'Far Odds', icon: CalendarRange },
-          { id: 'standings', label: 'Standings', icon: Trophy },
-          { id: 'general', label: 'General & Limits', icon: Globe },
+          { id: 'fixtures', label: t(language, 'admin.syncSettings.fixturesTab'), icon: Calendar },
+          { id: 'live', label: t(language, 'admin.syncSettings.liveOddsTab'), icon: Activity },
+          { id: 'upcoming', label: t(language, 'admin.syncSettings.upcomingOddsTab'), icon: Clock },
+          { id: 'far', label: t(language, 'admin.syncSettings.farOddsTab'), icon: CalendarRange },
+          { id: 'standings', label: t(language, 'admin.syncSettings.standingsTab'), icon: Trophy },
+          { id: 'general', label: t(language, 'admin.syncSettings.generalLimitsTab'), icon: Globe },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -291,7 +294,7 @@ export default function SyncSettingsPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Fixture Synchronization</h3>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.fixtureSync')}</h3>
                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Configure how often match fixtures are updated</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -374,7 +377,7 @@ export default function SyncSettingsPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Live Odds Synchronization</h3>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.liveOddsSync')}</h3>
                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Real-time odds updates for in-play matches</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -438,7 +441,7 @@ export default function SyncSettingsPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Upcoming Odds Synchronization</h3>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.upcomingOddsSync')}</h3>
                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pre-match odds updates for near matches (within hours)</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -521,7 +524,7 @@ export default function SyncSettingsPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Far Odds Synchronization</h3>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.farOddsSync')}</h3>
                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Pre-match odds for distant matches (beyond hours ahead, up to days)</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -614,7 +617,7 @@ export default function SyncSettingsPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Standings Synchronization</h3>
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.standingsSync')}</h3>
                 <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>League table and rankings updates</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -666,11 +669,11 @@ export default function SyncSettingsPage() {
         {activeTab === 'general' && (
           <div className="space-y-8">
             <div className="space-y-4">
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>League & Team Sync</h3>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.leagueTeamSync')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`p-4 rounded-xl border ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Leagues</span>
+                    <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t(language, 'admin.sync.leagues')}</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -698,7 +701,7 @@ export default function SyncSettingsPage() {
 
                 <div className={`p-4 rounded-xl border ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>Teams</span>
+                    <span className={`font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t(language, 'admin.sync.teams')}</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -727,7 +730,7 @@ export default function SyncSettingsPage() {
             </div>
 
             <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Rate Limits & Safety</h3>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.syncSettings.rateLimits')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -743,7 +746,7 @@ export default function SyncSettingsPage() {
                         : 'bg-slate-100 border-slate-200 text-slate-500'
                     }`}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Set by API plan</p>
+                  <p className="text-xs text-slate-500 mt-1">{t(language, 'admin.syncSettings.setByApiPlan')}</p>
                 </div>
                 
                 <div>
@@ -760,7 +763,7 @@ export default function SyncSettingsPage() {
                         : 'bg-slate-100 border-slate-200 text-slate-500'
                     }`}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Set by API plan</p>
+                  <p className="text-xs text-slate-500 mt-1">{t(language, 'admin.syncSettings.setByApiPlan')}</p>
                 </div>
 
                 <div>
@@ -779,7 +782,7 @@ export default function SyncSettingsPage() {
                         : 'bg-white border-slate-200 text-slate-900 focus:border-emerald-500'
                     } focus:ring-1 focus:ring-emerald-500 outline-none transition-colors`}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Safety buffer</p>
+                  <p className="text-xs text-slate-500 mt-1">{t(language, 'admin.syncSettings.safetyBuffer')}</p>
                 </div>
               </div>
             </div>
@@ -795,13 +798,13 @@ export default function SyncSettingsPage() {
               ? 'bg-slate-900 border-slate-700 text-white' 
               : 'bg-white border-slate-200 text-slate-900'
           }`}>
-            <span className="text-sm font-medium">Unsaved changes</span>
+            <span className="text-sm font-medium">{t(language, 'admin.syncSettings.unsavedChanges')}</span>
             <div className="h-4 w-px bg-slate-300 dark:bg-slate-700" />
             <button 
               onClick={handleReset}
               className={`text-sm hover:underline ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
             >
-              Discard
+              {t(language, 'admin.common.cancel')}
             </button>
             <button 
               onClick={handleSave}
@@ -809,7 +812,7 @@ export default function SyncSettingsPage() {
               className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500 text-white text-sm font-medium rounded-full hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"
             >
               {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-              Save Configuration
+              {t(language, 'admin.common.save')}
             </button>
           </div>
         </div>

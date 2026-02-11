@@ -23,12 +23,15 @@ import {
 } from 'lucide-react';
 import { adminService, AdminStats } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import Link from 'next/link';
 
 export default function AdminPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -72,11 +75,11 @@ export default function AdminPage() {
     };
     
     const labels: Record<string, string> = {
-      pending: 'Pending',
-      approved: 'Approved',
-      won: 'Won',
-      lost: 'Lost',
-      rejected: 'Rejected',
+      pending: t(language, 'admin.common.pending'),
+      approved: t(language, 'admin.common.approved'),
+      won: t(language, 'admin.dashboard.won'),
+      lost: t(language, 'admin.dashboard.lost'),
+      rejected: t(language, 'admin.common.rejected'),
     };
 
     const style = styles[status] || (isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-600 border-slate-200');
@@ -104,7 +107,7 @@ export default function AdminPage() {
 
   const statsData = [
     { 
-      label: 'Total Revenue', 
+      label: t(language, 'admin.dashboard.totalRevenue'), 
       value: formatCurrency(stats?.totalRevenue || 0), 
       change: formatTrend(stats?.revenueChange || 0), 
       trend: (stats?.revenueChange || 0) >= 0 ? 'up' : 'down',
@@ -113,7 +116,7 @@ export default function AdminPage() {
       color: 'emerald' 
     },
     { 
-      label: 'Total Users', 
+      label: t(language, 'admin.dashboard.totalUsers'), 
       value: stats?.totalUsers?.toLocaleString() || '0', 
       change: formatTrend(stats?.usersChange || 0), 
       trend: (stats?.usersChange || 0) >= 0 ? 'up' : 'down',
@@ -122,11 +125,11 @@ export default function AdminPage() {
       color: 'blue' 
     },
     { 
-      label: 'Active Matches', 
+      label: t(language, 'admin.dashboard.activeMatches'), 
       value: stats?.activeMatches?.toString() || '0', 
       change: formatTrend(stats?.matchesDiff || 0, true), 
       trend: (stats?.matchesDiff || 0) >= 0 ? 'up' : 'down',
-      subLabel: 'Live now',
+      subLabel: t(language, 'admin.dashboard.liveNow'),
       icon: Trophy, 
       color: 'orange' 
     },
@@ -142,7 +145,7 @@ export default function AdminPage() {
   ];
 
   if (loading) {
-    return <AdminLoading text="Loading dashboard..." />;
+    return <AdminLoading text={t(language, 'admin.common.loading')} />;
   }
 
   return (
@@ -218,10 +221,10 @@ export default function AdminPage() {
       {/* Extra Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Platform Balance', value: formatCurrency(stats?.totalPlatformBalance || 0), icon: Wallet, iconColor: 'text-cyan-500', bgColor: isDark ? 'bg-cyan-500/10' : 'bg-cyan-50' },
-          { label: 'Total Deposits', value: formatCurrency(stats?.totalDeposits || 0), icon: ArrowDownToLine, iconColor: 'text-emerald-500', bgColor: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
-          { label: 'Total Withdrawals', value: formatCurrency(stats?.totalWithdrawals || 0), icon: ArrowUpFromLine, iconColor: 'text-orange-500', bgColor: isDark ? 'bg-orange-500/10' : 'bg-orange-50' },
-          { label: 'Bets Won / Lost', value: `${stats?.betsWon || 0} / ${stats?.betsLost || 0}`, icon: BarChart3, iconColor: 'text-indigo-500', bgColor: isDark ? 'bg-indigo-500/10' : 'bg-indigo-50' },
+          { label: t(language, 'admin.dashboard.platformBalance'), value: formatCurrency(stats?.totalPlatformBalance || 0), icon: Wallet, iconColor: 'text-cyan-500', bgColor: isDark ? 'bg-cyan-500/10' : 'bg-cyan-50' },
+          { label: t(language, 'admin.dashboard.totalDeposits'), value: formatCurrency(stats?.totalDeposits || 0), icon: ArrowDownToLine, iconColor: 'text-emerald-500', bgColor: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
+          { label: t(language, 'admin.dashboard.totalWithdrawals'), value: formatCurrency(stats?.totalWithdrawals || 0), icon: ArrowUpFromLine, iconColor: 'text-orange-500', bgColor: isDark ? 'bg-orange-500/10' : 'bg-orange-50' },
+          { label: t(language, 'admin.dashboard.betsWonLost'), value: `${stats?.betsWon || 0} / ${stats?.betsLost || 0}`, icon: BarChart3, iconColor: 'text-indigo-500', bgColor: isDark ? 'bg-indigo-500/10' : 'bg-indigo-50' },
         ].map((item, i) => (
           <div key={i} className={`p-4 rounded-2xl flex items-center gap-3 ${
             isDark
@@ -304,7 +307,7 @@ export default function AdminPage() {
           <div className="flex items-center justify-between mb-6">
             <h3 className={`font-bold text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               <Activity size={20} className="text-emerald-500" />
-              Recent Activity
+              {t(language, 'admin.dashboard.recentActivity')}
             </h3>
             <Link 
               href="/admin/transactions" 
@@ -320,15 +323,15 @@ export default function AdminPage() {
             {(!stats?.recentActivities || stats.recentActivities.length === 0) ? (
               <div className={`text-center py-10 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 <Activity size={32} className="mx-auto mb-3 opacity-50" />
-                <p className="text-sm font-medium">No recent activity</p>
-                <p className="text-xs mt-1">Transactions will appear here</p>
+                <p className="text-sm font-medium">{t(language, 'admin.dashboard.noRecentActivity')}</p>
+                <p className="text-xs mt-1">{t(language, 'admin.dashboard.transactionsAppearHere')}</p>
               </div>
             ) : (
               stats.recentActivities.map((activity) => {
                 const timeAgo = (() => {
                   const diff = Date.now() - new Date(activity.time).getTime();
                   const mins = Math.floor(diff / 60000);
-                  if (mins < 1) return 'Just now';
+                  if (mins < 1) return t(language, 'admin.dashboard.justNow');
                   if (mins < 60) return `${mins}m ago`;
                   const hours = Math.floor(mins / 60);
                   if (hours < 24) return `${hours}h ago`;
@@ -403,9 +406,9 @@ export default function AdminPage() {
             </h3>
             <div className="space-y-3">
               {[
-                { label: 'Won', count: stats?.betsWon || 0, icon: CheckCircle2, color: 'emerald' },
-                { label: 'Lost', count: stats?.betsLost || 0, icon: XCircle, color: 'red' },
-                { label: 'Pending', count: stats?.betsPending || 0, icon: Clock, color: 'amber' },
+                { label: t(language, 'admin.dashboard.won'), count: stats?.betsWon || 0, icon: CheckCircle2, color: 'emerald' },
+                { label: t(language, 'admin.dashboard.lost'), count: stats?.betsLost || 0, icon: XCircle, color: 'red' },
+                { label: t(language, 'admin.common.pending'), count: stats?.betsPending || 0, icon: Clock, color: 'amber' },
               ].map((item, i) => {
                 const total = (stats?.totalBets || 1);
                 const pct = Math.round((item.count / total) * 100);
@@ -459,7 +462,7 @@ export default function AdminPage() {
                     <p className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                       Pending Deposits
                     </p>
-                    <p className="text-xs text-amber-500 font-medium">Action Required</p>
+                    <p className="text-xs text-amber-500 font-medium">{t(language, 'admin.dashboard.actionRequired')}</p>
                   </div>
                 </div>
                 <span className="text-xl font-bold text-amber-500">
@@ -483,7 +486,7 @@ export default function AdminPage() {
                     <p className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>
                       Pending Withdrawals
                     </p>
-                    <p className="text-xs text-orange-500 font-medium">Action Required</p>
+                    <p className="text-xs text-orange-500 font-medium">{t(language, 'admin.dashboard.actionRequired')}</p>
                   </div>
                 </div>
                 <span className="text-xl font-bold text-orange-500">
@@ -500,7 +503,7 @@ export default function AdminPage() {
               : 'bg-white border border-slate-100 shadow-sm'
           }`}>
              <h3 className={`font-bold text-lg mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Quick Access
+              {t(language, 'admin.dashboard.quickLinks')}
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <Link href="/admin/users" className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all ${
@@ -509,7 +512,7 @@ export default function AdminPage() {
                   : 'bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100'
               }`}>
                 <Users size={24} className="text-blue-500" />
-                <span className="text-xs font-medium">Users</span>
+                <span className="text-xs font-medium">{t(language, 'admin.nav.users')}</span>
               </Link>
               <Link href="/admin/matches" className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all ${
                 isDark 
@@ -517,7 +520,7 @@ export default function AdminPage() {
                   : 'bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100'
               }`}>
                 <Trophy size={24} className="text-yellow-500" />
-                <span className="text-xs font-medium">Matches</span>
+                <span className="text-xs font-medium">{t(language, 'admin.nav.matches')}</span>
               </Link>
               <Link href="/admin/bets" className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all ${
                 isDark 
@@ -525,7 +528,7 @@ export default function AdminPage() {
                   : 'bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100'
               }`}>
                 <CreditCard size={24} className="text-purple-500" />
-                <span className="text-xs font-medium">Bets</span>
+                <span className="text-xs font-medium">{t(language, 'admin.nav.bets')}</span>
               </Link>
               <Link href="/admin/settings" className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 text-center transition-all ${
                 isDark 
@@ -533,7 +536,7 @@ export default function AdminPage() {
                   : 'bg-slate-50 hover:bg-white hover:shadow-md border border-slate-100'
               }`}>
                 <MoreHorizontal size={24} className="text-slate-400" />
-                <span className="text-xs font-medium">Settings</span>
+                <span className="text-xs font-medium">{t(language, 'admin.nav.settings')}</span>
               </Link>
             </div>
           </div>

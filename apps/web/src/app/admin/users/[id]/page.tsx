@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { adminService, AdminUser, AdminBet, WalletDetails, Transaction } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { TableSkeleton } from '@/components/admin/AdminLoading';
 
@@ -41,6 +43,7 @@ export default function UserDetailPage() {
   const userId = params.id as string;
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -344,9 +347,9 @@ export default function UserDetailPage() {
       self_excluded: 'bg-purple-100 text-purple-700',
     };
     const labels: Record<string, string> = {
-      active: 'Active',
-      suspended: 'Suspended',
-      blocked: 'Blocked',
+      active: t(language, 'admin.common.active'),
+      suspended: t(language, 'admin.common.suspended'),
+      blocked: t(language, 'admin.common.blocked'),
       self_excluded: 'Self-excluded',
     };
     const styles = isDark ? darkStyles : lightStyles;
@@ -431,10 +434,10 @@ export default function UserDetailPage() {
   }
 
   const tabs = [
-    { id: 'details', label: 'User Info', icon: User },
-    { id: 'bets', label: 'Bets History', icon: Target },
-    { id: 'transactions', label: 'Transactions', icon: History },
-    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'details', label: t(language, 'admin.users.userDetails'), icon: User },
+    { id: 'bets', label: t(language, 'admin.users.bettingHistory'), icon: Target },
+    { id: 'transactions', label: t(language, 'admin.users.transactionHistory'), icon: History },
+    { id: 'wallet', label: t(language, 'admin.users.walletInfo'), icon: Wallet },
     { id: 'security', label: 'Security', icon: Key },
   ];
 
@@ -576,34 +579,34 @@ export default function UserDetailPage() {
             <div className="space-y-6">
               {/* User Info Summary */}
               <div className={`p-4 rounded-lg ${isDark ? 'bg-slate-700/30' : 'bg-slate-50'}`}>
-                <h3 className={`text-sm font-semibold mb-3 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Account Info</h3>
+                <h3 className={`text-sm font-semibold mb-3 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.accountInfo')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div>
-                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Username</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t(language, 'admin.users.username')}</p>
                     <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.username}</p>
                   </div>
                   <div>
-                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Email</p>
-                    <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.email || '-'}</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t(language, 'admin.common.email')}</p>
+                    <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.email || t(language, 'admin.users.noEmail')}</p>
                   </div>
                   <div>
                     <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Created</p>
                     <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatDate(user.createdAt)}</p>
                   </div>
                   <div>
-                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Last Login</p>
-                    <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.lastLoginAt ? formatDate(user.lastLoginAt) : 'Never'}</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t(language, 'admin.users.lastLogin')}</p>
+                    <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.lastLoginAt ? formatDate(user.lastLoginAt) : t(language, 'admin.users.never')}</p>
                   </div>
                 </div>
               </div>
 
               {/* Editable Fields */}
               <div>
-                <h3 className={`text-sm font-semibold mb-3 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Edit Profile</h3>
+                <h3 className={`text-sm font-semibold mb-3 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.personalInfo')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <Mail size={14} className="inline mr-1" /> Email
+                      <Mail size={14} className="inline mr-1" /> {t(language, 'admin.common.email')}
                     </label>
                     <input
                       type="email"
@@ -616,7 +619,7 @@ export default function UserDetailPage() {
                   </div>
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <Phone size={14} className="inline mr-1" /> Phone
+                      <Phone size={14} className="inline mr-1" /> {t(language, 'admin.common.phone')}
                     </label>
                     <input
                       type="tel"
@@ -628,7 +631,7 @@ export default function UserDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>First Name</label>
+                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t(language, 'admin.users.firstName')}</label>
                     <input
                       type="text"
                       value={formData.firstName}
@@ -639,7 +642,7 @@ export default function UserDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Last Name</label>
+                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t(language, 'admin.users.lastName')}</label>
                     <input
                       type="text"
                       value={formData.lastName}
@@ -651,7 +654,7 @@ export default function UserDetailPage() {
                   </div>
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <Shield size={14} className="inline mr-1" /> Status
+                      <Shield size={14} className="inline mr-1" /> {t(language, 'admin.common.status')}
                     </label>
                     <select
                       value={formData.status}
@@ -660,13 +663,13 @@ export default function UserDetailPage() {
                         isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'
                       }`}
                     >
-                      <option value="active">Active</option>
-                      <option value="suspended">Suspended</option>
-                      <option value="blocked">Blocked</option>
+                      <option value="active">{t(language, 'admin.common.active')}</option>
+                      <option value="suspended">{t(language, 'admin.common.suspended')}</option>
+                      <option value="blocked">{t(language, 'admin.common.blocked')}</option>
                     </select>
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Role</label>
+                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t(language, 'admin.common.role')}</label>
                     <input
                       type="text"
                       value={user.role?.name || 'User'}
@@ -711,7 +714,7 @@ export default function UserDetailPage() {
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium disabled:opacity-50"
                 >
                   <Save size={18} />
-                  {saving ? 'Saving...' : 'Save Changes'}
+                  {saving ? t(language, 'admin.common.loading') : t(language, 'admin.common.save')}
                 </button>
                 <button
                   onClick={() => router.push('/admin/users')}
@@ -719,7 +722,7 @@ export default function UserDetailPage() {
                     isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  Cancel
+                  {t(language, 'admin.common.cancel')}
                 </button>
               </div>
             </div>
@@ -737,10 +740,10 @@ export default function UserDetailPage() {
                   }`}
                 >
                   <option value="">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="won">Won</option>
-                  <option value="lost">Lost</option>
-                  <option value="void">Void</option>
+                  <option value="pending">{t(language, 'admin.common.pending')}</option>
+                  <option value="won">{t(language, 'admin.bets.won')}</option>
+                  <option value="lost">{t(language, 'admin.bets.lost')}</option>
+                  <option value="void">{t(language, 'admin.bets.void')}</option>
                   <option value="partial_won">Partial Won</option>
                   <option value="cashout">Cashout</option>
                 </select>
@@ -759,17 +762,17 @@ export default function UserDetailPage() {
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[800px]">
                       <thead>
                         <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
                           <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bet ID</th>
-                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Type</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.type')}</th>
                           <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Selections</th>
-                          <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Stake</th>
-                          <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Odds</th>
+                          <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.stakePotWin')}</th>
+                          <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.bets.odds')}</th>
                           <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Potential Win</th>
-                          <th className={`px-4 py-3 text-center text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
-                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Placed</th>
+                          <th className={`px-4 py-3 text-center text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.date')}</th>
                         </tr>
                       </thead>
                       <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
@@ -844,12 +847,12 @@ export default function UserDetailPage() {
                   }`}
                 >
                   <option value="">All Types</option>
-                  <option value="deposit">Deposit</option>
-                  <option value="withdrawal">Withdrawal</option>
-                  <option value="bet_placed">Bet Placed</option>
-                  <option value="bet_won">Bet Won</option>
-                  <option value="bet_refund">Bet Refund</option>
-                  <option value="bonus">Bonus</option>
+                  <option value="deposit">{t(language, 'admin.transactions.deposit')}</option>
+                  <option value="withdrawal">{t(language, 'admin.transactions.withdrawal')}</option>
+                  <option value="bet_placed">{t(language, 'admin.transactions.betPlaced')}</option>
+                  <option value="bet_won">{t(language, 'admin.transactions.betWon')}</option>
+                  <option value="bet_refund">{t(language, 'admin.transactions.betRefund')}</option>
+                  <option value="bonus">{t(language, 'admin.transactions.bonus')}</option>
                   <option value="adjustment">Adjustment</option>
                   <option value="transfer">Transfer</option>
                 </select>
@@ -868,16 +871,16 @@ export default function UserDetailPage() {
               ) : (
                 <>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[700px]">
                       <thead>
                         <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
-                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Type</th>
-                          <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Amount</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.type')}</th>
+                          <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.amount')}</th>
                           <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Before</th>
                           <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>After</th>
                           <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Description</th>
-                          <th className={`px-4 py-3 text-center text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
-                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Date</th>
+                          <th className={`px-4 py-3 text-center text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
+                          <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.date')}</th>
                         </tr>
                       </thead>
                       <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-200'}`}>
@@ -934,7 +937,7 @@ export default function UserDetailPage() {
                     <div className={`p-4 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                       <div className="flex items-center gap-3 mb-3">
                         <Wallet className="text-emerald-500" size={20} />
-                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Real Balance</span>
+                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.realBalance')}</span>
                       </div>
                       <p className="text-2xl font-bold text-emerald-500">
                         {formatCurrency(walletDetails?.realBalance || 0)}
@@ -943,7 +946,7 @@ export default function UserDetailPage() {
                     <div className={`p-4 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                       <div className="flex items-center gap-3 mb-3">
                         <Wallet className="text-amber-500" size={20} />
-                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Bonus Balance</span>
+                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.bonusBalance')}</span>
                       </div>
                       <p className="text-2xl font-bold text-amber-500">
                         {formatCurrency(walletDetails?.bonusBalance || 0)}
@@ -965,12 +968,12 @@ export default function UserDetailPage() {
                     className="w-full py-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium"
                   >
                     <DollarSign size={18} className="inline mr-2" />
-                    Adjust Balance
+                    {t(language, 'admin.users.adjustBalance')}
                   </button>
 
                   <div>
                     <h3 className={`text-sm font-semibold mb-3 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Transaction History
+                      {t(language, 'admin.users.transactionHistory')}
                     </h3>
                     {walletTransactions.length === 0 ? (
                       <p className={`text-sm text-center py-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -979,15 +982,15 @@ export default function UserDetailPage() {
                     ) : (
                       <>
                         <div className="overflow-x-auto">
-                          <table className="w-full">
+                          <table className="w-full min-w-[700px]">
                             <thead>
                               <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
-                                <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Type</th>
-                                <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Amount</th>
+                                <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.type')}</th>
+                                <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.amount')}</th>
                                 <th className={`px-4 py-3 text-right text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Balance After</th>
                                 <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Description</th>
-                                <th className={`px-4 py-3 text-center text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
-                                <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Date</th>
+                                <th className={`px-4 py-3 text-center text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
+                                <th className={`px-4 py-3 text-left text-xs font-medium uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.date')}</th>
                               </tr>
                             </thead>
                             <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-200'}`}>
@@ -1037,7 +1040,7 @@ export default function UserDetailPage() {
           {activeTab === 'security' && (
             <div className="space-y-6 max-w-md">
               <div>
-                <h3 className={`text-sm font-semibold mb-1 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Reset Password</h3>
+                <h3 className={`text-sm font-semibold mb-1 uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.resetPassword')}</h3>
                 <p className={`text-xs mb-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   Set a new password for this user. They will need to use this password at next login.
                 </p>
@@ -1046,7 +1049,7 @@ export default function UserDetailPage() {
               <div>
                 <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   <Key size={14} className="inline mr-1" />
-                  New Password
+                  {t(language, 'admin.users.newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -1070,7 +1073,7 @@ export default function UserDetailPage() {
 
               <div>
                 <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                  Confirm Password
+                  {t(language, 'admin.users.confirmPassword')}
                 </label>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -1115,7 +1118,7 @@ export default function UserDetailPage() {
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Key size={18} />
-                {resettingPassword ? 'Resetting...' : 'Reset Password'}
+                {resettingPassword ? t(language, 'admin.common.loading') : t(language, 'admin.users.resetPassword')}
               </button>
 
               <div className={`p-3 rounded-lg flex items-start gap-2 ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'}`}>
@@ -1134,7 +1137,7 @@ export default function UserDetailPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className={`rounded-xl p-6 w-full max-w-md mx-4 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Adjust Balance</h3>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.adjustBalance')}</h3>
               <button
                 onClick={() => setShowBalanceModal(false)}
                 className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -1178,13 +1181,13 @@ export default function UserDetailPage() {
                     isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'
                   }`}
                 >
-                  <option value="real">Real Balance</option>
-                  <option value="bonus">Bonus Balance</option>
+                  <option value="real">{t(language, 'admin.users.realBalance')}</option>
+                  <option value="bonus">{t(language, 'admin.users.bonusBalance')}</option>
                 </select>
               </div>
 
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Amount</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t(language, 'admin.common.amount')}</label>
                 <input
                   type="number"
                   value={balanceAdjustment.amount}
@@ -1198,7 +1201,7 @@ export default function UserDetailPage() {
               </div>
 
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Reason</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t(language, 'admin.users.adjustmentReason')}</label>
                 <textarea
                   value={balanceAdjustment.reason}
                   onChange={(e) => setBalanceAdjustment({ ...balanceAdjustment, reason: e.target.value })}
@@ -1216,7 +1219,7 @@ export default function UserDetailPage() {
                   disabled={saving}
                   className="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors font-medium disabled:opacity-50"
                 >
-                  {saving ? 'Processing...' : 'Confirm'}
+                  {saving ? t(language, 'admin.common.loading') : t(language, 'admin.common.save')}
                 </button>
                 <button
                   onClick={() => setShowBalanceModal(false)}
@@ -1224,7 +1227,7 @@ export default function UserDetailPage() {
                     isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  Cancel
+                  {t(language, 'admin.common.cancel')}
                 </button>
               </div>
             </div>

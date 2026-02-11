@@ -444,6 +444,7 @@ export class ApiFootballService implements OnModuleInit {
       league: {
         externalId: string | null;
         name: string;
+        slug?: string;
         country: string | null;
         logoUrl: string | null;
       };
@@ -459,6 +460,7 @@ export class ApiFootballService implements OnModuleInit {
         leagueMap.set(row.leagueId, {
           leagueId: row.leagueId,
           leagueName: row.leagueName,
+          leagueSlug: row.leagueSlug || match.league.slug || undefined,
           country: row.country,
           leagueLogo: match.league.logoUrl || undefined,
           matches: [],
@@ -512,6 +514,7 @@ export class ApiFootballService implements OnModuleInit {
     league: {
       externalId: string | null;
       name: string;
+      slug?: string;
       country: string | null;
       logoUrl: string | null;
     };
@@ -562,6 +565,7 @@ export class ApiFootballService implements OnModuleInit {
         ? parseInt(match.league.externalId, 10)
         : 0,
       leagueName: match.league.name,
+      leagueSlug: match.league.slug || undefined,
       country: match.league.country || "",
       matchTime,
       startTime: match.startTime.toISOString(),

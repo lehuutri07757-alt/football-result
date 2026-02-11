@@ -27,6 +27,8 @@ import { toast } from 'sonner';
 import { matchesService, leaguesService, teamsService, apiFootballSyncService, Match, MatchStatus, League, Team } from '@/services/match.service';
 import { AdminLoading, TableSkeleton } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { SearchableSelect } from '../leagues/components/searchable-select';
 import {
   MatchesFilters,
@@ -39,6 +41,7 @@ import {
 export default function AdminMatchesPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [leagues, setLeagues] = useState<League[]>([]);
@@ -312,18 +315,18 @@ export default function AdminMatchesPage() {
 
   const getStatusBadge = (status: string) => {
     const darkConfig: Record<string, { bg: string; text: string; label: string; icon: React.ElementType }> = {
-      scheduled: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'Scheduled', icon: Calendar },
-      live: { bg: 'bg-red-500/20', text: 'text-red-400', label: '🔴 LIVE', icon: Play },
-      finished: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'Finished', icon: CheckCircle },
-      cancelled: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'Cancelled', icon: XCircle },
-      postponed: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'Postponed', icon: Pause },
+      scheduled: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: t(language, 'admin.matches.scheduled'), icon: Calendar },
+      live: { bg: 'bg-red-500/20', text: 'text-red-400', label: '🔴 ' + t(language, 'admin.matches.live').toUpperCase(), icon: Play },
+      finished: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: t(language, 'admin.matches.finished'), icon: CheckCircle },
+      cancelled: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: t(language, 'admin.common.cancelled'), icon: XCircle },
+      postponed: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: t(language, 'admin.matches.postponed'), icon: Pause },
     };
     const lightConfig: Record<string, { bg: string; text: string; label: string; icon: React.ElementType }> = {
-      scheduled: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Scheduled', icon: Calendar },
-      live: { bg: 'bg-red-100', text: 'text-red-700', label: '🔴 LIVE', icon: Play },
-      finished: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Finished', icon: CheckCircle },
-      cancelled: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Cancelled', icon: XCircle },
-      postponed: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Postponed', icon: Pause },
+      scheduled: { bg: 'bg-blue-100', text: 'text-blue-700', label: t(language, 'admin.matches.scheduled'), icon: Calendar },
+      live: { bg: 'bg-red-100', text: 'text-red-700', label: '🔴 ' + t(language, 'admin.matches.live').toUpperCase(), icon: Play },
+      finished: { bg: 'bg-gray-100', text: 'text-gray-700', label: t(language, 'admin.matches.finished'), icon: CheckCircle },
+      cancelled: { bg: 'bg-orange-100', text: 'text-orange-700', label: t(language, 'admin.common.cancelled'), icon: XCircle },
+      postponed: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: t(language, 'admin.matches.postponed'), icon: Pause },
     };
     const config = isDark ? darkConfig : lightConfig;
     const c = config[status] || { bg: isDark ? 'bg-gray-500/20' : 'bg-gray-100', text: isDark ? 'text-gray-400' : 'text-gray-700', label: status, icon: Calendar };
@@ -347,7 +350,7 @@ export default function AdminMatchesPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            Match Management
+            {t(language, 'admin.matches.title')}
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
             Total {total} matches
@@ -368,14 +371,14 @@ export default function AdminMatchesPage() {
             ) : (
               <RefreshCw size={18} />
             )}
-            {syncing ? 'Syncing...' : 'Sync from API-Football'}
+            {syncing ? 'Syncing...' : <><span className="hidden sm:inline">{t(language, 'admin.matches.sync')}</span><span className="sm:hidden">{t(language, 'admin.matches.sync')}</span></>}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center gap-2"
           >
             <Plus size={18} />
-            Add Match
+            {t(language, 'admin.matches.createMatch')}
           </button>
         </div>
       </div>
@@ -400,7 +403,7 @@ export default function AdminMatchesPage() {
         onRefresh={fetchMatches}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div
           className={`p-4 rounded-xl border ${
             isDark
@@ -411,7 +414,7 @@ export default function AdminMatchesPage() {
           <div className="flex items-center gap-3">
             <Calendar className="text-blue-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Scheduled</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.matches.scheduled')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {getScheduledCount()}
               </p>
@@ -428,7 +431,7 @@ export default function AdminMatchesPage() {
           <div className="flex items-center gap-3">
             <Play className="text-red-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Live</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.matches.live')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {getLiveCount()}
               </p>
@@ -445,7 +448,7 @@ export default function AdminMatchesPage() {
           <div className="flex items-center gap-3">
             <CheckCircle className={isDark ? 'text-gray-400' : 'text-gray-500'} size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Finished</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.matches.finished')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {getFinishedCount()}
               </p>
@@ -462,7 +465,7 @@ export default function AdminMatchesPage() {
           <div className="flex items-center gap-3">
             <Trophy className="text-emerald-500" size={24} />
             <div>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Total Bets</p>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.matches.totalBets')}</p>
               <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                 {getTotalBets()}
               </p>
@@ -478,12 +481,12 @@ export default function AdminMatchesPage() {
       ) : matches.length === 0 ? (
         <div className="text-center py-20">
           <Gamepad2 className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-slate-300'}`} />
-          <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>No matches found</p>
+          <p className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.matches.noMatches')}</p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium"
           >
-            Create first match
+            {t(language, 'admin.matches.createMatch')}
           </button>
         </div>
       ) : (
@@ -494,24 +497,24 @@ export default function AdminMatchesPage() {
             }`}
           >
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[1100px]">
                 <thead>
                   <tr
                     className={`text-left ${
                       isDark ? 'bg-slate-700/50 text-gray-400' : 'bg-slate-50 text-slate-500'
                     }`}
                   >
-                    <th className="px-4 py-3 font-medium">Match</th>
-                    <th className="px-4 py-3 font-medium">League</th>
-                    <th className="px-4 py-3 font-medium">Date/Time</th>
-                    <th className="px-4 py-3 font-medium">Score</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Bets</th>
-                    <th className="px-4 py-3 font-medium">Betting</th>
-                    <th className="px-4 py-3 font-medium">Featured</th>
-                    <th className="px-4 py-3 font-medium">Created At</th>
-                    <th className="px-4 py-3 font-medium">Updated At</th>
-                    <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.matches.title')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.nav.leagues')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.matches.dateTime')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.matches.score')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.status')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.matches.totalBets')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.matches.betting')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.featured')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.createdAt')}</th>
+                    <th className="px-4 py-3 font-medium">{t(language, 'admin.common.updatedAt')}</th>
+                    <th className="px-4 py-3 font-medium text-right">{t(language, 'admin.common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
@@ -748,7 +751,7 @@ export default function AdminMatchesPage() {
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                  Match Details
+                  {t(language, 'admin.matches.matchDetails')}
                 </h3>
                 <button
                   onClick={() => setShowDetailModal(false)}
@@ -811,11 +814,11 @@ export default function AdminMatchesPage() {
 
                 <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                   <div className="flex justify-between items-center">
-                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Status</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.status')}</span>
                     {getStatusBadge(selectedMatch.status)}
                   </div>
                   <div className="flex justify-between">
-                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Date</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.matches.dateTime')}</span>
                     <span className={isDark ? 'text-white' : 'text-slate-800'}>{date}</span>
                   </div>
                   <div className="flex justify-between">
@@ -823,19 +826,19 @@ export default function AdminMatchesPage() {
                     <span className={isDark ? 'text-white' : 'text-slate-800'}>{time}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Total Bets</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.matches.totalBets')}</span>
                     <span className="text-emerald-500 font-bold">{selectedMatch._count?.betSelections || 0}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Betting</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.matches.betting')}</span>
                     <span className={selectedMatch.bettingEnabled ? 'text-emerald-500' : 'text-red-500'}>
-                      {selectedMatch.bettingEnabled ? 'Enabled' : 'Disabled'}
+                      {selectedMatch.bettingEnabled ? t(language, 'admin.common.enabled') : t(language, 'admin.common.disabled')}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>Featured</span>
+                    <span className={isDark ? 'text-gray-400' : 'text-slate-500'}>{t(language, 'admin.common.featured')}</span>
                     <span className={selectedMatch.isFeatured ? 'text-yellow-500' : (isDark ? 'text-gray-400' : 'text-slate-400')}>
-                      {selectedMatch.isFeatured ? 'Yes' : 'No'}
+                      {selectedMatch.isFeatured ? t(language, 'admin.common.yes') : t(language, 'admin.common.no')}
                     </span>
                   </div>
                 </div>
@@ -849,7 +852,7 @@ export default function AdminMatchesPage() {
                     : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                 }`}
               >
-                Close
+                {t(language, 'admin.common.close')}
               </button>
             </div>
           </div>
@@ -866,7 +869,7 @@ export default function AdminMatchesPage() {
             }`}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Edit Match</h3>
+              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{t(language, 'admin.matches.editMatch')}</h3>
               <button
                 onClick={() => setShowEditModal(false)}
                 className={`p-2 rounded-lg transition-colors ${
@@ -882,7 +885,7 @@ export default function AdminMatchesPage() {
             <div className="space-y-4">
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Status
+                  {t(language, 'admin.common.status')}
                 </label>
                 <select
                   value={editForm.status}
@@ -893,11 +896,11 @@ export default function AdminMatchesPage() {
                       : 'bg-white border-slate-200 text-slate-800'
                   }`}
                 >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="live">Live</option>
-                  <option value="finished">Finished</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="postponed">Postponed</option>
+                  <option value="scheduled">{t(language, 'admin.matches.scheduled')}</option>
+                  <option value="live">{t(language, 'admin.matches.live')}</option>
+                  <option value="finished">{t(language, 'admin.matches.finished')}</option>
+                  <option value="cancelled">{t(language, 'admin.common.cancelled')}</option>
+                  <option value="postponed">{t(language, 'admin.matches.postponed')}</option>
                 </select>
               </div>
 
@@ -905,7 +908,7 @@ export default function AdminMatchesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                      Home Score
+                      {t(language, 'admin.matches.score')} ({t(language, 'admin.matches.homeTeam')})
                     </label>
                     <input
                       type="number"
@@ -921,7 +924,7 @@ export default function AdminMatchesPage() {
                   </div>
                   <div>
                     <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                      Away Score
+                      {t(language, 'admin.matches.score')} ({t(language, 'admin.matches.awayTeam')})
                     </label>
                     <input
                       type="number"
@@ -940,7 +943,7 @@ export default function AdminMatchesPage() {
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Start Time
+                  {t(language, 'admin.matches.dateTime')}
                 </label>
                 <input
                   type="datetime-local"
@@ -965,7 +968,7 @@ export default function AdminMatchesPage() {
                     : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                 } disabled:opacity-50`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleUpdate}
@@ -973,7 +976,7 @@ export default function AdminMatchesPage() {
                 className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading && <Loader2 size={18} className="animate-spin" />}
-                Save Changes
+                {t(language, 'admin.common.save')}
               </button>
             </div>
           </div>
@@ -990,7 +993,7 @@ export default function AdminMatchesPage() {
             }`}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Create New Match</h3>
+              <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{t(language, 'admin.matches.createMatch')}</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className={`p-2 rounded-lg transition-colors ${
@@ -1006,49 +1009,49 @@ export default function AdminMatchesPage() {
             <div className="space-y-4">
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  League *
+                  {t(language, 'admin.nav.leagues')} *
                 </label>
                 <SearchableSelect
                   value={createForm.leagueId}
                   options={leagueOptions}
                   onChange={(newValue) => setCreateForm((prev) => ({ ...prev, leagueId: newValue }))}
-                  placeholder="Select league"
+                  placeholder={t(language, 'admin.matches.selectLeague')}
                   isDark={isDark}
-                  allLabel="Select a league"
+                  allLabel={t(language, 'admin.matches.selectLeague')}
                 />
               </div>
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Home Team *
+                  {t(language, 'admin.matches.homeTeam')} *
                 </label>
                 <SearchableSelect
                   value={createForm.homeTeamId}
                   options={teamOptions}
                   onChange={(newValue) => setCreateForm((prev) => ({ ...prev, homeTeamId: newValue }))}
-                  placeholder="Select home team"
+                  placeholder={t(language, 'admin.matches.selectHomeTeam')}
                   isDark={isDark}
-                  allLabel="Select a team"
+                  allLabel={t(language, 'admin.matches.selectHomeTeam')}
                 />
               </div>
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Away Team *
+                  {t(language, 'admin.matches.awayTeam')} *
                 </label>
                 <SearchableSelect
                   value={createForm.awayTeamId}
-                  options={teamOptions.filter((t) => t.value !== createForm.homeTeamId)}
+                  options={teamOptions.filter((tm) => tm.value !== createForm.homeTeamId)}
                   onChange={(newValue) => setCreateForm((prev) => ({ ...prev, awayTeamId: newValue }))}
-                  placeholder="Select away team"
+                  placeholder={t(language, 'admin.matches.selectAwayTeam')}
                   isDark={isDark}
-                  allLabel="Select a team"
+                  allLabel={t(language, 'admin.matches.selectAwayTeam')}
                 />
               </div>
 
               <div>
                 <label className={`text-sm mb-2 block ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
-                  Start Time *
+                  {t(language, 'admin.matches.dateTime')} *
                 </label>
                 <input
                   type="datetime-local"
@@ -1073,7 +1076,7 @@ export default function AdminMatchesPage() {
                     : 'bg-slate-100 text-slate-800 hover:bg-slate-200'
                 } disabled:opacity-50`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleCreate}
@@ -1081,7 +1084,7 @@ export default function AdminMatchesPage() {
                 className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {actionLoading && <Loader2 size={18} className="animate-spin" />}
-                Create Match
+                {t(language, 'admin.matches.createMatch')}
               </button>
             </div>
           </div>

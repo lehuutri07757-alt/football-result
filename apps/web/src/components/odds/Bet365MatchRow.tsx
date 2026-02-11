@@ -142,12 +142,21 @@ export function Bet365MatchRow({
         {showLeague && (
           <div className="hidden sm:flex items-center gap-1.5 w-36 flex-shrink-0">
             {match.leagueName && (
-              <>
-                <Trophy className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
-                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                  {match.leagueName}
-                </span>
-              </>
+              match.leagueSlug ? (
+                <Link href={`/leagues/${match.leagueSlug}`} className="flex items-center gap-1.5 min-w-0 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                  <Trophy className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400 truncate hover:text-emerald-600 dark:hover:text-emerald-400">
+                    {match.leagueName}
+                  </span>
+                </Link>
+              ) : (
+                <>
+                  <Trophy className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                    {match.leagueName}
+                  </span>
+                </>
+              )
             )}
           </div>
         )}

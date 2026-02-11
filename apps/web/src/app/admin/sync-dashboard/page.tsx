@@ -32,6 +32,8 @@ import {
 } from 'lucide-react';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { AdminLoading } from '@/components/admin/AdminLoading';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { syncJobService, SyncJob, SyncJobStats, QueueStatus, SyncJobType, SyncJobStatus, SyncJobPriority } from '@/services/sync-job.service';
 import { cn } from '@/lib/utils';
 
@@ -120,7 +122,7 @@ function JobDetailModal({ job, onClose, isDark }: { job: SyncJob; onClose: () =>
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
       <div className={cn(
-        'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl',
+        'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl',
         isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'
       )}>
         <div className={cn(
@@ -152,7 +154,7 @@ function JobDetailModal({ job, onClose, isDark }: { job: SyncJob; onClose: () =>
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className={cn('p-4 rounded-xl', isDark ? 'bg-slate-800' : 'bg-slate-50')}>
               <div className={cn('text-xs font-medium uppercase mb-2', isDark ? 'text-slate-400' : 'text-slate-500')}>
                 Status
@@ -259,7 +261,7 @@ function JobDetailModal({ job, onClose, isDark }: { job: SyncJob; onClose: () =>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className={cn('p-4 rounded-xl', isDark ? 'bg-slate-800' : 'bg-slate-50')}>
               <div className={cn('text-xs font-medium uppercase mb-2', isDark ? 'text-slate-400' : 'text-slate-500')}>
                 Triggered By
@@ -335,6 +337,7 @@ function JobDetailModal({ job, onClose, isDark }: { job: SyncJob; onClose: () =>
 export default function SyncDashboardPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [jobs, setJobs] = useState<SyncJob[]>([]);
   const [stats, setStats] = useState<SyncJobStats | null>(null);
@@ -516,7 +519,7 @@ export default function SyncDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={cn('text-2xl font-bold tracking-tight', isDark ? 'text-white' : 'text-slate-900')}>
-            Sync Dashboard
+            {t(language, 'admin.sync.title')}
           </h1>
           <p className={cn('mt-1 text-sm', isDark ? 'text-slate-400' : 'text-slate-500')}>
             Manage and monitor data synchronization jobs
@@ -555,11 +558,11 @@ export default function SyncDashboardPage() {
       {queueStatus && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: 'Waiting', value: queueStatus.waiting, color: 'text-slate-500' },
-            { label: 'Active', value: queueStatus.active, color: 'text-blue-500' },
-            { label: 'Completed', value: queueStatus.completed, color: 'text-emerald-500' },
-            { label: 'Failed', value: queueStatus.failed, color: 'text-red-500' },
-            { label: 'Delayed', value: queueStatus.delayed, color: 'text-amber-500' },
+            { label: t(language, 'admin.sync.waiting'), value: queueStatus.waiting, color: 'text-slate-500' },
+            { label: t(language, 'admin.sync.active'), value: queueStatus.active, color: 'text-blue-500' },
+            { label: t(language, 'admin.common.completed'), value: queueStatus.completed, color: 'text-emerald-500' },
+            { label: t(language, 'admin.common.failed'), value: queueStatus.failed, color: 'text-red-500' },
+            { label: t(language, 'admin.sync.delayed'), value: queueStatus.delayed, color: 'text-amber-500' },
           ].map((item) => (
             <div
               key={item.label}
@@ -715,7 +718,7 @@ export default function SyncDashboardPage() {
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
               )}
             >
-              <option value="">All Types</option>
+              <option value="">{t(language, 'admin.sync.allTypes')}</option>
               {(Object.keys(JOB_TYPE_CONFIG) as SyncJobType[]).map((type) => (
                 <option key={type} value={type}>{JOB_TYPE_CONFIG[type].label}</option>
               ))}
@@ -729,7 +732,7 @@ export default function SyncDashboardPage() {
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
               )}
             >
-              <option value="">All Status</option>
+              <option value="">{t(language, 'admin.sync.allStatus')}</option>
               {(Object.keys(STATUS_CONFIG) as SyncJobStatus[]).map((status) => (
                 <option key={status} value={status}>{STATUS_CONFIG[status].label}</option>
               ))}
@@ -743,11 +746,11 @@ export default function SyncDashboardPage() {
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
               )}
             >
-              <option value="">All Priorities</option>
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
+              <option value="">{t(language, 'admin.sync.allPriorities')}</option>
+              <option value="low">{t(language, 'admin.sync.low')}</option>
+              <option value="normal">{t(language, 'admin.sync.normal')}</option>
+              <option value="high">{t(language, 'admin.sync.high')}</option>
+              <option value="critical">{t(language, 'admin.sync.critical')}</option>
             </select>
 
             <select
@@ -758,10 +761,10 @@ export default function SyncDashboardPage() {
                 isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
               )}
             >
-              <option value="">All Triggers</option>
-              <option value="api">API</option>
-              <option value="scheduler">Scheduler</option>
-              <option value="system">System</option>
+              <option value="">{t(language, 'admin.sync.allTriggers')}</option>
+              <option value="api">{t(language, 'admin.sync.api')}</option>
+              <option value="scheduler">{t(language, 'admin.sync.scheduler')}</option>
+              <option value="system">{t(language, 'admin.sync.systemTrigger')}</option>
             </select>
 
             <input
@@ -804,19 +807,19 @@ export default function SyncDashboardPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className={cn(
                 'text-xs uppercase tracking-wider',
                 isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-slate-50 text-slate-500'
               )}>
-                <th className="px-6 py-3 text-left font-medium">Type</th>
-                <th className="px-6 py-3 text-left font-medium">Status</th>
-                <th className="px-6 py-3 text-left font-medium">Progress</th>
-                <th className="px-6 py-3 text-left font-medium">Duration</th>
-                <th className="px-6 py-3 text-left font-medium">Started</th>
-                <th className="px-6 py-3 text-left font-medium">Triggered By</th>
-                <th className="px-6 py-3 text-right font-medium">Actions</th>
+                <th className="px-6 py-3 text-left font-medium">{t(language, 'admin.common.type')}</th>
+                <th className="px-6 py-3 text-left font-medium">{t(language, 'admin.common.status')}</th>
+                <th className="px-6 py-3 text-left font-medium">{t(language, 'admin.sync.progress')}</th>
+                <th className="px-6 py-3 text-left font-medium">{t(language, 'admin.sync.duration')}</th>
+                <th className="px-6 py-3 text-left font-medium">{t(language, 'admin.sync.started')}</th>
+                <th className="px-6 py-3 text-left font-medium">{t(language, 'admin.sync.triggeredBy')}</th>
+                <th className="px-6 py-3 text-right font-medium">{t(language, 'admin.common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">

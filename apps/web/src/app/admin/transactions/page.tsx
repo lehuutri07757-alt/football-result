@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { adminService, Transaction, TransactionStats } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 import { TableSkeleton } from '@/components/admin/AdminLoading';
 import { toast } from 'sonner';
 
@@ -39,6 +41,7 @@ const slideUpAnimation = {
 export default function AdminTransactionsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState<TransactionStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,24 +152,24 @@ export default function AdminTransactionsPage() {
 
   const getTypeBadge = (type: string) => {
     const darkConfig: Record<string, { bg: string; text: string; label: string; icon: 'up' | 'down' }> = {
-      deposit: { bg: 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30', text: 'text-emerald-400', label: 'Deposit', icon: 'up' },
-      withdrawal: { bg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30', text: 'text-orange-400', label: 'Withdrawal', icon: 'down' },
-      bet_placed: { bg: 'bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30', text: 'text-red-400', label: 'Bet Placed', icon: 'down' },
-      bet_won: { bg: 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30', text: 'text-emerald-400', label: 'Bet Won', icon: 'up' },
-      bet_refund: { bg: 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30', text: 'text-blue-400', label: 'Bet Refund', icon: 'up' },
-      bonus: { bg: 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30', text: 'text-yellow-400', label: 'Bonus', icon: 'up' },
-      transfer: { bg: 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30', text: 'text-purple-400', label: 'Transfer', icon: 'down' },
-      adjustment: { bg: 'bg-gradient-to-r from-slate-500/20 to-gray-500/20 border border-slate-500/30', text: 'text-slate-400', label: 'Adjustment', icon: 'up' },
+      deposit: { bg: 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30', text: 'text-emerald-400', label: t(language, 'admin.transactions.deposit'), icon: 'up' },
+      withdrawal: { bg: 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30', text: 'text-orange-400', label: t(language, 'admin.transactions.withdrawal'), icon: 'down' },
+      bet_placed: { bg: 'bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30', text: 'text-red-400', label: t(language, 'admin.transactions.betPlaced'), icon: 'down' },
+      bet_won: { bg: 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30', text: 'text-emerald-400', label: t(language, 'admin.transactions.betWon'), icon: 'up' },
+      bet_refund: { bg: 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border border-blue-500/30', text: 'text-blue-400', label: t(language, 'admin.transactions.betRefund'), icon: 'up' },
+      bonus: { bg: 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30', text: 'text-yellow-400', label: t(language, 'admin.transactions.bonus'), icon: 'up' },
+      transfer: { bg: 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 border border-purple-500/30', text: 'text-purple-400', label: t(language, 'admin.transactions.transfer'), icon: 'down' },
+      adjustment: { bg: 'bg-gradient-to-r from-slate-500/20 to-gray-500/20 border border-slate-500/30', text: 'text-slate-400', label: t(language, 'admin.transactions.adjustment'), icon: 'up' },
     };
     const lightConfig: Record<string, { bg: string; text: string; label: string; icon: 'up' | 'down' }> = {
-      deposit: { bg: 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200', text: 'text-emerald-700', label: 'Deposit', icon: 'up' },
-      withdrawal: { bg: 'bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200', text: 'text-orange-700', label: 'Withdrawal', icon: 'down' },
-      bet_placed: { bg: 'bg-gradient-to-r from-red-50 to-rose-50 border border-red-200', text: 'text-red-700', label: 'Bet Placed', icon: 'down' },
-      bet_won: { bg: 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200', text: 'text-emerald-700', label: 'Bet Won', icon: 'up' },
-      bet_refund: { bg: 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200', text: 'text-blue-700', label: 'Bet Refund', icon: 'up' },
-      bonus: { bg: 'bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200', text: 'text-yellow-700', label: 'Bonus', icon: 'up' },
-      transfer: { bg: 'bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200', text: 'text-purple-700', label: 'Transfer', icon: 'down' },
-      adjustment: { bg: 'bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200', text: 'text-slate-500', label: 'Adjustment', icon: 'up' },
+      deposit: { bg: 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200', text: 'text-emerald-700', label: t(language, 'admin.transactions.deposit'), icon: 'up' },
+      withdrawal: { bg: 'bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200', text: 'text-orange-700', label: t(language, 'admin.transactions.withdrawal'), icon: 'down' },
+      bet_placed: { bg: 'bg-gradient-to-r from-red-50 to-rose-50 border border-red-200', text: 'text-red-700', label: t(language, 'admin.transactions.betPlaced'), icon: 'down' },
+      bet_won: { bg: 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200', text: 'text-emerald-700', label: t(language, 'admin.transactions.betWon'), icon: 'up' },
+      bet_refund: { bg: 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200', text: 'text-blue-700', label: t(language, 'admin.transactions.betRefund'), icon: 'up' },
+      bonus: { bg: 'bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200', text: 'text-yellow-700', label: t(language, 'admin.transactions.bonus'), icon: 'up' },
+      transfer: { bg: 'bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200', text: 'text-purple-700', label: t(language, 'admin.transactions.transfer'), icon: 'down' },
+      adjustment: { bg: 'bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200', text: 'text-slate-500', label: t(language, 'admin.transactions.adjustment'), icon: 'up' },
     };
     const config = isDark ? darkConfig : lightConfig;
     const fallback = isDark
@@ -195,10 +198,10 @@ export default function AdminTransactionsPage() {
       cancelled: 'bg-gradient-to-r from-slate-50 to-gray-50 text-slate-500 border border-slate-200',
     };
     const labels: Record<string, string> = {
-      completed: 'Completed',
-      pending: 'Pending',
-      failed: 'Failed',
-      cancelled: 'Cancelled',
+      completed: t(language, 'admin.common.completed'),
+      pending: t(language, 'admin.common.pending'),
+      failed: t(language, 'admin.common.failed'),
+      cancelled: t(language, 'admin.common.cancelled'),
     };
     const styles = isDark ? darkStyles : lightStyles;
     return (
@@ -294,7 +297,7 @@ export default function AdminTransactionsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4" style={fadeInAnimation}>
           <div>
             <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Transaction Management
+              {t(language, 'admin.transactions.title')}
             </h2>
             <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {total} total transactions • Global overview across the platform
@@ -406,15 +409,15 @@ export default function AdminTransactionsPage() {
                   : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50'
               } border`}
             >
-              <option value="all">All Types</option>
-              <option value="deposit">Deposit</option>
-              <option value="withdrawal">Withdrawal</option>
-              <option value="bet_placed">Bet Placed</option>
-              <option value="bet_won">Bet Won</option>
-              <option value="bet_refund">Bet Refund</option>
-              <option value="bonus">Bonus</option>
-              <option value="transfer">Transfer</option>
-              <option value="adjustment">Adjustment</option>
+              <option value="all">{t(language, 'admin.transactions.allTypes')}</option>
+              <option value="deposit">{t(language, 'admin.transactions.deposit')}</option>
+              <option value="withdrawal">{t(language, 'admin.transactions.withdrawal')}</option>
+              <option value="bet_placed">{t(language, 'admin.transactions.betPlaced')}</option>
+              <option value="bet_won">{t(language, 'admin.transactions.betWon')}</option>
+              <option value="bet_refund">{t(language, 'admin.transactions.betRefund')}</option>
+              <option value="bonus">{t(language, 'admin.transactions.bonus')}</option>
+              <option value="transfer">{t(language, 'admin.transactions.transfer')}</option>
+              <option value="adjustment">{t(language, 'admin.transactions.adjustment')}</option>
             </select>
 
             {/* Status */}
@@ -427,11 +430,11 @@ export default function AdminTransactionsPage() {
                   : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50'
               } border`}
             >
-              <option value="all">All Statuses</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
-              <option value="failed">Failed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t(language, 'admin.transactions.allStatuses')}</option>
+              <option value="completed">{t(language, 'admin.common.completed')}</option>
+              <option value="pending">{t(language, 'admin.common.pending')}</option>
+              <option value="failed">{t(language, 'admin.common.failed')}</option>
+              <option value="cancelled">{t(language, 'admin.common.cancelled')}</option>
             </select>
 
             {/* Balance Type */}
@@ -444,9 +447,9 @@ export default function AdminTransactionsPage() {
                   : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50'
               } border`}
             >
-              <option value="all">All Balances</option>
-              <option value="real">Real</option>
-              <option value="bonus">Bonus</option>
+              <option value="all">{t(language, 'admin.transactions.allBalances')}</option>
+              <option value="real">{t(language, 'admin.transactions.real')}</option>
+              <option value="bonus">{t(language, 'admin.transactions.bonusLabel')}</option>
             </select>
 
             {/* Date Range */}
@@ -454,7 +457,7 @@ export default function AdminTransactionsPage() {
               type="date"
               value={startDate}
               onChange={(e) => handleFilterChange(setStartDate, e.target.value)}
-              className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-200 w-36 ${
+              className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-200 w-full sm:w-36 ${
                 isDark
                   ? 'bg-slate-800 border-slate-700 text-white'
                   : 'bg-white border-slate-200 text-slate-900'
@@ -464,7 +467,7 @@ export default function AdminTransactionsPage() {
               type="date"
               value={endDate}
               onChange={(e) => handleFilterChange(setEndDate, e.target.value)}
-              className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-200 w-36 ${
+              className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-200 w-full sm:w-36 ${
                 isDark
                   ? 'bg-slate-800 border-slate-700 text-white'
                   : 'bg-white border-slate-200 text-slate-900'
@@ -517,17 +520,17 @@ export default function AdminTransactionsPage() {
               <div className={`p-4 rounded-full mb-4 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'}`}>
                 <CreditCard size={40} className="opacity-50" />
               </div>
-              <p className="font-medium">No transactions found</p>
-              <p className="text-sm mt-1 opacity-70">Try adjusting your filters</p>
+              <p className="font-medium">{t(language, 'admin.transactions.noTransactions')}</p>
+              <p className="text-sm mt-1 opacity-70">{t(language, 'admin.common.tryAdjustFilters')}</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[900px]">
                   <thead>
                     <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Type</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.user')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.type')}</th>
                       <th
                         className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition-colors select-none ${
                           isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
@@ -539,9 +542,9 @@ export default function AdminTransactionsPage() {
                           <SortIcon column="amount" />
                         </span>
                       </th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Before / After</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Balance</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.beforeAfter')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.balance')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
                       <th
                         className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition-colors select-none ${
                           isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
@@ -549,11 +552,11 @@ export default function AdminTransactionsPage() {
                         onClick={() => handleSort('createdAt')}
                       >
                         <span className="flex items-center gap-1.5">
-                          Date
+                          {t(language, 'admin.common.date')}
                           <SortIcon column="createdAt" />
                         </span>
                       </th>
-                      <th className={`px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Actions</th>
+                      <th className={`px-4 py-3.5 text-center text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${isDark ? 'divide-slate-700/50' : 'divide-slate-100'}`}>
@@ -571,7 +574,7 @@ export default function AdminTransactionsPage() {
                             </div>
                             <div className="min-w-0">
                               <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                {tx.wallet?.user?.username || 'Unknown'}
+                                {tx.wallet?.user?.username || t(language, 'admin.transactions.unknown')}
                               </p>
                               <p className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                 {tx.wallet?.user?.email || tx.walletId.slice(0, 12) + '...'}
@@ -602,7 +605,7 @@ export default function AdminTransactionsPage() {
                               ? (isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-700')
                               : (isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-50 text-yellow-700')
                           }`}>
-                            {tx.balanceType === 'real' ? 'Real' : 'Bonus'}
+                            {tx.balanceType === 'real' ? t(language, 'admin.transactions.real') : t(language, 'admin.transactions.bonusLabel')}
                           </span>
                         </td>
                         {/* Status */}
@@ -677,7 +680,7 @@ export default function AdminTransactionsPage() {
             >
               {/* Modal Header */}
               <div className={`sticky top-0 flex items-center justify-between p-5 border-b ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'}`}>
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Transaction Details</h3>
+                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.transactions.transactionDetails')}</h3>
                 <button
                   onClick={() => setShowDetailModal(false)}
                   className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -700,13 +703,13 @@ export default function AdminTransactionsPage() {
                 </div>
 
                 {/* Balance Before/After */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className={`p-4 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                    <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Balance Before</p>
+                    <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.balanceBefore')}</p>
                     <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatCurrency(selectedTransaction.balanceBefore)}</p>
                   </div>
                   <div className={`p-4 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                    <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Balance After</p>
+                    <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.balanceAfter')}</p>
                     <p className="text-emerald-500 font-bold">{formatCurrency(selectedTransaction.balanceAfter)}</p>
                   </div>
                 </div>
@@ -714,13 +717,13 @@ export default function AdminTransactionsPage() {
                 {/* Details */}
                 <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                   <div className="flex justify-between items-start">
-                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Transaction ID</span>
+                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.transactionId')}</span>
                     <span className={`font-mono text-xs text-right break-all max-w-[60%] ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedTransaction.id}</span>
                   </div>
 
                   {selectedTransaction.wallet?.user && (
                     <div className="flex justify-between items-center">
-                      <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User</span>
+                      <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.user')}</span>
                       <div className="text-right">
                         <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedTransaction.wallet.user.username}</p>
                         <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{selectedTransaction.wallet.user.email}</p>
@@ -729,36 +732,36 @@ export default function AdminTransactionsPage() {
                   )}
 
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Balance Type</span>
+                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.balanceType')}</span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                       selectedTransaction.balanceType === 'real'
                         ? (isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-700')
                         : (isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-50 text-yellow-700')
                     }`}>
-                      {selectedTransaction.balanceType === 'real' ? 'Real Balance' : 'Bonus Balance'}
+                      {selectedTransaction.balanceType === 'real' ? t(language, 'admin.transactions.realBalance') : t(language, 'admin.transactions.bonusBalance')}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</span>
+                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</span>
                     {getStatusBadge(selectedTransaction.status)}
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Date</span>
+                    <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.date')}</span>
                     <span className={`text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{formatDate(selectedTransaction.createdAt)}</span>
                   </div>
 
                   {selectedTransaction.referenceType && (
                     <div className="flex justify-between items-center">
-                      <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Reference Type</span>
+                      <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.referenceType')}</span>
                       <span className={`text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedTransaction.referenceType}</span>
                     </div>
                   )}
 
                   {selectedTransaction.referenceId && (
                     <div className="flex justify-between items-start">
-                      <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Reference ID</span>
+                      <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.referenceId')}</span>
                       <span className={`font-mono text-xs text-right break-all max-w-[60%] ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedTransaction.referenceId}</span>
                     </div>
                   )}
@@ -775,7 +778,7 @@ export default function AdminTransactionsPage() {
                 {/* Metadata */}
                 {selectedTransaction.metadata && Object.keys(selectedTransaction.metadata).length > 0 && (
                   <div className={`p-4 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                    <p className={`text-sm mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Metadata</p>
+                    <p className={`text-sm mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.transactions.metadata')}</p>
                     <pre className={`text-xs font-mono p-3 rounded-lg overflow-x-auto ${isDark ? 'text-slate-300 bg-slate-800' : 'text-slate-700 bg-slate-100'}`}>
                       {JSON.stringify(selectedTransaction.metadata, null, 2)}
                     </pre>
@@ -791,7 +794,7 @@ export default function AdminTransactionsPage() {
                     isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  Close
+                  {t(language, 'admin.common.close')}
                 </button>
               </div>
             </div>

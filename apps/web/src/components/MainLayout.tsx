@@ -10,7 +10,7 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const NO_HEADER_ROUTES = ['/admin', '/'];
+const NO_HEADER_ROUTES = ['/admin', '/', '/login'];
 const NO_BOTTOM_NAV_ROUTES = ['/admin', '/', '/auth', '/login', '/register'];
 const NO_BETSLIP_ROUTES = ['/admin', '/', '/auth', '/login', '/register', '/wallet', '/bets', '/settings', '/profile'];
 

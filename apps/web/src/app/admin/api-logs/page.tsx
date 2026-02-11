@@ -23,10 +23,13 @@ import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { adminService, ApiRequestLog, ApiLogsStats, ApiLogsQueryParams, ApiFootballAccountStatus } from '@/services/admin.service';
 import { cn } from '@/lib/utils';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 export default function ApiLogsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [logs, setLogs] = useState<ApiRequestLog[]>([]);
   const [stats, setStats] = useState<ApiLogsStats | null>(null);
@@ -183,7 +186,7 @@ export default function ApiLogsPage() {
   };
 
   if (loading && logs.length === 0) {
-    return <AdminLoading text="Loading API logs..." />;
+    return <AdminLoading text={t(language, 'admin.common.loading')} />;
   }
 
   return (
@@ -191,7 +194,7 @@ export default function ApiLogsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={cn('text-2xl font-bold tracking-tight', isDark ? 'text-white' : 'text-slate-900')}>
-            API Request Logs
+            {t(language, 'admin.apiLogs.title')}
           </h1>
           <p className={cn('mt-1 text-sm', isDark ? 'text-slate-400' : 'text-slate-500')}>
             Monitor external API calls to api-football provider
@@ -279,7 +282,7 @@ export default function ApiLogsPage() {
             <h3 className={cn('text-2xl font-bold', isDark ? 'text-white' : 'text-slate-900')}>
               {stats.summary.successRate}
             </h3>
-            <p className={cn('text-sm mt-1', isDark ? 'text-slate-400' : 'text-slate-500')}>Success Rate</p>
+            <p className={cn('text-sm mt-1', isDark ? 'text-slate-400' : 'text-slate-500')}>{t(language, 'admin.apiLogs.successRate')}</p>
           </div>
 
           <div
@@ -296,7 +299,7 @@ export default function ApiLogsPage() {
             <h3 className={cn('text-2xl font-bold', isDark ? 'text-white' : 'text-slate-900')}>
               {formatResponseTime(stats.summary.avgResponseTime)}
             </h3>
-            <p className={cn('text-sm mt-1', isDark ? 'text-slate-400' : 'text-slate-500')}>Avg Response Time</p>
+            <p className={cn('text-sm mt-1', isDark ? 'text-slate-400' : 'text-slate-500')}>{t(language, 'admin.apiLogs.avgResponseTime')}</p>
           </div>
 
           <div
@@ -355,14 +358,14 @@ export default function ApiLogsPage() {
                 <div className={cn('text-3xl font-bold', isDark ? 'text-white' : 'text-slate-900')}>
                   {accountStatus.requests.current.toLocaleString()}
                 </div>
-                <div className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>Used Today</div>
+                <div className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>{t(language, 'admin.apiLogs.usedToday')}</div>
               </div>
               <div className={cn('text-2xl font-light', isDark ? 'text-slate-600' : 'text-slate-300')}>/</div>
               <div className="text-center">
                 <div className={cn('text-3xl font-bold', isDark ? 'text-emerald-400' : 'text-emerald-600')}>
                   {accountStatus.requests.limit_day.toLocaleString()}
                 </div>
-                <div className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>Daily Limit</div>
+                <div className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-500')}>{t(language, 'admin.apiLogs.dailyLimit')}</div>
               </div>
               <div className="w-32">
                 <div className="flex justify-between text-xs mb-1">
@@ -401,7 +404,7 @@ export default function ApiLogsPage() {
         >
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 size={20} className="text-emerald-500" />
-            <h3 className={cn('font-semibold', isDark ? 'text-white' : 'text-slate-900')}>Requests by Endpoint</h3>
+            <h3 className={cn('font-semibold', isDark ? 'text-white' : 'text-slate-900')}>{t(language, 'admin.apiLogs.requestsByEndpoint')}</h3>
           </div>
           <div className="space-y-3">
             {stats.requestsByEndpoint.map((item, index) => {
@@ -444,7 +447,7 @@ export default function ApiLogsPage() {
           )}
         >
           <div className="flex flex-col gap-1.5">
-            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>Status</label>
+            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>{t(language, 'admin.common.status')}</label>
             <select
               value={filters.status || 'all'}
               onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -453,10 +456,10 @@ export default function ApiLogsPage() {
                 isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
               )}
             >
-              <option value="all">All</option>
-              <option value="success">Success</option>
-              <option value="error">Error</option>
-              <option value="timeout">Timeout</option>
+              <option value="all">{t(language, 'admin.common.all')}</option>
+              <option value="success">{t(language, 'admin.apiLogs.success')}</option>
+              <option value="error">{t(language, 'admin.apiLogs.error')}</option>
+              <option value="timeout">{t(language, 'admin.apiLogs.timeout')}</option>
             </select>
           </div>
 
@@ -470,7 +473,7 @@ export default function ApiLogsPage() {
                 isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'
               )}
             >
-              <option value="">All Endpoints</option>
+              <option value="">{t(language, 'admin.apiLogs.allEndpoints')}</option>
               <option value="/fixtures">/fixtures</option>
               <option value="/odds">/odds</option>
               <option value="/odds/live">/odds/live</option>
@@ -478,7 +481,7 @@ export default function ApiLogsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>Start Date</label>
+            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>{t(language, 'admin.apiLogs.startDate')}</label>
             <input
               type="date"
               value={filters.startDate || ''}
@@ -491,7 +494,7 @@ export default function ApiLogsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>End Date</label>
+            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>{t(language, 'admin.apiLogs.endDate')}</label>
             <input
               type="date"
               value={filters.endDate || ''}
@@ -504,7 +507,7 @@ export default function ApiLogsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>Stats Period</label>
+            <label className={cn('text-xs font-medium', isDark ? 'text-slate-400' : 'text-slate-600')}>{t(language, 'admin.apiLogs.statsPeriod')}</label>
             <select
               value={statsDays}
               onChange={(e) => setStatsDays(Number(e.target.value))}
@@ -528,7 +531,7 @@ export default function ApiLogsPage() {
         )}
       >
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className={isDark ? 'bg-slate-800/50' : 'bg-slate-50'}>
                 <th className={cn('px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider', isDark ? 'text-slate-400' : 'text-slate-500')}>

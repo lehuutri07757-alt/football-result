@@ -36,6 +36,8 @@ import {
 } from '@/services/match.service';
 import { AdminLoading } from '@/components/admin/AdminLoading';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 interface DerbyPair {
   homeTeamId: string;
@@ -48,6 +50,7 @@ interface DerbyPair {
 export default function FeaturedMatchesSettingsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -219,7 +222,7 @@ export default function FeaturedMatchesSettingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-            Featured Matches Settings
+            {t(language, 'admin.featured.title')}
           </h2>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
             Configure criteria for selecting featured matches
@@ -236,7 +239,7 @@ export default function FeaturedMatchesSettingsPage() {
             }`}
           >
             {autoSelecting ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-            Auto Select
+            {t(language, 'admin.featured.autoSelect')}
           </button>
           <button
             onClick={handleSave}
@@ -244,7 +247,7 @@ export default function FeaturedMatchesSettingsPage() {
             className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center gap-2"
           >
             {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            Save Settings
+            {t(language, 'admin.common.save')}
           </button>
         </div>
       </div>
@@ -261,7 +264,7 @@ export default function FeaturedMatchesSettingsPage() {
             <div className="flex items-center gap-3">
               <Star className="text-yellow-500" size={24} />
               <div>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Featured</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.common.featured')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   {stats.totalFeatured}
                 </p>
@@ -278,7 +281,7 @@ export default function FeaturedMatchesSettingsPage() {
             <div className="flex items-center gap-3">
               <Play className="text-red-500" size={24} />
               <div>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Live</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.featured.live')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   {stats.liveCount}
                 </p>
@@ -295,7 +298,7 @@ export default function FeaturedMatchesSettingsPage() {
             <div className="flex items-center gap-3">
               <Clock className="text-blue-500" size={24} />
               <div>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Upcoming</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.featured.upcoming')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   {stats.upcomingCount}
                 </p>
@@ -312,7 +315,7 @@ export default function FeaturedMatchesSettingsPage() {
             <div className="flex items-center gap-3">
               <Trophy className="text-purple-500" size={24} />
               <div>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>Leagues</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>{t(language, 'admin.nav.leagues')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   {stats.byLeague.length}
                 </p>
@@ -354,7 +357,7 @@ export default function FeaturedMatchesSettingsPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Search leagues..."
+                  placeholder={t(language, 'admin.common.searchPlaceholder')}
                   value={leagueSearch}
                   onChange={(e) => setLeagueSearch(e.target.value)}
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
@@ -446,7 +449,7 @@ export default function FeaturedMatchesSettingsPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Search teams..."
+                  placeholder={t(language, 'admin.common.searchPlaceholder')}
                   value={teamSearch}
                   onChange={(e) => setTeamSearch(e.target.value)}
                   className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
@@ -691,7 +694,7 @@ export default function FeaturedMatchesSettingsPage() {
                       isDark ? 'bg-slate-700/50' : 'bg-slate-50'
                     }`}
                   >
-                    <span className={isDark ? 'text-white' : 'text-slate-800'}>Auto Select Enabled</span>
+                    <span className={isDark ? 'text-white' : 'text-slate-800'}>{t(language, 'admin.featured.autoSelect')}</span>
                     <input
                       type="checkbox"
                       checked={settings.autoSelectEnabled}
@@ -707,7 +710,7 @@ export default function FeaturedMatchesSettingsPage() {
                       isDark ? 'bg-slate-700/50' : 'bg-slate-50'
                     }`}
                   >
-                    <span className={isDark ? 'text-white' : 'text-slate-800'}>Include Live Matches</span>
+                    <span className={isDark ? 'text-white' : 'text-slate-800'}>{t(language, 'admin.featured.includeLive')}</span>
                     <input
                       type="checkbox"
                       checked={settings.includeLive}
@@ -723,7 +726,7 @@ export default function FeaturedMatchesSettingsPage() {
                       isDark ? 'bg-slate-700/50' : 'bg-slate-50'
                     }`}
                   >
-                    <span className={isDark ? 'text-white' : 'text-slate-800'}>Include Upcoming Matches</span>
+                    <span className={isDark ? 'text-white' : 'text-slate-800'}>{t(language, 'admin.featured.includeUpcoming')}</span>
                     <input
                       type="checkbox"
                       checked={settings.includeUpcoming}

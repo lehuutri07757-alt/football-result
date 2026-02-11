@@ -24,6 +24,8 @@ import { adminService, DepositRequest } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { TableSkeleton } from '@/components/admin/AdminLoading';
 import { toast } from 'sonner';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 const fadeInAnimation = {
   animation: 'fadeIn 0.3s ease-out forwards',
@@ -36,6 +38,7 @@ const slideUpAnimation = {
 export default function AdminDepositsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
   const [deposits, setDeposits] = useState<DepositRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -226,10 +229,10 @@ export default function AdminDepositsPage() {
       cancelled: 'bg-gradient-to-r from-slate-50 to-gray-50 text-slate-500 border border-slate-200',
     };
     const labels: Record<string, string> = {
-      pending: 'Pending',
-      approved: 'Approved',
-      rejected: 'Rejected',
-      cancelled: 'Cancelled',
+      pending: t(language, 'admin.common.pending'),
+      approved: t(language, 'admin.common.approved'),
+      rejected: t(language, 'admin.common.rejected'),
+      cancelled: t(language, 'admin.common.cancelled'),
     };
     const styles = isDark ? darkStyles : lightStyles;
     return (
@@ -241,10 +244,10 @@ export default function AdminDepositsPage() {
 
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
-      bank_transfer: 'Bank Transfer',
+      bank_transfer: t(language, 'admin.deposits.bankTransfer'),
       e_wallet: 'E-Wallet',
-      crypto: 'Crypto',
-      card: 'Prepaid Card',
+      crypto: t(language, 'admin.deposits.crypto'),
+      card: t(language, 'admin.deposits.prepaidCard'),
     };
     return labels[method] || method;
   };
@@ -319,7 +322,7 @@ export default function AdminDepositsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div style={fadeInAnimation}>
             <h2 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Deposit Management
+              {t(language, 'admin.deposits.title')}
             </h2>
             <p className={`text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               {total} total requests • Manage and process deposit requests
@@ -333,10 +336,10 @@ export default function AdminDepositsPage() {
               }`} size={16} />
               <input
                 type="text"
-                placeholder="Search user..."
+                placeholder={t(language, 'admin.deposits.searchUser')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-44 transition-all duration-200 ${
+                className={`pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-44 transition-all duration-200 ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:bg-slate-700' 
                     : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-slate-50'
@@ -344,14 +347,14 @@ export default function AdminDepositsPage() {
               />
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <div className="relative">
                 <Calendar className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} size={14} />
                 <input
                   type="date"
                   value={fromDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className={`pl-8 pr-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-36 transition-all duration-200 ${
+                  className={`pl-8 pr-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-36 transition-all duration-200 ${
                     isDark 
                       ? 'bg-slate-800 border-slate-700 text-white' 
                       : 'bg-white border-slate-200 text-slate-900'
@@ -363,7 +366,7 @@ export default function AdminDepositsPage() {
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-36 transition-all duration-200 ${
+                className={`px-2 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 w-full sm:w-36 transition-all duration-200 ${
                   isDark 
                     ? 'bg-slate-800 border-slate-700 text-white' 
                     : 'bg-white border-slate-200 text-slate-900'
@@ -391,10 +394,10 @@ export default function AdminDepositsPage() {
                   : 'bg-white border-slate-200 text-slate-900 hover:bg-slate-50'
               } border`}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="all">{t(language, 'admin.deposits.allStatus')}</option>
+              <option value="pending">{t(language, 'admin.common.pending')}</option>
+              <option value="approved">{t(language, 'admin.common.approved')}</option>
+              <option value="rejected">{t(language, 'admin.common.rejected')}</option>
             </select>
 
             <button 
@@ -413,28 +416,28 @@ export default function AdminDepositsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" style={{ ...fadeInAnimation, animationDelay: '0.15s' }}>
           <StatCard
             icon={Clock}
-            label="Pending"
+            label={t(language, 'admin.common.pending')}
             value={stats.pending}
             color="text-amber-500"
             gradient="from-amber-500/10 to-orange-500/10"
           />
           <StatCard
             icon={Check}
-            label="Approved"
+            label={t(language, 'admin.common.approved')}
             value={stats.approved}
             color="text-emerald-500"
             gradient="from-emerald-500/10 to-green-500/10"
           />
           <StatCard
             icon={X}
-            label="Rejected"
+            label={t(language, 'admin.common.rejected')}
             value={stats.rejected}
             color="text-red-500"
             gradient="from-red-500/10 to-rose-500/10"
           />
           <StatCard
             icon={TrendingUp}
-            label="Total Approved"
+            label={`${t(language, 'admin.common.approved')}`}
             value={formatCurrency(stats.totalAmount)}
             color="text-blue-500"
             gradient="from-blue-500/10 to-indigo-500/10"
@@ -454,22 +457,22 @@ export default function AdminDepositsPage() {
               <div className={`p-4 rounded-full mb-4 ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'}`}>
                 <ArrowDownToLine size={40} className="opacity-50" />
               </div>
-              <p className="font-medium">No deposit requests found</p>
-              <p className="text-sm mt-1 opacity-70">Try adjusting your filters</p>
+              <p className="font-medium">{t(language, 'admin.deposits.noDeposits')}</p>
+              <p className="text-sm mt-1 opacity-70">{t(language, 'admin.common.tryAdjustFilters')}</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[800px]">
                   <thead>
                     <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Amount</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Method</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bank Info</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Created</th>
-                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Actions</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.user')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.amount')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.deposits.method')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.deposits.bankInfo')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.created')}</th>
+                      <th className={`px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className={`divide-y ${isDark ? 'divide-slate-700/50' : 'divide-slate-100'}`}>
@@ -617,7 +620,7 @@ export default function AdminDepositsPage() {
               style={slideUpAnimation}
             >
               <div className={`sticky top-0 flex items-center justify-between p-5 border-b ${isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'}`}>
-                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Deposit Details</h3>
+                <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.deposits.depositDetails')}</h3>
                 <button 
                   onClick={() => setShowDetailModal(false)}
                   className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -638,7 +641,7 @@ export default function AdminDepositsPage() {
                 </div>
 
                 <div className={`p-5 rounded-xl text-center bg-gradient-to-br ${isDark ? 'from-emerald-500/20 to-green-500/10' : 'from-emerald-50 to-green-50'} border ${isDark ? 'border-emerald-500/30' : 'border-emerald-200'}`}>
-                  <p className={`text-xs font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Deposit Amount</p>
+                  <p className={`text-xs font-medium mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.deposits.depositAmount')}</p>
                   <p className="text-emerald-500 font-bold text-3xl">
                     {formatCurrency(selectedDeposit.amount)}
                   </p>
@@ -646,20 +649,20 @@ export default function AdminDepositsPage() {
 
                 <div className={`p-4 rounded-xl space-y-3 ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                   <div className="flex justify-between text-sm">
-                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Payment Method</span>
+                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.deposits.paymentMethod')}</span>
                     <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {getPaymentMethodLabel(selectedDeposit.paymentMethod)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Bank</span>
+                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.deposits.bank')}</span>
                     <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {selectedDeposit.bankName || '-'}
                     </span>
                   </div>
                   {selectedDeposit.accountNumber && (
                     <div className="flex justify-between text-sm items-center">
-                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Account Number</span>
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.deposits.accountNumber')}</span>
                       <button
                         onClick={() => copyToClipboard(selectedDeposit.accountNumber || '', 'Account number')}
                         className={`font-mono font-medium flex items-center gap-2 px-2 py-1 rounded-lg transition-colors ${
@@ -673,7 +676,7 @@ export default function AdminDepositsPage() {
                   )}
                   {selectedDeposit.transferContent && (
                     <div className="flex justify-between text-sm items-center">
-                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Transfer Content</span>
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.deposits.transferContent')}</span>
                       <button
                         onClick={() => copyToClipboard(selectedDeposit.transferContent || '', 'Transfer content')}
                         className={`font-mono font-medium flex items-center gap-2 px-2 py-1 rounded-lg transition-colors ${
@@ -686,11 +689,11 @@ export default function AdminDepositsPage() {
                     </div>
                   )}
                   <div className="flex justify-between text-sm items-center">
-                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Status</span>
+                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.status')}</span>
                     {getStatusBadge(selectedDeposit.status)}
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Created</span>
+                    <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.created')}</span>
                     <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {formatDate(selectedDeposit.createdAt)}
                     </span>
@@ -708,13 +711,13 @@ export default function AdminDepositsPage() {
                     }`}
                   >
                     <ImageIcon className="text-emerald-500" size={20} />
-                    <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>View Proof Image</span>
+                    <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.deposits.viewProofImage')}</span>
                   </button>
                 )}
 
                 {selectedDeposit.rejectReason && (
                   <div className={`p-4 rounded-xl ${isDark ? 'bg-red-500/10 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}>
-                    <p className="text-red-500 text-xs font-semibold mb-2">Rejection Reason</p>
+                    <p className="text-red-500 text-xs font-semibold mb-2">{t(language, 'admin.deposits.rejectionReason')}</p>
                     <p className={`text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedDeposit.rejectReason}</p>
                   </div>
                 )}
@@ -732,14 +735,14 @@ export default function AdminDepositsPage() {
                         isDark ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-red-50 text-red-500 hover:bg-red-100'
                       }`}
                     >
-                      Reject
+                      {t(language, 'admin.common.reject')}
                     </button>
                     <button 
                       onClick={() => handleApprove(selectedDeposit.id)}
                       disabled={actionLoading}
                       className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {actionLoading ? 'Processing...' : 'Approve'}
+                      {actionLoading ? 'Processing...' : t(language, 'admin.common.approve')}
                     </button>
                   </div>
                 ) : (
@@ -749,7 +752,7 @@ export default function AdminDepositsPage() {
                       isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
-                    Close
+                    {t(language, 'admin.common.close')}
                   </button>
                 )}
               </div>
@@ -772,7 +775,7 @@ export default function AdminDepositsPage() {
                   <X className="text-red-500" size={24} />
                 </div>
                 <div>
-                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Reject Request</h3>
+                  <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.common.reject')}</h3>
                   <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     {formatCurrency(selectedDeposit.amount)} from {selectedDeposit.user?.username}
                   </p>
@@ -781,12 +784,12 @@ export default function AdminDepositsPage() {
               
               <div className="mb-5">
                 <label className={`text-xs font-semibold mb-2 block ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Rejection Reason *
+                  {t(language, 'admin.deposits.rejectionReason')} *
                 </label>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Please provide a reason for rejection..."
+                  placeholder={t(language, 'admin.deposits.rejectionReasonPlaceholder')}
                   className={`w-full px-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-none h-24 transition-all duration-200 ${
                     isDark 
                       ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-500 focus:bg-slate-600' 
@@ -806,14 +809,14 @@ export default function AdminDepositsPage() {
                     isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  Cancel
+                  {t(language, 'admin.common.cancel')}
                 </button>
                 <button 
                   onClick={handleReject}
                   disabled={actionLoading || !rejectReason.trim()}
                   className="flex-1 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-red-500/25 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {actionLoading ? 'Processing...' : 'Reject'}
+                  {actionLoading ? 'Processing...' : t(language, 'admin.common.reject')}
                 </button>
               </div>
             </div>

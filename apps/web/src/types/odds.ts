@@ -26,6 +26,7 @@ export interface OddsTableRow {
   externalId: number;
   leagueId: number;
   leagueName: string;
+  leagueSlug?: string;
   country: string;
   matchTime: string;
   startTime: string;
@@ -53,6 +54,7 @@ export interface OddsTableRow {
 export interface LeagueOddsGroup {
   leagueId: number;
   leagueName: string;
+  leagueSlug?: string;
   country: string;
   countryFlag?: string;
   leagueLogo?: string;

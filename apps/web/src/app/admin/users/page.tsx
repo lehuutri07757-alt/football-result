@@ -20,11 +20,14 @@ import { adminService, AdminUser } from '@/services/admin.service';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { TableSkeleton } from '@/components/admin/AdminLoading';
 import { toast } from 'sonner';
+import { useLanguageStore } from '@/stores/language.store';
+import { t } from '@/lib/i18n';
 
 export default function AdminUsersPage() {
   const router = useRouter();
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,9 +161,9 @@ export default function AdminUsersPage() {
       self_excluded: 'bg-purple-100 text-purple-700',
     };
     const labels: Record<string, string> = {
-      active: 'Active',
-      suspended: 'Suspended',
-      blocked: 'Blocked',
+      active: t(language, 'admin.common.active'),
+      suspended: t(language, 'admin.common.suspended'),
+      blocked: t(language, 'admin.common.blocked'),
       self_excluded: 'Self-excluded',
     };
     const styles = isDark ? darkStyles : lightStyles;
@@ -175,7 +178,7 @@ export default function AdminUsersPage() {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Users</h2>
+          <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.title')}</h2>
           <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{total} total</p>
         </div>
         <div className="flex items-center gap-2">
@@ -183,7 +186,7 @@ export default function AdminUsersPage() {
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-400' : 'text-slate-400'}`} size={16} />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder={t(language, 'admin.common.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`pl-9 pr-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48 ${
@@ -202,10 +205,10 @@ export default function AdminUsersPage() {
                 : 'bg-white border-slate-200 text-slate-900'
             } border`}
           >
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="blocked">Blocked</option>
+            <option value="all">{t(language, 'admin.common.all')}</option>
+            <option value="active">{t(language, 'admin.common.active')}</option>
+            <option value="suspended">{t(language, 'admin.common.suspended')}</option>
+            <option value="blocked">{t(language, 'admin.common.blocked')}</option>
           </select>
           <button 
             onClick={fetchUsers}
@@ -220,7 +223,7 @@ export default function AdminUsersPage() {
             className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <UserPlus size={16} />
-            <span className="hidden sm:inline">Create User</span>
+            <span className="hidden sm:inline">{t(language, 'admin.users.createUser')}</span>
           </button>
         </div>
       </div>
@@ -231,21 +234,21 @@ export default function AdminUsersPage() {
         ) : users.length === 0 ? (
           <div className={`flex flex-col items-center justify-center py-16 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             <Users size={40} className="mb-3 opacity-50" />
-            <p className="text-sm">No users found</p>
+            <p className="text-sm">{t(language, 'admin.users.noUsers')}</p>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className={isDark ? 'bg-slate-700/50' : 'bg-slate-50'}>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>User</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Email</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Balance</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Role</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Status</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Created</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Actions</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.user')}</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.email')}</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.balance')}</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.role')}</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.status')}</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.created')}</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-slate-100'}`}>
@@ -311,7 +314,7 @@ export default function AdminUsersPage() {
                                 ? isDark ? 'hover:bg-slate-600 text-amber-400' : 'hover:bg-amber-50 text-amber-500'
                                 : isDark ? 'hover:bg-slate-600 text-emerald-400' : 'hover:bg-emerald-50 text-emerald-500'
                             }`}
-                            title={user.status === 'active' ? 'Suspend' : 'Activate'}
+                            title={user.status === 'active' ? t(language, 'admin.users.suspend') : t(language, 'admin.users.activate')}
                           >
                             {user.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
                           </button>
@@ -360,7 +363,7 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className={`rounded-xl p-5 w-full max-w-md mx-4 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>User Details</h3>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.userDetails')}</h3>
               <button 
                 onClick={() => setShowDetailModal(false)}
                 className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -376,19 +379,19 @@ export default function AdminUsersPage() {
                 </div>
                 <div>
                   <p className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedUser.username}</p>
-                  <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{selectedUser.email || 'No email'}</p>
+                  <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{selectedUser.email || t(language, 'admin.users.noEmail')}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                  <p className={`text-xs mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Real balance</p>
+                  <p className={`text-xs mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.realBalance')}</p>
                   <p className="text-emerald-500 font-bold">
                     {formatCurrency(selectedUser.wallet?.realBalance || 0)}
                   </p>
                 </div>
                 <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
-                  <p className={`text-xs mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Bonus balance</p>
+                  <p className={`text-xs mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.bonusBalance')}</p>
                   <p className="text-amber-500 font-bold">
                     {formatCurrency(selectedUser.wallet?.bonusBalance || 0)}
                   </p>
@@ -397,21 +400,21 @@ export default function AdminUsersPage() {
 
               <div className={`p-3 rounded-lg space-y-2 ${isDark ? 'bg-slate-700' : 'bg-slate-50'}`}>
                 <div className="flex justify-between text-sm">
-                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Role</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.role')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-900'}>{selectedUser.role?.name || 'User'}</span>
                 </div>
                 <div className="flex justify-between text-sm items-center">
-                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Status</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.status')}</span>
                   {getStatusBadge(selectedUser.status)}
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Created</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>{t(language, 'admin.common.created')}</span>
                   <span className={isDark ? 'text-white' : 'text-slate-900'}>{formatDate(selectedUser.createdAt)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Last login</span>
                   <span className={isDark ? 'text-white' : 'text-slate-900'}>
-                    {selectedUser.lastLoginAt ? formatDate(selectedUser.lastLoginAt) : 'Never'}
+                    {selectedUser.lastLoginAt ? formatDate(selectedUser.lastLoginAt) : t(language, 'admin.users.never')}
                   </span>
                 </div>
               </div>
@@ -424,7 +427,7 @@ export default function AdminUsersPage() {
                   isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                Close
+                {t(language, 'admin.common.cancel')}
               </button>
               <button 
                 onClick={() => {
@@ -433,7 +436,7 @@ export default function AdminUsersPage() {
                 }}
                 className="flex-1 py-2 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 transition-colors"
               >
-                Change Status
+                {t(language, 'admin.users.changeStatus')}
               </button>
             </div>
           </div>
@@ -444,7 +447,7 @@ export default function AdminUsersPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className={`rounded-xl p-5 w-full max-w-md mx-4 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>Create New User</h3>
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.createNewUser')}</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}
@@ -455,7 +458,7 @@ export default function AdminUsersPage() {
 
             <div className="space-y-3">
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Username *</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.username')} *</label>
                 <input
                   type="text"
                   value={createForm.username}
@@ -467,7 +470,7 @@ export default function AdminUsersPage() {
                 />
               </div>
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Password *</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.password')} *</label>
                 <div className="relative">
                   <input
                     type={showNewPassword ? 'text' : 'password'}
@@ -489,7 +492,7 @@ export default function AdminUsersPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>First Name</label>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.firstName')}</label>
                   <input
                     type="text"
                     value={createForm.firstName}
@@ -501,7 +504,7 @@ export default function AdminUsersPage() {
                   />
                 </div>
                 <div>
-                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Last Name</label>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.users.lastName')}</label>
                   <input
                     type="text"
                     value={createForm.lastName}
@@ -514,7 +517,7 @@ export default function AdminUsersPage() {
                 </div>
               </div>
               <div>
-                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Email</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t(language, 'admin.common.email')}</label>
                 <input
                   type="email"
                   value={createForm.email}
@@ -546,7 +549,7 @@ export default function AdminUsersPage() {
                   isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                Cancel
+                {t(language, 'admin.common.cancel')}
               </button>
               <button
                 onClick={handleCreateUser}
@@ -556,7 +559,7 @@ export default function AdminUsersPage() {
                 {createLoading ? (
                   <><Loader2 size={16} className="animate-spin" /> Creating...</>
                 ) : (
-                  <><UserPlus size={16} /> Create User</>
+                  <><UserPlus size={16} /> {t(language, 'admin.users.createUser')}</>
                 )}
               </button>
             </div>
@@ -567,7 +570,7 @@ export default function AdminUsersPage() {
       {showStatusModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className={`rounded-xl p-5 w-full max-w-sm mx-4 ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Change Status</h3>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t(language, 'admin.users.changeStatus')}</h3>
             <p className={`text-sm mb-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               Select status for <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>{selectedUser.username}</span>
             </p>
@@ -587,10 +590,10 @@ export default function AdminUsersPage() {
                   } disabled:opacity-50`}
                 >
                   <span className={isDark ? 'text-white' : 'text-slate-900'}>
-                    {status === 'active' ? 'Active' : status === 'suspended' ? 'Suspended' : 'Blocked'}
+                    {status === 'active' ? t(language, 'admin.common.active') : status === 'suspended' ? t(language, 'admin.common.suspended') : t(language, 'admin.common.blocked')}
                   </span>
                   {selectedUser.status === status && (
-                    <span className="text-emerald-500 text-xs">Current</span>
+                    <span className="text-emerald-500 text-xs">{t(language, 'admin.users.current')}</span>
                   )}
                 </button>
               ))}
@@ -602,7 +605,7 @@ export default function AdminUsersPage() {
                 isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Cancel
+              {t(language, 'admin.common.cancel')}
             </button>
           </div>
         </div>

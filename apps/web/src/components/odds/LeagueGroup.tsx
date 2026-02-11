@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { LeagueOddsGroup } from '@/types/odds';
 import { OddsRow } from './OddsRow';
 
@@ -16,7 +17,13 @@ export function LeagueGroup({ league, showHalfTime = false }: LeagueGroupProps) 
           <img src={league.leagueLogo} alt="" className="w-6 h-6 object-contain" />
         )}
         <div className="flex-1">
-          <h3 className="font-semibold">{league.leagueName}</h3>
+          {league.leagueSlug ? (
+            <Link href={`/leagues/${league.leagueSlug}`} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              <h3 className="font-semibold">{league.leagueName}</h3>
+            </Link>
+          ) : (
+            <h3 className="font-semibold">{league.leagueName}</h3>
+          )}
           <span className="text-xs text-muted-foreground">{league.country}</span>
         </div>
         <span className="text-xs text-muted-foreground">

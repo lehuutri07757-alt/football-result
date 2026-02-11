@@ -21,6 +21,8 @@ import {
   Check
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguageStore } from '@/stores/language.store';
+import { t, type I18nKey } from '@/lib/i18n';
 import { useAdminTheme } from '@/contexts/AdminThemeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,47 +52,48 @@ type SettingSectionId = 'security' | 'payment' | 'notification' | 'system' | 'pr
 
 interface SettingSection {
   id: SettingSectionId;
-  title: string;
+  title: I18nKey;
   icon: React.ElementType;
-  description: string;
+  description: I18nKey;
 }
 
 const sections: SettingSection[] = [
   { 
     id: 'security', 
-    title: 'Security', 
+    title: 'admin.settings.security', 
     icon: Shield,
-    description: 'Manage security protocols, authentication, and access controls.'
+    description: 'admin.settings.securityDesc'
   },
   { 
     id: 'payment', 
-    title: 'Payments', 
+    title: 'admin.settings.payments', 
     icon: Wallet,
-    description: 'Configure deposit/withdrawal limits, fees, and currency settings.'
+    description: 'admin.settings.paymentsDesc'
   },
   { 
     id: 'notification', 
-    title: 'Notifications', 
+    title: 'admin.settings.notifications', 
     icon: Bell,
-    description: 'Setup email alerts, push notifications, and system messages.'
+    description: 'admin.settings.notificationsDesc'
   },
   { 
     id: 'providers', 
-    title: 'Data Providers', 
+    title: 'admin.settings.dataProviders', 
     icon: Database,
-    description: 'Manage external data providers and API keys.'
+    description: 'admin.settings.dataProvidersDesc'
   },
   { 
     id: 'system', 
-    title: 'System', 
+    title: 'admin.settings.systemConfig', 
     icon: Globe,
-    description: 'General system configuration, maintenance mode, and feature toggles.'
+    description: 'admin.settings.systemDesc'
   },
 ];
 
 export default function AdminSettingsPage() {
   const { theme } = useAdminTheme();
   const isDark = theme === 'dark';
+  const language = useLanguageStore((s) => s.language);
   
   const [activeSection, setActiveSection] = useState<SettingSectionId>('security');
   const [saving, setSaving] = useState(false);
@@ -280,10 +283,10 @@ export default function AdminSettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={cn("text-3xl font-bold tracking-tight", isDark ? "text-white" : "text-slate-900")}>
-            Settings
+            {t(language, 'admin.settings.title')}
           </h1>
           <p className={cn("text-muted-foreground mt-1")}>
-            Manage your platform preferences and system configurations.
+            {t(language, 'admin.settings.systemDesc')}
           </p>
         </div>
         <Button 
@@ -299,7 +302,7 @@ export default function AdminSettingsPage() {
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              Save Changes
+              {t(language, 'admin.common.save')}
             </>
           )}
         </Button>
@@ -330,10 +333,10 @@ export default function AdminSettingsPage() {
               </div>
               <div className="space-y-0.5">
                 <span className="font-medium text-sm block">
-                  {section.title}
+                  {t(language, section.title)}
                 </span>
                 <span className="text-xs text-muted-foreground line-clamp-1">
-                  {section.description}
+                  {t(language, section.description)}
                 </span>
               </div>
             </button>
@@ -345,8 +348,8 @@ export default function AdminSettingsPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Authentication Security</CardTitle>
-                  <CardDescription>Configure how administrators access the system.</CardDescription>
+                  <CardTitle>{t(language, 'admin.settings.authSecurity')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.configureAuth')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between space-x-2">
@@ -363,7 +366,7 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Login Notifications</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.loginNotifications')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Send email alerts for new device logins.
                       </p>
@@ -378,13 +381,13 @@ export default function AdminSettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Session Management</CardTitle>
-                  <CardDescription>Control session duration and lockout policies.</CardDescription>
+                  <CardTitle>{t(language, 'admin.settings.sessionManagement')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.controlSession')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Session Timeout (minutes)</Label>
+                      <Label>{t(language, 'admin.settings.sessionTimeout')}</Label>
                       <Input
                         type="number"
                         value={settings.sessionTimeout}
@@ -395,7 +398,7 @@ export default function AdminSettingsPage() {
                       <p className="text-xs text-muted-foreground">Auto-logout after inactivity.</p>
                     </div>
                     <div className="space-y-2">
-                      <Label>Max Login Attempts</Label>
+                      <Label>{t(language, 'admin.settings.maxLoginAttempts')}</Label>
                       <Input
                         type="number"
                         value={settings.maxLoginAttempts}
@@ -403,7 +406,7 @@ export default function AdminSettingsPage() {
                         min={3}
                         max={10}
                       />
-                      <p className="text-xs text-muted-foreground">Lock account after failed tries.</p>
+                      <p className="text-xs text-muted-foreground">{t(language, 'admin.settings.lockAccount')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -415,12 +418,12 @@ export default function AdminSettingsPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Transaction Limits</CardTitle>
-                  <CardDescription>Set global limits for deposits and withdrawals.</CardDescription>
+                  <CardTitle>{t(language, 'admin.settings.transactionLimits')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.setGlobalLimits')}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Min Deposit (USD)</Label>
+                    <Label>{t(language, 'admin.settings.minDeposit')}</Label>
                     <Input
                       type="number"
                       value={settings.minDeposit}
@@ -428,7 +431,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Deposit (USD)</Label>
+                    <Label>{t(language, 'admin.settings.maxDeposit')}</Label>
                     <Input
                       type="number"
                       value={settings.maxDeposit}
@@ -436,7 +439,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Min Withdrawal (USD)</Label>
+                    <Label>{t(language, 'admin.settings.minWithdrawal')}</Label>
                     <Input
                       type="number"
                       value={settings.minWithdrawal}
@@ -444,7 +447,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Withdrawal (USD)</Label>
+                    <Label>{t(language, 'admin.settings.maxWithdrawal')}</Label>
                     <Input
                       type="number"
                       value={settings.maxWithdrawal}
@@ -456,8 +459,8 @@ export default function AdminSettingsPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Fees & Betting Limits</CardTitle>
-                  <CardDescription>Configure transaction fees and betting constraints.</CardDescription>
+                  <CardTitle>{t(language, 'admin.settings.feesBettingLimits')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.configureFees')}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -470,7 +473,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Fixed Fee (USD)</Label>
+                    <Label>{t(language, 'admin.settings.fixedFee')}</Label>
                     <Input
                       type="number"
                       value={settings.withdrawalFeeFixed}
@@ -478,7 +481,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Min Bet (USD)</Label>
+                    <Label>{t(language, 'admin.settings.minBet')}</Label>
                     <Input
                       type="number"
                       value={settings.minBet}
@@ -486,7 +489,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Max Bet (USD)</Label>
+                    <Label>{t(language, 'admin.settings.maxBet')}</Label>
                     <Input
                       type="number"
                       value={settings.maxBet}
@@ -502,13 +505,13 @@ export default function AdminSettingsPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>System Alerts</CardTitle>
-                  <CardDescription>Manage real-time notifications and alerts.</CardDescription>
+                  <CardTitle>{t(language, 'admin.settings.systemAlerts')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.configureAlerts')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">New Bet Notifications</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.newBetNotifications')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Notify admins when a new bet is placed.
                       </p>
@@ -520,7 +523,7 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Suspicious Activity</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.suspiciousActivity')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Alert on unusual user behavior or login patterns.
                       </p>
@@ -532,7 +535,7 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Daily Reports</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.dailyReports')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Email daily summary of system performance.
                       </p>
@@ -553,7 +556,7 @@ export default function AdminSettingsPage() {
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Large Transaction Alert</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.largeTransactionAlert')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Notify when deposit/withdrawal exceeds threshold.
                       </p>
@@ -566,7 +569,7 @@ export default function AdminSettingsPage() {
                   
                   {settings.largeTransactionAlert && (
                     <div className="space-y-2 pt-4 border-t">
-                      <Label>Threshold Amount (USD)</Label>
+                      <Label>{t(language, 'admin.settings.thresholdAmount')}</Label>
                       <Input
                         type="number"
                         value={settings.largeTransactionThreshold}
@@ -584,12 +587,12 @@ export default function AdminSettingsPage() {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h2 className="text-lg font-medium">Data Providers</h2>
-                  <p className="text-sm text-muted-foreground">Manage external data sources and API connections.</p>
+                  <h2 className="text-lg font-medium">{t(language, 'admin.settings.dataProviders')}</h2>
+                  <p className="text-sm text-muted-foreground">{t(language, 'admin.settings.manageDataSources')}</p>
                 </div>
                 <Button onClick={openCreateDialog}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Provider
+                  {t(language, 'admin.settings.addProvider')}
                 </Button>
               </div>
 
@@ -611,7 +614,7 @@ export default function AdminSettingsPage() {
                               {PROVIDER_STATUS_LABELS[provider.status]}
                             </span>
                           </div>
-                          <CardDescription>{provider.description || 'No description'}</CardDescription>
+                          <CardDescription>{provider.description || t(language, 'admin.settings.noDescription')}</CardDescription>
                           <div className="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded w-fit mt-1">
                             {provider.code}
                           </div>
@@ -626,7 +629,7 @@ export default function AdminSettingsPage() {
                       <CardContent className="space-y-4 pt-4">
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Health Score</span>
+                            <span className="text-muted-foreground">{t(language, 'admin.settings.healthScore')}</span>
                             <span className={cn("font-medium", provider.healthScore > 80 ? "text-green-600" : provider.healthScore > 50 ? "text-yellow-600" : "text-red-600")}>
                               {provider.healthScore}%
                             </span>
@@ -641,13 +644,13 @@ export default function AdminSettingsPage() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="space-y-1">
-                            <p className="text-muted-foreground text-xs">Daily Usage</p>
+                            <p className="text-muted-foreground text-xs">{t(language, 'admin.settings.dailyUsage')}</p>
                             <div className="font-medium">
                               {provider.dailyUsage.toLocaleString()} / {provider.dailyLimit ? provider.dailyLimit.toLocaleString() : '∞'}
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-muted-foreground text-xs">Monthly Usage</p>
+                            <p className="text-muted-foreground text-xs">{t(language, 'admin.settings.monthlyUsage')}</p>
                             <div className="font-medium">
                               {provider.monthlyUsage.toLocaleString()} / {provider.monthlyLimit ? provider.monthlyLimit.toLocaleString() : '∞'}
                             </div>
@@ -681,11 +684,11 @@ export default function AdminSettingsPage() {
                       <CardFooter className="flex justify-end gap-2 border-t pt-4">
                         <Button variant="outline" size="sm" onClick={() => openEditDialog(provider)}>
                           <Edit className="mr-2 h-3 w-3" />
-                          Edit
+                          {t(language, 'admin.common.edit')}
                         </Button>
                         <Button variant="destructive" size="sm" onClick={() => handleDeleteProvider(provider.id)}>
                           <Trash2 className="mr-2 h-3 w-3" />
-                          Delete
+                          {t(language, 'admin.common.delete')}
                         </Button>
                       </CardFooter>
                     </Card>
@@ -705,7 +708,7 @@ export default function AdminSettingsPage() {
                   <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
                     <div className="flex items-center justify-between p-6 border-b">
                       <h3 className="text-lg font-semibold leading-none tracking-tight">
-                        {editingProvider ? 'Edit Provider' : 'Add New Provider'}
+                        {editingProvider ? t(language, 'admin.settings.editProvider') : t(language, 'admin.settings.addProvider')}
                       </h3>
                       <Button variant="ghost" size="icon" onClick={() => setIsProviderDialogOpen(false)} className="h-8 w-8 rounded-full">
                         <X className="h-4 w-4" />
@@ -714,7 +717,7 @@ export default function AdminSettingsPage() {
                     <div className="p-6 space-y-6 flex-1 overflow-y-auto">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Provider Code</Label>
+                          <Label>{t(language, 'admin.settings.providerCode')}</Label>
                           <Input 
                             value={providerForm.code} 
                             onChange={e => setProviderForm({...providerForm, code: e.target.value})}
@@ -723,7 +726,7 @@ export default function AdminSettingsPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Name</Label>
+                          <Label>{t(language, 'admin.common.name')}</Label>
                           <Input 
                             value={providerForm.name} 
                             onChange={e => setProviderForm({...providerForm, name: e.target.value})}
@@ -733,7 +736,7 @@ export default function AdminSettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Base URL</Label>
+                        <Label>{t(language, 'admin.settings.baseUrl')}</Label>
                         <Input 
                           value={providerForm.baseUrl} 
                           onChange={e => setProviderForm({...providerForm, baseUrl: e.target.value})}
@@ -742,7 +745,7 @@ export default function AdminSettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Description</Label>
+                        <Label>{t(language, 'admin.common.description')}</Label>
                         <textarea 
                           className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           value={providerForm.description || ''}
@@ -752,7 +755,7 @@ export default function AdminSettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>API Key</Label>
+                        <Label>{t(language, 'admin.settings.apiKey')}</Label>
                         <Input 
                           type="password"
                           value={providerForm.apiKey || ''} 
@@ -762,7 +765,7 @@ export default function AdminSettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Data Types</Label>
+                        <Label>{t(language, 'admin.settings.dataTypes')}</Label>
                         <div className="flex flex-wrap gap-2 pt-2">
                           {Object.values(DataProviderType).map(type => (
                             <button
@@ -794,7 +797,7 @@ export default function AdminSettingsPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Daily Limit</Label>
+                          <Label>{t(language, 'admin.settings.dailyLimit')}</Label>
                           <Input 
                             type="number"
                             value={providerForm.dailyLimit} 
@@ -803,7 +806,7 @@ export default function AdminSettingsPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Monthly Limit</Label>
+                          <Label>{t(language, 'admin.settings.monthlyLimit')}</Label>
                           <Input 
                             type="number"
                             value={providerForm.monthlyLimit} 
@@ -814,7 +817,7 @@ export default function AdminSettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Headers (JSON)</Label>
+                        <Label>{t(language, 'admin.settings.headersJson')}</Label>
                         <textarea 
                           className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
                           value={headersJson}
@@ -823,9 +826,9 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
                     <div className="p-6 border-t flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setIsProviderDialogOpen(false)}>Cancel</Button>
+                      <Button variant="outline" onClick={() => setIsProviderDialogOpen(false)}>{t(language, 'admin.common.cancel')}</Button>
                       <Button onClick={handleProviderSubmit}>
-                        {editingProvider ? 'Update Provider' : 'Create Provider'}
+                        {editingProvider ? t(language, 'admin.settings.updateProvider') : t(language, 'admin.settings.createProvider')}
                       </Button>
                     </div>
                   </div>
@@ -838,13 +841,13 @@ export default function AdminSettingsPage() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Feature Toggles</CardTitle>
-                  <CardDescription>Enable or disable core system features.</CardDescription>
+                  <CardTitle>{t(language, 'admin.settings.featureToggles')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.enableDisableFeatures')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">User Registration</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.userRegistration')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Allow new users to create accounts.
                       </p>
@@ -856,7 +859,7 @@ export default function AdminSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base">Betting System</Label>
+                      <Label className="text-base">{t(language, 'admin.settings.bettingSystem')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Enable betting functionality globally.
                       </p>
@@ -871,13 +874,13 @@ export default function AdminSettingsPage() {
 
               <Card className="border-orange-500/50 bg-orange-500/5">
                 <CardHeader>
-                  <CardTitle className="text-orange-600 dark:text-orange-400">Maintenance Mode</CardTitle>
+                  <CardTitle className="text-orange-600 dark:text-orange-400">{t(language, 'admin.settings.maintenanceMode')}</CardTitle>
                   <CardDescription>System-wide maintenance status.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between space-x-2">
                     <div className="space-y-0.5">
-                      <Label className="text-base font-medium">Enable Maintenance</Label>
+                      <Label className="text-base font-medium">{t(language, 'admin.settings.enableMaintenance')}</Label>
                       <p className="text-sm text-muted-foreground">
                         Prevent user access during updates. Admins still have access.
                       </p>
@@ -892,32 +895,32 @@ export default function AdminSettingsPage() {
 
               <Card className="border-red-500/50 bg-red-500/5">
                 <CardHeader>
-                  <CardTitle className="text-red-600 dark:text-red-400">Danger Zone</CardTitle>
-                  <CardDescription>Irreversible system actions.</CardDescription>
+                  <CardTitle className="text-red-600 dark:text-red-400">{t(language, 'admin.settings.dangerZone')}</CardTitle>
+                  <CardDescription>{t(language, 'admin.settings.irreversibleActions')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900/50 rounded-lg bg-background">
                     <div className="space-y-0.5">
-                      <div className="font-medium text-red-600 dark:text-red-400">Clear System Cache</div>
+                      <div className="font-medium text-red-600 dark:text-red-400">{t(language, 'admin.settings.clearCache')}</div>
                       <p className="text-sm text-muted-foreground">
                         Force refresh all cached data (Redis).
                       </p>
                     </div>
                     <Button variant="destructive" size="sm">
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Clear Cache
+                      {t(language, 'admin.settings.clearCache')}
                     </Button>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-900/50 rounded-lg bg-background">
                     <div className="space-y-0.5">
-                      <div className="font-medium text-red-600 dark:text-red-400">Reset Settings</div>
+                      <div className="font-medium text-red-600 dark:text-red-400">{t(language, 'admin.settings.resetSettings')}</div>
                       <p className="text-sm text-muted-foreground">
                         Restore all configurations to defaults.
                       </p>
                     </div>
                     <Button variant="destructive" size="sm">
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Reset Defaults
+                      {t(language, 'admin.settings.resetSettings')}
                     </Button>
                   </div>
                 </CardContent>
